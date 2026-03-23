@@ -1,9 +1,32 @@
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router';
-import { MessageCircle, History, LogIn, User } from 'lucide-react';
+import { MessageCircle, History, LogIn, ChevronRight } from 'lucide-react';
+import { getConsultations } from '../utils/storage';
+import { getRelationStyle } from '../utils/relationStyles';
+import { ConsultationData } from '../types';
+
+/** personName ごとに最新の相談を1件返す */
+function getRecentPersons(consultations: ConsultationData[]) {
+  const map = new Map<string, ConsultationData>();
+  // 古い順に処理 → 後から上書きで最新が残る
+  [...consultations]
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+    .forEach((c) => map.set(c.personName, c));
+  // 新しい順に並べ直して返す
+  return Array.from(map.values()).sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+}
 
 export function Navigation() {
   const location = useLocation();
-  
+  const [persons, setPersons] = useState<ConsultationData[]>([]);
+
+  // パス変更のたびに再取得（新規相談後も反映）
+  useEffect(() => {
+    setPersons(getRecentPersons(getConsultations()));
+  }, [location.pathname]);
+
   const navItems = [
     { path: '/', icon: MessageCircle, label: 'ホーム' },
     { path: '/history', icon: History, label: '履歴' },
@@ -26,8 +49,8 @@ export function Navigation() {
           </Link>
         </div>
 
-        {/* メニュー */}
-        <div className="flex-1 p-4 space-y-2">
+        {/* メニュー + 人物リスト */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-1">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
@@ -46,6 +69,47 @@ export function Navigation() {
               </Link>
             );
           })}
+
+          {/* ── 相談した人物リスト ── */}
+          {persons.length > 0 && (
+            <div className="pt-2">
+              <p className="px-4 py-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
+                最近の相談相手
+              </p>
+              <div className="space-y-0.5">
+                {persons.map((person) => {
+                  const style = getRelationStyle(person.relation);
+                  const isActive = location.pathname === `/analysis/${person.id}`;
+                  return (
+                    <Link
+                      key={person.id}
+                      to={`/analysis/${person.id}`}
+                      className={`flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors group ${
+                        isActive
+                          ? 'bg-purple-50 text-purple-700'
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      {/* アバター */}
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-sm flex-shrink-0 ${style.badge}`}>
+                        {style.emoji}
+                      </div>
+                      {/* 名前 + 関係性 */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium leading-tight truncate">
+                          {person.personName}
+                        </p>
+                        <p className="text-[10px] text-gray-400 leading-tight truncate">
+                          {person.relation}
+                        </p>
+                      </div>
+                      <ChevronRight className="w-3.5 h-3.5 text-gray-300 group-hover:text-gray-500 flex-shrink-0 transition-colors" />
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* ログインボタン */}
