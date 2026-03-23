@@ -28,7 +28,7 @@ export function Navigation() {
   }, [location.pathname]);
 
   const navItems = [
-    { path: '/', icon: MessageCircle, label: 'ホーム' },
+    { path: '/', icon: MessageCircle, label: '新しい人物について質問' },
     { path: '/history', icon: History, label: '履歴' },
   ];
 
@@ -83,7 +83,7 @@ export function Navigation() {
                   return (
                     <Link
                       key={person.id}
-                      to={`/analysis/${person.id}`}
+                      to={`/new?person=${encodeURIComponent(person.personName)}`}
                       className={`flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors group ${
                         isActive
                           ? 'bg-purple-50 text-purple-700'

@@ -38,9 +38,26 @@ export function ActionSuggestion() {
   const relStyle = getRelationStyle(consultation.relation);
 
   const handleCopy = (text: string, index: number) => {
-    navigator.clipboard.writeText(text);
+    // Clipboard API が使えない環境（iframe内など）ではフォールバック
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+    } else {
+      fallbackCopy(text);
+    }
     setCopiedIndex(index);
     setTimeout(() => setCopiedIndex(null), 2000);
+  };
+
+  const fallbackCopy = (text: string) => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try { document.execCommand('copy'); } catch (_) { /* silent */ }
+    document.body.removeChild(ta);
   };
 
   return (
@@ -187,7 +204,7 @@ export function ActionSuggestion() {
               完了
             </button>
             <button
-              onClick={() => navigate('/new')}
+              onClick={() => navigate(`/new?person=${encodeURIComponent(consultation.personName)}`)}
               className="w-full bg-white text-gray-700 py-4 rounded-xl font-medium border-2 border-gray-200 hover:border-gray-300 transition-colors lg:text-lg"
             >
               新しい相談を始める
