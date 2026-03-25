@@ -66,7 +66,7 @@ export function Home() {
                       return (
                         <Link
                           key={person}
-                          to={latest ? `/action/${latest.id}` : '/new'}
+                          to={`/history?person=${encodeURIComponent(person)}`}
                           className={`flex items-center justify-between bg-gray-50 ${style.bgHover} rounded-xl px-4 py-3 transition-colors group`}
                         >
                           <div className="flex items-center gap-3">

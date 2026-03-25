@@ -1,18 +1,21 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useSyncExternalStore } from 'react';
 import { Link, useLocation } from 'react-router';
-import { MessageCircle, History, LogIn, ChevronRight } from 'lucide-react';
+import { MessageCircle, History, LogIn, ChevronRight, ChevronDown } from 'lucide-react';
 import { getConsultations } from '../utils/storage';
 import { getRelationStyle } from '../utils/relationStyles';
 import { ConsultationData } from '../types';
+import {
+  getExpandedPerson,
+  setExpandedPerson,
+  subscribeExpandedPerson,
+} from '../utils/navigationState';
 
 /** personName ごとに最新の相談を1件返す */
 function getRecentPersons(consultations: ConsultationData[]) {
   const map = new Map<string, ConsultationData>();
-  // 古い順に処理 → 後から上書きで最新が残る
   [...consultations]
     .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
     .forEach((c) => map.set(c.personName, c));
-  // 新しい順に並べ直して返す
   return Array.from(map.values()).sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
@@ -22,10 +25,17 @@ export function Navigation() {
   const location = useLocation();
   const [persons, setPersons] = useState<ConsultationData[]>([]);
 
-  // パス変更のたびに再取得（新規相談後も反映）
+  // シングルトンストアから展開状態を読む（ページ遷移後も保持）
+  const expandedPerson = useSyncExternalStore(
+    subscribeExpandedPerson,
+    getExpandedPerson
+  );
+
   useEffect(() => {
     setPersons(getRecentPersons(getConsultations()));
   }, [location.pathname]);
+
+  // ※ パス変更時のリセットは行わない（展開状態を保持するため）
 
   const navItems = [
     { path: '/', icon: MessageCircle, label: '新しい人物について質問' },
@@ -79,32 +89,55 @@ export function Navigation() {
               <div className="space-y-0.5">
                 {persons.map((person) => {
                   const style = getRelationStyle(person.relation);
-                  const isActive = location.pathname === `/analysis/${person.id}`;
+                  const isExpanded = expandedPerson === person.personName;
                   return (
-                    <Link
-                      key={person.id}
-                      to={`/new?person=${encodeURIComponent(person.personName)}`}
-                      className={`flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors group ${
-                        isActive
-                          ? 'bg-purple-50 text-purple-700'
-                          : 'text-gray-600 hover:bg-gray-100'
-                      }`}
-                    >
-                      {/* アバター */}
-                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-sm flex-shrink-0 ${style.badge}`}>
-                        {style.emoji}
-                      </div>
-                      {/* 名前 + 関係性 */}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium leading-tight truncate">
-                          {person.personName}
-                        </p>
-                        <p className="text-[10px] text-gray-400 leading-tight truncate">
-                          {person.relation}
-                        </p>
-                      </div>
-                      <ChevronRight className="w-3.5 h-3.5 text-gray-300 group-hover:text-gray-500 flex-shrink-0 transition-colors" />
-                    </Link>
+                    <div key={person.id}>
+                      {/* 人物行（クリックで展開） */}
+                      <button
+                        onClick={() =>
+                          setExpandedPerson(isExpanded ? null : person.personName)
+                        }
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors group text-gray-600 hover:bg-gray-100"
+                      >
+                        {/* アバター */}
+                        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-sm flex-shrink-0 ${style.badge}`}>
+                          {style.emoji}
+                        </div>
+                        {/* 名前 + 関係性 */}
+                        <div className="flex-1 min-w-0 text-left">
+                          <p className="text-sm font-medium leading-tight truncate">
+                            {person.personName}
+                          </p>
+                          <p className="text-[10px] text-gray-400 leading-tight truncate">
+                            {person.relation}
+                          </p>
+                        </div>
+                        {isExpanded
+                          ? <ChevronDown className="w-3.5 h-3.5 text-gray-400 flex-shrink-0 transition-transform" />
+                          : <ChevronRight className="w-3.5 h-3.5 text-gray-300 group-hover:text-gray-500 flex-shrink-0 transition-colors" />
+                        }
+                      </button>
+
+                      {/* 展開メニュー */}
+                      {isExpanded && (
+                        <div className="ml-10 mt-0.5 mb-1 space-y-0.5">
+                          <Link
+                            to={`/new?person=${encodeURIComponent(person.personName)}`}
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm text-pink-600 hover:bg-pink-50 transition-colors font-medium"
+                          >
+                            <MessageCircle className="w-3.5 h-3.5" />
+                            その人について相談
+                          </Link>
+                          <Link
+                            to={`/history?person=${encodeURIComponent(person.personName)}`}
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm text-purple-600 hover:bg-purple-50 transition-colors font-medium"
+                          >
+                            <History className="w-3.5 h-3.5" />
+                            履歴
+                          </Link>
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </div>
