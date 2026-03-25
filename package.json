@@ -2,10 +2,8 @@
   "name": "@figma/my-make-file",
   "private": true,
   "version": "0.0.1",
-  "type": "module",
   "scripts": {
-    "build": "vite build",
-    "dev": "vite"
+    "server": "ts-node src/server.ts"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
@@ -68,8 +66,11 @@
   "devDependencies": {
     "@tailwindcss/vite": "4.1.12",
     "@types/express": "^5.0.6",
+    "@types/node": "^25.5.0",
     "@vitejs/plugin-react": "4.7.0",
     "tailwindcss": "4.1.12",
+    "ts-node": "^10.9.2",
+    "typescript": "^6.0.2",
     "vite": "6.3.5"
   },
   "peerDependencies": {
