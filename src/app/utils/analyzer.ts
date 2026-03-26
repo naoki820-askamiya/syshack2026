@@ -408,6 +408,7 @@ const getReasons = (consultation: ConsultationData, scores: EmotionScores): { la
   return reasons;
 };
 
+// AI分析結果の生成（モック）
 export const generateAIAnalysis = (consultation: ConsultationData): AIAnalysisResult => {
   const scores = buildScores(consultation);
   return {
