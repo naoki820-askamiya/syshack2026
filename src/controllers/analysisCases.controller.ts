@@ -1,12 +1,38 @@
+/**
+ * このファイルは analysis-cases の controller です。
+ *
+ * controller とは:
+ * - 受け取ったリクエストを整理して service に渡す場所
+ *
+ * ここでは、
+ * - `req.params` から URL 上の ID を取り出す
+ * - `req.body` から送信データを取り出す
+ * - `req.query` から一覧取得用の値を取り出す
+ * - service の結果を `res.json(...)` で返す
+ *
+ * という「入出力の整理」に集中しています。
+ */
 import type { NextFunction, Request, Response } from "express";
 import type { CreateAnalysisCaseBody } from "../types/index.ts";
 import * as analysisCasesService from "../services/analysisCases.service.ts";
 
+// `requireSession` middleware を通ったあとに、
+// `req.sessionId` を使えるようにするための型です。
 type SessionRequest<TBody = unknown> = Request & {
     sessionId?: string;
     body: TBody;
 };
 
+/**
+ * analysis-case 作成 API の controller です。
+ *
+ * 受け取るもの:
+ * - header の `x-session-id`
+ * - body の `CreateAnalysisCaseBody`
+ *
+ * 返すもの:
+ * - 作成された analysis-case を 201 で返します
+ */
 export async function createAnalysisCase(
     req: SessionRequest<CreateAnalysisCaseBody>,
     res: Response,
@@ -24,6 +50,12 @@ export async function createAnalysisCase(
     }
 }
 
+/**
+ * AI 分析実行 API の controller です。
+ *
+ * URL から `caseId` を取り出して service に渡します。
+ * controller 自体は AI を呼ばず、流れの管理は service に任せます。
+ */
 export async function analyzeCase(
     req: SessionRequest,
     res: Response,
@@ -32,7 +64,7 @@ export async function analyzeCase(
     try {
         const result = await analysisCasesService.analyzeCase(
             req.sessionId ?? "",
-            req.params.caseId,
+            getSingleParam(req.params.caseId),
         );
 
         res.json(result);
@@ -41,6 +73,11 @@ export async function analyzeCase(
     }
 }
 
+/**
+ * 保存済み result 取得 API の controller です。
+ *
+ * service から返ってきた値をそのまま JSON として返します。
+ */
 export async function getResult(
     req: SessionRequest,
     res: Response,
@@ -49,7 +86,7 @@ export async function getResult(
     try {
         const result = await analysisCasesService.getResult(
             req.sessionId ?? "",
-            req.params.caseId,
+            getSingleParam(req.params.caseId),
         );
 
         res.json(result);
@@ -58,6 +95,12 @@ export async function getResult(
     }
 }
 
+/**
+ * Person ごとの analysis-case 一覧を返す controller です。
+ *
+ * `limit` と `offset` は一覧の件数を調整するための query です。
+ * どちらも文字列で来るので、ここで number に変換しています。
+ */
 export async function getCasesByPerson(
     req: SessionRequest,
     res: Response,
@@ -69,7 +112,7 @@ export async function getCasesByPerson(
 
         const result = await analysisCasesService.getCasesByPerson(
             req.sessionId ?? "",
-            req.params.personId,
+            getSingleParam(req.params.personId),
             { limit, offset },
         );
 
@@ -77,4 +120,12 @@ export async function getCasesByPerson(
     } catch (error) {
         next(error);
     }
+}
+
+function getSingleParam(value: string | string[] | undefined): string {
+    if (Array.isArray(value)) {
+        return value[0] ?? "";
+    }
+
+    return value ?? "";
 }

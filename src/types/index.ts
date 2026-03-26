@@ -1,3 +1,15 @@
+/**
+ * このファイルは、バックエンド全体で使う型をまとめる場所です。
+ *
+ * 型を書く理由:
+ * - 「どんなデータを受け取るか」が分かりやすくなる
+ * - まちがった shape のデータを早めに見つけやすくなる
+ * - IDE の補完が効いて、読み手も追いやすくなる
+ *
+ * 初学者向けに言うと、
+ * 「データの設計図を先に書いているファイル」
+ * と考えると分かりやすいです。
+ */
 // AI 分析結果の確信度です。
 // UI や保存側で扱いやすいよう、文字列を固定の候補に絞っています。
 export type AnalysisConfidenceLevel = "low" | "medium" | "high";
@@ -112,6 +124,8 @@ export interface ResponseLike {
 // next() 相当の関数型です。
 export type NextLike = (error?: unknown) => void;
 
+// Person の関係性を表す候補です。
+// `POST /api/persons` で relationshipType として使います。
 export type RelationshipType =
     | "boss"
     | "coworker"
@@ -122,8 +136,11 @@ export type RelationshipType =
     | "customer"
     | "other";
 
+// Person の genderHint に入れられる候補です。
 export type GenderHint = "male" | "female" | "other" | "unknown";
 
+// AI に渡す Person 情報の shape です。
+// analysis-case にも snapshot として保存します。
 export interface AnalyzePersonInput {
     displayName: string;
     relationshipType: RelationshipType;
@@ -132,6 +149,7 @@ export interface AnalyzePersonInput {
     notes: string;
 }
 
+// analysis-case 作成時に受け取る本文の型です。
 export interface AnalyzeCaseFormInput {
     eventFacts: string;
     selfMessage: string;
@@ -148,6 +166,7 @@ export interface AnalyzeCaseFormInput {
     messageLengthType: string;
 }
 
+// `POST /api/analysis-cases` の body 型です。
 export interface CreateAnalysisCaseBody {
     personId: string;
     eventFacts: string;
@@ -165,6 +184,7 @@ export interface CreateAnalysisCaseBody {
     messageLengthType: string;
 }
 
+// `POST /api/persons` の body 型です。
 export interface CreatePersonBody {
     displayName: string;
     relationshipType: RelationshipType;
@@ -175,6 +195,17 @@ export interface CreatePersonBody {
 
 export type AnalysisCaseStatus = "draft" | "analyzing" | "analyzed" | "error";
 
+// session repository に保存する完全形です。
+// 今はインメモリ実装なので、サーバー再起動で消えます。
+export interface StoredSession {
+    id: string;
+    expiresAt: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+// repository に保存する Person の完全形です。
+// sessionId や createdAt も含みます。
 export interface StoredPerson extends AnalyzePersonInput {
     id: string;
     sessionId: string;
@@ -182,6 +213,7 @@ export interface StoredPerson extends AnalyzePersonInput {
     updatedAt: string;
 }
 
+// repository に保存する analysis-case の完全形です。
 export interface StoredAnalysisCase {
     id: string;
     personId: string;
@@ -193,6 +225,7 @@ export interface StoredAnalysisCase {
     updatedAt: string;
 }
 
+// repository に保存する analysis result の完全形です。
 export interface StoredAnalysisResult {
     id: string;
     analysisCaseId: string;
@@ -201,6 +234,7 @@ export interface StoredAnalysisResult {
     updatedAt: string;
 }
 
+// 一覧取得で使うページング用の型です。
 export interface PaginationOptions {
     limit: number;
     offset: number;

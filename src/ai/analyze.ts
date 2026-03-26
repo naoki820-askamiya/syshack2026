@@ -1,10 +1,20 @@
+/**
+ * このファイルは OpenAI API を呼び出す専門の場所です。
+ *
+ * 役割:
+ * - AI に渡す入力を整理する
+ * - system prompt と user prompt を作る
+ * - OpenAI API を呼ぶ
+ * - AI が返した JSON を取り出す
+ * - Zod で shape を検証する
+ *
+ * つまり、
+ * 「AI まわりの難しい部分を 1 ファイルに集めている」
+ * と考えると追いやすいです。
+ */
 import OpenAI from "openai";
 import { z } from "zod";
 
-/**
- * OpenAI の利用モデル名を 1 か所にまとめています。
- * 将来モデルを差し替えるときに、この定数だけ見れば済むようにするためです。
- */
 /**
  * API キーは要件どおり process.env.OPENAI_API_KEY から読みます。
  * 初期化自体はファイル先頭で行い、実際の不足チェックは analyzeMood() 内で明示します。
@@ -195,6 +205,10 @@ export function buildSystemPrompt(): string {
 /**
  * user prompt を組み立てます。
  * 指定されたフォーマットをそのまま守ることで、入力の意味を AI に伝えやすくします。
+ *
+ * system prompt との違い:
+ * - system prompt は「AI に守ってほしい全体ルール」
+ * - user prompt は「今回の分析対象データそのもの」
  */
 export function buildUserPrompt(input: AnalyzeInput): string {
     const safeInput = analyzeInputSchema.parse(input);
@@ -308,6 +322,7 @@ function parseAnalyzeOutput(rawText: string): AnalyzeOutput {
         );
     }
 
+    // goodSignals は「悪い面だけで決めつけない」ために必須にしています。
     if (validated.data.goodSignals.length === 0) {
         throw new AnalyzeMoodError(
             "AI_RESPONSE_INVALID",
@@ -326,6 +341,8 @@ function parseAnalyzeOutput(rawText: string): AnalyzeOutput {
 export async function analyzeMood(input: AnalyzeInput): Promise<AnalyzeOutput> {
     const sanitizedInput = analyzeInputSchema.parse(input);
 
+    // OpenAI を呼ぶ前に、必要な環境変数があるか確認します。
+    // ここが無いと、原因が分かりにくいまま失敗してしまいます。
     if (!process.env.OPENAI_API_KEY?.trim()) {
         throw new AnalyzeMoodError(
             "AI_PROVIDER_ERROR",
@@ -349,6 +366,8 @@ export async function analyzeMood(input: AnalyzeInput): Promise<AnalyzeOutput> {
     let rawText = "";
 
     try {
+        // 実際に OpenAI API を呼んでいる場所です。
+        // ここでは「JSON だけ返してほしい」と明示しています。
         const completion = await openai.chat.completions.create({
             model,
             temperature: 0.2,
@@ -359,6 +378,7 @@ export async function analyzeMood(input: AnalyzeInput): Promise<AnalyzeOutput> {
             ],
         });
 
+        // OpenAI の返答本文だけを取り出します。
         rawText = completion.choices[0]?.message?.content?.trim() ?? "";
     } catch (error) {
         throw new AnalyzeMoodError(
@@ -377,6 +397,8 @@ export async function analyzeMood(input: AnalyzeInput): Promise<AnalyzeOutput> {
         );
     }
 
+    // 返ってきた文字列を JSON として取り出し、
+    // schema（データの形のルール）に合っているか確認します。
     return parseAnalyzeOutput(rawText);
 }
 
@@ -393,9 +415,9 @@ export const analyze = analyzeMood;
 export const sampleAnalyzeInput: AnalyzeInput = {
     person: {
         displayName: "取引先A",
-        relationshipType: "仕事関係",
+        relationshipType: "customer",
         ageRange: "30代",
-        genderHint: "不明",
+        genderHint: "unknown",
         notes: "ふだんは返信が早く、文面は簡潔。",
     },
     analysisCase: {

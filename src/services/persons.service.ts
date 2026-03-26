@@ -1,3 +1,11 @@
+/**
+ * このファイルは persons の service です。
+ *
+ * Person に関する実際の処理の流れをここへまとめています。
+ * 今は主に次の 2 つを担当しています。
+ * - Person を作る
+ * - personId が実在するか、同じ session の持ち物か確認する
+ */
 import * as personsRepository from "../repositories/persons.repository.ts";
 import type {
     CreatePersonBody,
@@ -18,10 +26,24 @@ const RELATIONSHIP_TYPES: RelationshipType[] = [
     "other",
 ];
 
+// 許可する genderHint の候補です。
+// body の値がこの中に入っているかを確認するために使います。
 const GENDER_HINTS: GenderHint[] = ["male", "female", "other", "unknown"];
 
-// Person 作成の service です。
-// controller から受け取った body を検証し、session とひも付けて repository に保存します。
+/**
+ * Person 作成の service です。
+ *
+ * 受け取るもの:
+ * - sessionId
+ * - Person 作成用の body
+ *
+ * 返すもの:
+ * - 作成された person
+ *
+ * ここでは validation（入力チェック）も一緒に行います。
+ * controller には「HTTP の整理」だけを持たせたいので、
+ * 値の意味に関するチェックは service 側でしています。
+ */
 export async function createPerson(sessionId: string, data: CreatePersonBody) {
     if (!sessionId) {
         throw new AppError({
@@ -69,6 +91,8 @@ export async function createPerson(sessionId: string, data: CreatePersonBody) {
         });
     }
 
+    // repository は実際の保存担当です。
+    // service は「どの値を保存するか」を決めて渡します。
     const person = await personsRepository.create({
         sessionId,
         displayName,
@@ -81,8 +105,12 @@ export async function createPerson(sessionId: string, data: CreatePersonBody) {
     return { person };
 }
 
-// personId の存在確認と session 所有確認を共通化します。
-// analysisCases 側からも使えるように service として公開します。
+/**
+ * personId の存在確認と session 所有確認を行う共通関数です。
+ *
+ * analysisCases 側でも同じ確認が必要なので、
+ * ここで共通化して再利用しています。
+ */
 export async function getOwnedPersonOrThrow(
     sessionId: string,
     personId: string,
