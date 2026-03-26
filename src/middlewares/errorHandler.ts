@@ -1,5 +1,5 @@
-import type { NextLike, RequestLike, ResponseLike } from "../types";
-import { normalizeError, toErrorResponse } from "../utils";
+import type { NextLike, RequestLike, ResponseLike } from "../types/index.ts";
+import { normalizeError, toErrorResponse } from "../utils/index.ts";
 
 // どの層で起きたエラーでも、最後は同じ JSON 形式で返すための middleware です。
 // 返却形式をここで統一しておくと、AI 層・service 層・middleware 層で投げ方が違っても、

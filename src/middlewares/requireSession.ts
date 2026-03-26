@@ -1,5 +1,5 @@
-import type { NextLike, RequestLike, ResponseLike } from "../types";
-import { AppError } from "../utils";
+import type { NextLike, RequestLike, ResponseLike } from "../types/index.ts";
+import { AppError } from "../utils/index.ts";
 
 // すべての protected API で、x-session-id があるかだけを確認する middleware です。
 // cookie や body ではなくヘッダーに限定することで、セッションの受け取り方を 1 つに固定し、

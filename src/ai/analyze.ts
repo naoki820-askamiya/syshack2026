@@ -1,409 +1,470 @@
-import type {
-    AIAnalysisResult,
-    AIInputDTO,
-    AnalysisCaseInput,
-    AnalysisReplyTone,
-    AnalysisScores,
-    AnalyzeResponse,
-} from "../types";
-import {
-    ANALYZE_TIMEOUT_MS,
-    AppError,
-    buildAIInputDTO,
-    clampScore,
-    readEnv,
-    withTimeout,
-} from "../utils";
+import OpenAI from "openai";
+import { z } from "zod";
 
-const OPENAI_BASE_URL = "https://api.openai.com/v1";
-const DEFAULT_MODEL = "gpt-4o-mini";
+/**
+ * OpenAI の利用モデル名を 1 か所にまとめています。
+ * 将来モデルを差し替えるときに、この定数だけ見れば済むようにするためです。
+ */
+/**
+ * API キーは要件どおり process.env.OPENAI_API_KEY から読みます。
+ * 初期化自体はファイル先頭で行い、実際の不足チェックは analyzeMood() 内で明示します。
+ */
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+});
 
-// analyze() は B 側 service から呼ばれる AI 分析の入口です。
-// ここでは 1) analysisCase を AI 向け DTO に変換し、
-// 2) 必須入力を確認し、
-// 3) mock か外部 AI を選び、
-// 4) timeout 付きで実行し、
-// 5) B 側がそのまま保存しやすい shape で返します。
-// B 側の呼び出しシグネチャを壊さないため、引数は analysisCase のまま受けています。
-export async function analyze(
-    analysisCase: AnalysisCaseInput,
-): Promise<AnalyzeResponse> {
-    const input = buildAIInputDTO(analysisCase);
+/**
+ * 入力の Person 情報です。
+ * フォーム入力アプリなので、会話そのものだけでなく相手の基本属性や補足も扱います。
+ */
+const analyzePersonSchema = z
+    .object({
+        displayName: z.string().trim(),
+        relationshipType: z.string().trim(),
+        ageRange: z.string().trim(),
+        genderHint: z.string().trim(),
+        notes: z.string().trim(),
+    })
+    .strict();
 
-    if (!input.eventFacts.trim()) {
-        throw new AppError({
-            code: "AI_RESPONSE_INVALID",
-            message: "eventFacts is required for analysis",
-            status: 502,
-        });
-    }
+/**
+ * 入力の AnalysisCase 情報です。
+ * 実際に起きた事実・会話文・ユーザーの不安や推測を分離したまま AI に渡す前提です。
+ */
+const analyzeCaseSchema = z
+    .object({
+        eventFacts: z.string().trim(),
+        selfMessage: z.string().trim(),
+        partnerMessage: z.string().trim(),
+        recentConversationText: z.string().trim(),
+        appType: z.string().trim(),
+        userEmotion: z.string().trim(),
+        assumedPartnerEmotion: z.string().trim(),
+        partnerSpeakingStyle: z.string().trim(),
+        contextNote: z.string().trim(),
+        concernText: z.string().trim(),
+        emojiUsed: z.string().trim(),
+        toneType: z.string().trim(),
+        messageLengthType: z.string().trim(),
+    })
+    .strict();
 
-    const result = await withTimeout(async (signal) => {
-        if (!shouldUseExternalAI()) {
-            return buildMockResult(input);
-        }
+/**
+ * AnalyzeMood に渡す入力全体です。
+ */
+export const analyzeInputSchema = z
+    .object({
+        person: analyzePersonSchema,
+        analysisCase: analyzeCaseSchema,
+    })
+    .strict();
 
-        return requestExternalAI(input, signal);
-    }, ANALYZE_TIMEOUT_MS);
+export type AnalyzeInput = z.infer<typeof analyzeInputSchema>;
 
-    return {
-        status: "analyzed",
-        result,
-    };
-}
+/**
+ * text だけを持つ配列要素の共通 schema です。
+ */
+const textItemSchema = z
+    .object({
+        text: z.string().trim().min(1),
+    })
+    .strict();
 
-// API キーがあるときだけ外部 AI を使い、ないときは mock に切り替えます。
-// こうしておくと、ローカル開発や接続前の段階でも B 側の analyze フローを止めずに確認できます。
-function shouldUseExternalAI(): boolean {
-    return Boolean(readEnv("AI_API_KEY") || readEnv("OPENAI_API_KEY"));
-}
+/**
+ * 返信例の schema です。
+ * tone は formal / casual / neutral だけを許可します。
+ */
+const replyExampleSchema = z
+    .object({
+        text: z.string().trim().min(1),
+        tone: z.enum(["formal", "casual", "neutral"]),
+    })
+    .strict();
 
-// 外部 AI への実リクエストをまとめた関数です。
-// 通信失敗・HTTP エラー・JSON 破損を分けて AppError に変換し、
-// 呼び出し元が AI_PROVIDER_ERROR / AI_RESPONSE_INVALID を区別できるようにしています。
-async function requestExternalAI(
-    input: AIInputDTO,
-    signal: AbortSignal,
-): Promise<AIAnalysisResult> {
-    const apiKey = readEnv("AI_API_KEY") ?? readEnv("OPENAI_API_KEY");
-    const baseUrl =
-        readEnv("AI_BASE_URL") ?? readEnv("OPENAI_BASE_URL") ?? OPENAI_BASE_URL;
-    const model =
-        readEnv("AI_MODEL") ?? readEnv("OPENAI_MODEL") ?? DEFAULT_MODEL;
+/**
+ * 理由の schema です。
+ */
+const reasonSchema = z
+    .object({
+        label: z.string().trim().min(1),
+        detail: z.string().trim().min(1),
+    })
+    .strict();
 
-    const response = await fetch(
-        `${baseUrl.replace(/\/$/, "")}/chat/completions`,
-        {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${apiKey}`,
-            },
-            body: JSON.stringify({
-                model,
-                temperature: 0.2,
-                response_format: { type: "json_object" },
-                messages: [
-                    {
-                        role: "system",
-                        content:
-                            "Return JSON only. The schema must include textImpression, contextImpression, scores, confidenceLevel, contactTiming, actions, avoidExpressions, goodSignals, replyExamples, reasons.",
-                    },
-                    {
-                        role: "user",
-                        content: buildPrompt(input),
-                    },
-                ],
-            }),
-            signal,
-        },
-    ).catch((error) => {
-        throw new AppError({
-            code: "AI_PROVIDER_ERROR",
-            message: "Failed to call AI provider",
-            status: 502,
-            cause: error,
-        });
-    });
+/**
+ * スコアは最終 schema を正として 5 つだけに統一します。
+ * cold / pressure / happy / joy / relief は出力に含めません。
+ */
+const scoresSchema = z
+    .object({
+        angry: z.number().min(0).max(1),
+        busy: z.number().min(0).max(1),
+        justCold: z.number().min(0).max(1),
+        positive: z.number().min(0).max(1),
+        distance: z.number().min(0).max(1),
+    })
+    .strict();
 
-    if (!response.ok) {
-        throw new AppError({
-            code: "AI_PROVIDER_ERROR",
-            message: "AI provider returned a non-success response",
-            status: 502,
-            cause: response.status,
-        });
-    }
+/**
+ * AI の最終出力 schema です。
+ * 件数制約・文字数制約・列挙値制約をここで厳密に担保します。
+ */
+export const analyzeOutputSchema = z
+    .object({
+        textImpression: z.string().trim().min(1),
+        contextImpression: z.string().trim().min(1),
+        scores: scoresSchema,
+        confidenceLevel: z.enum(["low", "medium", "high"]),
+        contactTiming: z.string().trim().min(1).max(200),
+        actions: z.array(textItemSchema).min(1).max(3),
+        avoidExpressions: z.array(textItemSchema).min(1).max(3),
+        goodSignals: z.array(textItemSchema).min(1).max(3),
+        replyExamples: z.array(replyExampleSchema).min(2).max(4),
+        reasons: z.array(reasonSchema).min(2).max(5),
+    })
+    .strict();
 
-    const payload = (await response.json().catch((error) => {
-        throw new AppError({
-            code: "AI_RESPONSE_INVALID",
-            message: "AI provider response was not valid JSON",
-            status: 502,
-            cause: error,
-        });
-    })) as {
-        choices?: Array<{ message?: { content?: string } }>;
-    };
+export type AnalyzeOutput = z.infer<typeof analyzeOutputSchema>;
 
-    const content = payload.choices?.[0]?.message?.content;
+/**
+ * エラーの分類を見やすくするための専用クラスです。
+ * status と code を持たせて、上位層でそのまま API エラーへ変換しやすくしています。
+ */
+export class AnalyzeMoodError extends Error {
+    readonly code: string;
+    readonly status: number;
+    override readonly cause?: unknown;
 
-    if (!content) {
-        throw new AppError({
-            code: "AI_RESPONSE_INVALID",
-            message: "AI provider response content was empty",
-            status: 502,
-        });
-    }
-
-    const parsed = JSON.parse(content) as Partial<AIAnalysisResult>;
-    return normalizeAIResult(parsed);
-}
-
-// 外部 AI に渡す入力を 1 つの JSON にまとめます。
-// timeout や retry なしといった制約も含めて渡すことで、
-// モデル側にも期待する出力条件を明示しています。
-function buildPrompt(input: AIInputDTO): string {
-    return JSON.stringify({
-        caseId: input.caseId,
-        eventFacts: input.eventFacts,
-        selfMessage: input.selfMessage,
-        partnerMessage: input.partnerMessage,
-        timeoutMs: ANALYZE_TIMEOUT_MS,
-        constraints: {
-            language: "ja",
-            retry: false,
-        },
-    });
-}
-
-// 外部 AI を使わない場合の開発用の簡易分析です。
-// 完全な推論ではなく、キーワードベースでそれらしい初期結果を返し、
-// B 側の保存や画面確認を進めやすくする目的があります。
-function buildMockResult(input: AIInputDTO): AIAnalysisResult {
-    const combinedText = `${input.eventFacts} ${input.selfMessage} ${input.partnerMessage}`;
-    const scores = buildScores(combinedText);
-    const confidenceLevel =
-        scores.angry > 0.65 || scores.busy > 0.65 || scores.positive > 0.6
-            ? "high"
-            : "medium";
-
-    return {
-        textImpression:
-            scores.angry > 0.6
-                ? "やり取りには緊張感があり、相手の感情がやや強く出ています。"
-                : scores.busy > 0.6
-                  ? "拒絶よりも、忙しさや余裕のなさが強く表れている印象です。"
-                  : "強い拒絶までは読み取れず、状況要因を考慮して慎重に見る段階です。",
-        contextImpression:
-            scores.busy > 0.6
-                ? "相手の置かれた状況の負荷が高く、反応が短くなっている可能性があります。"
-                : "やり取り全体を見ると、言い方よりもタイミングや文量の影響がありそうです。",
-        scores,
-        confidenceLevel,
-        contactTiming:
-            scores.angry > 0.6
-                ? "少し時間を置いてから、短く誠実に連絡するのが安全です。"
-                : "急ぎでなければ、相手の負荷が下がるタイミングで簡潔に伝えるのが無難です。",
-        actions: [
-            { text: "次の連絡は要点を一つに絞る" },
-            { text: "相手の状況を決めつけず確認する" },
-        ],
-        avoidExpressions: [
-            { text: "感情を断定して責める言い方" },
-            { text: "短時間での追いメッセージ" },
-        ],
-        goodSignals: [
-            { text: "完全な拒絶を示す表現までは見られない" },
-            { text: "文面からは調整余地が残っている" },
-        ],
-        replyExamples: [
-            {
-                text: "お忙しいところ恐れ入ります。落ち着いたタイミングでご確認いただければ大丈夫です。",
-                tone: "formal",
-            },
-            {
-                text: "急ぎではないので、落ち着いたときに見てもらえたら大丈夫です。",
-                tone: "neutral",
-            },
-        ],
-        reasons: [
-            {
-                label: "文面の温度感",
-                detail: "短文傾向や否定表現の有無から、怒りと距離感を中心に評価しています。",
-            },
-            {
-                label: "状況要因",
-                detail: "出来事の内容とメッセージ量から、忙しさ由来の反応かどうかを補正しています。",
-            },
-        ],
-    };
-}
-
-// 複数のキーワード群から感情スコアを組み立てる関数です。
-// mock 結果でも画面側で扱いやすいよう、各スコアを 0〜1 にそろえています。
-function buildScores(text: string): AnalysisScores {
-    const angry = scoreByKeywords(
-        text,
-        ["怒", "最悪", "無理", "嫌", "イライラ"],
-        0.18,
-        0.14,
-    );
-    const busy = scoreByKeywords(
-        text,
-        ["忙", "あとで", "会議", "立て込", "今は"],
-        0.24,
-        0.14,
-    );
-    const justCold = scoreByKeywords(
-        text,
-        ["。", "了解", "はい", "ふーん", "別に"],
-        0.22,
-        0.08,
-    );
-    const positive = scoreByKeywords(
-        text,
-        ["ありがとう", "助かる", "大丈夫", "うれしい", "また"],
-        0.18,
-        0.15,
-    );
-    const distance = scoreByKeywords(
-        text,
-        ["また今度", "無理", "やめて", "距離", "控えて"],
-        0.2,
-        0.14,
-    );
-
-    return {
-        angry,
-        busy,
-        justCold,
-        positive,
-        distance,
-    };
-}
-
-// キーワードのヒット数をスコアに変換する小さな補助関数です。
-// 単純な規則でも毎回同じ基準で評価できるため、mock の挙動が読みやすくなります。
-function scoreByKeywords(
-    text: string,
-    keywords: string[],
-    base: number,
-    step: number,
-): number {
-    const hits = keywords.reduce(
-        (count, keyword) => (text.includes(keyword) ? count + 1 : count),
-        0,
-    );
-    return clampScore(base + hits * step);
-}
-
-// 外部 AI から返ってきた JSON を、このアプリで使う型に整える関数です。
-// AI の出力は欠落や型ずれが起こりやすいため、ここで最低限の検証と補正を行い、
-// 以降の処理が「期待した shape を前提」に動けるようにしています。
-function normalizeAIResult(
-    result: Partial<AIAnalysisResult>,
-): AIAnalysisResult {
-    if (
-        typeof result.textImpression !== "string" ||
-        typeof result.contextImpression !== "string" ||
-        typeof result.contactTiming !== "string"
+    constructor(
+        code: string,
+        message: string,
+        status: number,
+        cause?: unknown,
     ) {
-        throw new AppError({
-            code: "AI_RESPONSE_INVALID",
-            message: "AI provider response did not match the expected schema",
-            status: 502,
+        super(message);
+        this.name = "AnalyzeMoodError";
+        this.code = code;
+        this.status = status;
+        this.cause = cause;
+    }
+}
+
+/**
+ * system prompt を組み立てます。
+ * 要件をコード内に明示することで、後から見返したときに
+ * 「なぜこの出力制約があるか」を追いやすくしています。
+ */
+export function buildSystemPrompt(): string {
+    return [
+        "あなたは『相手の機嫌・感情傾向分析』AIです。",
+        "これはチャットアプリではなく、フォーム入力型の分析アプリのバックエンド用処理です。",
+        "ユーザー入力の出来事・会話文・補足情報をもとに分析してください。",
+        "怒りだけでなく、忙しさ、そっけなさ、距離感、前向きさも分析対象に含めてください。",
+        "ユーザーの不安をそのまま事実として扱わないでください。",
+        "悪い兆候だけでなく、良い兆候も必ず拾ってください。",
+        "断定ではなく『可能性』として表現してください。",
+        "実際に起きた事実、会話文から読み取れる要素、ユーザーの主観的な不安、ユーザーが推測している相手の感情、状況要因を混同しないでください。",
+        "相手の人格を決めつけないでください。",
+        "ユーザーの思い込みを一方的に補強しないでください。",
+        "相手を責める方向の助言をしないでください。",
+        "攻撃的な追撃や圧の強い催促を勧めないでください。",
+        "textImpression と contextImpression は断定を避けてください。",
+        "goodSignals は必ず 1 件以上返してください。",
+        "contactTiming は 200 文字以内にしてください。",
+        "replyExamples は実際にそのまま使える短文にしてください。",
+        "不明点が多い場合は confidenceLevel を下げてください。",
+        "JSON のみ返してください。",
+        "JSON の外に文章を書かないでください。",
+        "Markdown を使わないでください。",
+        "null は使わないでください。",
+        "キー名を変更しないでください。",
+        "scores は次の 5 つだけを使ってください: angry, busy, justCold, positive, distance。",
+        "scores の定義は以下の通りです。",
+        "angry: 怒り、不機嫌",
+        "busy: 忙しさ、余裕のなさ",
+        "justCold: 冷たさ、そっけなさ",
+        "positive: 前向きさ、機嫌のよさ、安心感、好意的反応",
+        "distance: 距離感、引いている感じ",
+        "スコアの意味: 0.00 に近い = 可能性がかなり低い、1.00 に近い = 可能性がかなり高い。",
+        "confidenceLevel の意味: low = 根拠が少なく解釈の幅が広い、medium = 根拠はあるが断定はできない、high = 複数の根拠が整合している。",
+        "最終 JSON schema は次の構造に厳密に従ってください。",
+        '{"textImpression":"string","contextImpression":"string","scores":{"angry":0,"busy":0,"justCold":0,"positive":0,"distance":0},"confidenceLevel":"low|medium|high","contactTiming":"string","actions":[{"text":"string"}],"avoidExpressions":[{"text":"string"}],"goodSignals":[{"text":"string"}],"replyExamples":[{"text":"string","tone":"formal|casual|neutral"}],"reasons":[{"label":"string","detail":"string"}]}',
+    ].join("\n");
+}
+
+/**
+ * user prompt を組み立てます。
+ * 指定されたフォーマットをそのまま守ることで、入力の意味を AI に伝えやすくします。
+ */
+export function buildUserPrompt(input: AnalyzeInput): string {
+    const safeInput = analyzeInputSchema.parse(input);
+
+    return [
+        "以下は分析対象データです。",
+        "仕様に従って分析し、JSONのみを返してください。",
+        "",
+        "[Person]",
+        `displayName: ${safeInput.person.displayName}`,
+        `relationshipType: ${safeInput.person.relationshipType}`,
+        `ageRange: ${safeInput.person.ageRange}`,
+        `genderHint: ${safeInput.person.genderHint}`,
+        `notes: ${safeInput.person.notes}`,
+        "",
+        "[AnalysisCase]",
+        `eventFacts: ${safeInput.analysisCase.eventFacts}`,
+        `selfMessage: ${safeInput.analysisCase.selfMessage}`,
+        `partnerMessage: ${safeInput.analysisCase.partnerMessage}`,
+        `recentConversationText: ${safeInput.analysisCase.recentConversationText}`,
+        `appType: ${safeInput.analysisCase.appType}`,
+        `userEmotion: ${safeInput.analysisCase.userEmotion}`,
+        `assumedPartnerEmotion: ${safeInput.analysisCase.assumedPartnerEmotion}`,
+        `partnerSpeakingStyle: ${safeInput.analysisCase.partnerSpeakingStyle}`,
+        `contextNote: ${safeInput.analysisCase.contextNote}`,
+        `concernText: ${safeInput.analysisCase.concernText}`,
+        `emojiUsed: ${safeInput.analysisCase.emojiUsed}`,
+        `toneType: ${safeInput.analysisCase.toneType}`,
+        `messageLengthType: ${safeInput.analysisCase.messageLengthType}`,
+    ].join("\n");
+}
+
+/**
+ * LLM の返答から JSON 部分だけを抜き出します。
+ * ```json ... ``` で囲まれているケースや、前後に余計な文字が付いたケースを吸収するためです。
+ */
+export function extractJsonText(rawText: string): string {
+    const trimmed = rawText.trim();
+
+    const fencedMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    if (fencedMatch?.[1]) {
+        return fencedMatch[1].trim();
+    }
+
+    const firstBraceIndex = trimmed.indexOf("{");
+    const lastBraceIndex = trimmed.lastIndexOf("}");
+
+    if (
+        firstBraceIndex !== -1 &&
+        lastBraceIndex !== -1 &&
+        lastBraceIndex > firstBraceIndex
+    ) {
+        return trimmed.slice(firstBraceIndex, lastBraceIndex + 1).trim();
+    }
+
+    return trimmed;
+}
+
+/**
+ * OpenAI SDK 由来のエラーから、原因の見当が付くメッセージだけを抜き出します。
+ * モデル ID 不正や認証エラーのときに、呼び出し側で切り分けしやすくするためです。
+ */
+function getProviderErrorMessage(error: unknown): string {
+    if (error instanceof Error && error.message.trim()) {
+        return error.message.trim();
+    }
+
+    return "詳細不明の provider error";
+}
+
+/**
+ * Zod エラーを初心者にも読みやすい文字列に変換します。
+ * どの項目が壊れているかを path ごとに返すため、デバッグしやすくなります。
+ */
+function formatZodIssues(error: z.ZodError<unknown>): string {
+    return error.issues
+        .map((issue) => {
+            const path =
+                issue.path.length > 0 ? issue.path.join(".") : "(root)";
+            return `${path}: ${issue.message}`;
+        })
+        .join("; ");
+}
+
+/**
+ * OpenAI の返答テキストを JSON.parse し、Zod で厳密に検証します。
+ * parse 失敗と schema 不一致を分けて扱うことで、何が壊れていたかを追いやすくします。
+ */
+function parseAnalyzeOutput(rawText: string): AnalyzeOutput {
+    const jsonText = extractJsonText(rawText);
+
+    let parsedJson: unknown;
+    try {
+        parsedJson = JSON.parse(jsonText);
+    } catch (error) {
+        throw new AnalyzeMoodError(
+            "AI_RESPONSE_INVALID",
+            `AI の返答を JSON.parse できませんでした。抽出結果: ${jsonText.slice(0, 300)}`,
+            502,
+            error,
+        );
+    }
+
+    const validated = analyzeOutputSchema.safeParse(parsedJson);
+    if (!validated.success) {
+        throw new AnalyzeMoodError(
+            "AI_RESPONSE_INVALID",
+            `AI の返答が schema に一致しません。${formatZodIssues(validated.error)}`,
+            502,
+            validated.error,
+        );
+    }
+
+    if (validated.data.goodSignals.length === 0) {
+        throw new AnalyzeMoodError(
+            "AI_RESPONSE_INVALID",
+            "AI の返答で goodSignals が 0 件でした。",
+            502,
+        );
+    }
+
+    return validated.data;
+}
+
+/**
+ * 実際の OpenAI 呼び出しを行う本体です。
+ * prompt 構築、SDK 呼び出し、JSON 抽出、schema 検証を順番に担当します。
+ */
+export async function analyzeMood(input: AnalyzeInput): Promise<AnalyzeOutput> {
+    const sanitizedInput = analyzeInputSchema.parse(input);
+
+    if (!process.env.OPENAI_API_KEY?.trim()) {
+        throw new AnalyzeMoodError(
+            "AI_PROVIDER_ERROR",
+            "process.env.OPENAI_API_KEY が設定されていません。",
+            500,
+        );
+    }
+
+    const model = process.env.OPENAI_MODEL?.trim();
+    if (!model) {
+        throw new AnalyzeMoodError(
+            "AI_PROVIDER_ERROR",
+            "process.env.OPENAI_MODEL が設定されていません。",
+            500,
+        );
+    }
+
+    const systemPrompt = buildSystemPrompt();
+    const userPrompt = buildUserPrompt(sanitizedInput);
+
+    let rawText = "";
+
+    try {
+        const completion = await openai.chat.completions.create({
+            model,
+            temperature: 0.2,
+            response_format: { type: "json_object" },
+            messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: userPrompt },
+            ],
         });
+
+        rawText = completion.choices[0]?.message?.content?.trim() ?? "";
+    } catch (error) {
+        throw new AnalyzeMoodError(
+            "AI_PROVIDER_ERROR",
+            `OpenAI API の呼び出しに失敗しました。model=${model}. ${getProviderErrorMessage(error)}`,
+            502,
+            error,
+        );
     }
 
-    return {
-        textImpression: result.textImpression,
-        contextImpression: result.contextImpression,
-        scores: {
-            angry: clampScore(Number(result.scores?.angry ?? 0)),
-            busy: clampScore(Number(result.scores?.busy ?? 0)),
-            justCold: clampScore(Number(result.scores?.justCold ?? 0)),
-            positive: clampScore(Number(result.scores?.positive ?? 0)),
-            distance: clampScore(Number(result.scores?.distance ?? 0)),
+    if (!rawText) {
+        throw new AnalyzeMoodError(
+            "AI_RESPONSE_INVALID",
+            "OpenAI から空の応答が返されました。",
+            502,
+        );
+    }
+
+    return parseAnalyzeOutput(rawText);
+}
+
+/**
+ * 既存コードで analyze という関数名を期待していても流用しやすいよう、
+ * analyzeMood の別名も export しておきます。
+ */
+export const analyze = analyzeMood;
+
+/**
+ * サンプル入力です。
+ * 実装の利用イメージを確認しやすいように export しています。
+ */
+export const sampleAnalyzeInput: AnalyzeInput = {
+    person: {
+        displayName: "取引先A",
+        relationshipType: "仕事関係",
+        ageRange: "30代",
+        genderHint: "不明",
+        notes: "ふだんは返信が早く、文面は簡潔。",
+    },
+    analysisCase: {
+        eventFacts: "提案資料を送ったあと、短い返信だけが返ってきた。",
+        selfMessage: "ご確認よろしくお願いします。",
+        partnerMessage: "確認します。",
+        recentConversationText:
+            "昨日は打ち合わせの後に資料送付。相手は会議続きだった。",
+        appType: "LINE",
+        userEmotion: "不安",
+        assumedPartnerEmotion: "少し冷たいかも",
+        partnerSpeakingStyle: "普段から短文",
+        contextNote: "今週は相手が繁忙期らしい。",
+        concernText: "嫌われたのか、忙しいだけなのか知りたい。",
+        emojiUsed: "なし",
+        toneType: "事務的",
+        messageLengthType: "短め",
+    },
+};
+
+/**
+ * サンプル出力です。
+ * schema を満たす完成形の見本として使えます。
+ */
+export const sampleAnalyzeOutput: AnalyzeOutput = {
+    textImpression:
+        "文面は短く事務的ですが、強い拒絶や怒りを示す表現までは見られず、忙しさが影響している可能性があります。",
+    contextImpression:
+        "繁忙期という状況や普段から短文という情報を踏まえると、そっけなさがそのまま否定的感情とは限らない可能性があります。",
+    scores: {
+        angry: 0.18,
+        busy: 0.74,
+        justCold: 0.41,
+        positive: 0.28,
+        distance: 0.32,
+    },
+    confidenceLevel: "medium",
+    contactTiming:
+        "急ぎでなければ少し時間を置き、相手の負荷が下がりそうな時間帯に短く連絡するのが無難です。",
+    actions: [
+        { text: "次の連絡は要点を一つに絞って送る" },
+        { text: "返信を急かさず、確認しやすい形で補足情報を出す" },
+    ],
+    avoidExpressions: [
+        { text: "返事を催促するような強い追撃" },
+        { text: "冷たいと決めつけて責める言い方" },
+    ],
+    goodSignals: [
+        { text: "返信自体は返ってきている" },
+        { text: "明確な拒絶表現は見られない" },
+    ],
+    replyExamples: [
+        {
+            text: "お忙しいところ恐れ入ります。お手すきの際にご確認いただければ幸いです。",
+            tone: "formal",
         },
-        confidenceLevel: normalizeConfidenceLevel(result.confidenceLevel),
-        contactTiming: result.contactTiming,
-        actions: normalizeTextItems(result.actions),
-        avoidExpressions: normalizeTextItems(result.avoidExpressions),
-        goodSignals: normalizeTextItems(result.goodSignals),
-        replyExamples: normalizeReplyExamples(result.replyExamples),
-        reasons: normalizeReasons(result.reasons),
-    };
-}
-
-// confidenceLevel は想定外の文字列が来る可能性があるため、
-// 不正値のときは安全側で medium に寄せます。
-function normalizeConfidenceLevel(
-    value: unknown,
-): AIAnalysisResult["confidenceLevel"] {
-    return value === "low" || value === "medium" || value === "high"
-        ? value
-        : "medium";
-}
-
-// { text } の配列として扱いたい項目を共通化して正規化します。
-// 文字列だけ、オブジェクトだけ、という揺れがあっても吸収できるようにしています。
-function normalizeTextItems(value: unknown): AIAnalysisResult["actions"] {
-    if (!Array.isArray(value)) {
-        return [];
-    }
-
-    return value
-        .map((item) => {
-            const text =
-                typeof item === "string"
-                    ? item
-                    : (item as { text?: unknown })?.text;
-            return typeof text === "string" && text ? { text } : null;
-        })
-        .filter(
-            (item): item is AIAnalysisResult["actions"][number] =>
-                item !== null,
-        );
-}
-
-// 返信例は text に加えて tone も必要なので、通常の text 配列とは別に整形します。
-function normalizeReplyExamples(
-    value: unknown,
-): AIAnalysisResult["replyExamples"] {
-    if (!Array.isArray(value)) {
-        return [];
-    }
-
-    return value
-        .map((item) => {
-            const candidate = item as { text?: unknown; tone?: unknown };
-            if (typeof candidate.text !== "string" || !candidate.text) {
-                return null;
-            }
-
-            return {
-                text: candidate.text,
-                tone: normalizeTone(candidate.tone),
-            };
-        })
-        .filter(
-            (item): item is AIAnalysisResult["replyExamples"][number] =>
-                item !== null,
-        );
-}
-
-// 分析理由は label と detail の 2 つがそろって初めて意味を持つため、
-// 両方あるものだけを通します。
-function normalizeReasons(value: unknown): AIAnalysisResult["reasons"] {
-    if (!Array.isArray(value)) {
-        return [];
-    }
-
-    return value
-        .map((item) => {
-            const candidate = item as { label?: unknown; detail?: unknown };
-            if (
-                typeof candidate.label !== "string" ||
-                typeof candidate.detail !== "string"
-            ) {
-                return null;
-            }
-
-            return {
-                label: candidate.label,
-                detail: candidate.detail,
-            };
-        })
-        .filter(
-            (item): item is AIAnalysisResult["reasons"][number] =>
-                item !== null,
-        );
-}
-
-// tone も AI 出力の揺れが起きやすいので、想定外は neutral に寄せます。
-function normalizeTone(value: unknown): AnalysisReplyTone {
-    return value === "formal" || value === "neutral" || value === "casual"
-        ? value
-        : "neutral";
-}
+        {
+            text: "急ぎではないので、落ち着いたタイミングで大丈夫です。",
+            tone: "neutral",
+        },
+    ],
+    reasons: [
+        {
+            label: "文面の短さ",
+            detail: "返信は短いものの、怒りや拒絶を直接示す語は含まれていません。",
+        },
+        {
+            label: "状況要因",
+            detail: "繁忙期という背景があり、忙しさ由来の簡潔な反応である可能性があります。",
+        },
+    ],
+};

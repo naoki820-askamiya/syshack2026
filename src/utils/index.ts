@@ -3,7 +3,7 @@ import type {
     AnalysisCaseInput,
     AppErrorShape,
     ErrorResponseBody,
-} from "../types";
+} from "../types/index.ts";
 
 // Analyze API の共通 timeout 値です。
 // 複数箇所に数字を散らさず、仕様変更時もここだけ直せるようにしています。

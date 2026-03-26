@@ -111,3 +111,97 @@ export interface ResponseLike {
 
 // next() 相当の関数型です。
 export type NextLike = (error?: unknown) => void;
+
+export type RelationshipType =
+    | "boss"
+    | "coworker"
+    | "lover"
+    | "family"
+    | "friend"
+    | "classmate"
+    | "customer"
+    | "other";
+
+export type GenderHint = "male" | "female" | "other" | "unknown";
+
+export interface AnalyzePersonInput {
+    displayName: string;
+    relationshipType: RelationshipType;
+    ageRange: string;
+    genderHint: GenderHint;
+    notes: string;
+}
+
+export interface AnalyzeCaseFormInput {
+    eventFacts: string;
+    selfMessage: string;
+    partnerMessage: string;
+    recentConversationText: string;
+    appType: string;
+    userEmotion: string;
+    assumedPartnerEmotion: string;
+    partnerSpeakingStyle: string;
+    contextNote: string;
+    concernText: string;
+    emojiUsed: string;
+    toneType: string;
+    messageLengthType: string;
+}
+
+export interface CreateAnalysisCaseBody {
+    personId: string;
+    eventFacts: string;
+    selfMessage: string;
+    partnerMessage: string;
+    recentConversationText: string;
+    appType: string;
+    userEmotion: string;
+    assumedPartnerEmotion: string;
+    partnerSpeakingStyle: string;
+    contextNote: string;
+    concernText: string;
+    emojiUsed: string;
+    toneType: string;
+    messageLengthType: string;
+}
+
+export interface CreatePersonBody {
+    displayName: string;
+    relationshipType: RelationshipType;
+    ageRange?: string;
+    genderHint?: GenderHint;
+    notes?: string;
+}
+
+export type AnalysisCaseStatus = "draft" | "analyzing" | "analyzed" | "error";
+
+export interface StoredPerson extends AnalyzePersonInput {
+    id: string;
+    sessionId: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface StoredAnalysisCase {
+    id: string;
+    personId: string;
+    sessionId: string;
+    status: AnalysisCaseStatus;
+    person: AnalyzePersonInput;
+    analysisCase: AnalyzeCaseFormInput;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface StoredAnalysisResult {
+    id: string;
+    analysisCaseId: string;
+    result: AIAnalysisResult;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface PaginationOptions {
+    limit: number;
+    offset: number;
+}
