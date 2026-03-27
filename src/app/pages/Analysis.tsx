@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router';
 import { ArrowLeft, ArrowRight, Clock, AlertCircle, CheckCircle2, Info } from 'lucide-react';
 import { getConsultation, getAnalysis } from '../utils/storage';
-import { getRelationStyle } from '../utils/relationStyles';
+import { getRelationStyle, getReactionStyle } from '../utils/relationStyles';
 import { EmotionRadarChart } from '../components/EmotionRadarChart';
 import { Navigation } from '../components/Navigation';
 
@@ -32,6 +32,7 @@ export function Analysis() {
   }
 
   const relStyle = getRelationStyle(consultation.relation);
+  const reactionStyle = getReactionStyle(consultation.reaction);
   const conf = CONFIDENCE_MAP[analysis.result.confidenceLevel];
 
   return (
@@ -66,14 +67,24 @@ export function Analysis() {
                 {new Date(consultation.createdAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
               </div>
             </div>
-            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+            <div className="mt-3 space-y-2 text-sm">
               <div className="bg-gray-50 rounded-lg p-3">
                 <span className="text-xs text-gray-500 block mb-1">出来事</span>
                 <p className="text-gray-800 leading-relaxed">{consultation.event}</p>
               </div>
-              <div className="bg-gray-50 rounded-lg p-3">
-                <span className="text-xs text-gray-500 block mb-1">相手の反応・経過時間</span>
-                <p className="text-gray-800">{consultation.reaction} ／ {consultation.timing}</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <span className="text-xs text-gray-500 block mb-1">相手の反応</span>
+                  <p className="text-gray-800">
+                    <span className={`inline-block px-3 py-1 text-sm rounded-full ${reactionStyle.text} ${reactionStyle.bg}`}>
+                      {consultation.reaction}
+                    </span>
+                  </p>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <span className="text-xs text-gray-500 block mb-1">経過時間</span>
+                  <p className="text-gray-800">{consultation.timing}</p>
+                </div>
               </div>
             </div>
           </div>

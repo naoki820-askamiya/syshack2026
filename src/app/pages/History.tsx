@@ -111,7 +111,7 @@ export function History() {
                   return (
                     <Link
                       key={consultation.id}
-                      to={`/action/${consultation.id}`}
+                      to={`/analysis/${consultation.id}`}
                       className={`block bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow ${relStyle.bgHover}`}
                     >
                       {/* ヘッダー行 */}

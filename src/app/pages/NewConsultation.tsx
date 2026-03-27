@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { ArrowLeft, Send, MessageSquare, PenLine, X, ChevronDown, AlertCircle, UserCheck } from 'lucide-react';
 import { ConsultationData, RelationType, Reaction, Timing } from '../types';
-import { createSession, createPerson, createAnalysisCase, analyze } from '../api/session';
+import { createPerson, createAnalysisCase, analyze } from '../api/session';
 import { saveConsultation, getConsultations } from '../utils/storage';
 import { getRelationStyle } from '../utils/relationStyles';
 import { Navigation } from '../components/Navigation';

@@ -64,9 +64,33 @@ export async function createPerson(params: {
   genderHint?: string;
   notes?: string;
 }): Promise<any> {
+  // フロントエンドのvalueをAPIの期待する値に変換
+  const relationshipTypesToApi: { [key: string]: string } = {
+    '上司': 'boss',
+    '同僚': 'coworker',
+    '部下': 'subordinate',
+    '恋人': 'lover',
+    '配偶者': 'spouse',
+    '友人': 'friend',
+    '家族': 'family',
+    'その他': 'other',
+  };
+  const genderHintsToApi: { [key: string]: string } = {
+    '男性':'male',
+    '女性':'female',
+    'その他':'other',
+    '回答しない':'unknown',
+  };
+
+  const apiParams = {
+    ...params,
+    relationshipType: relationshipTypesToApi[params.relationshipType] || 'other',
+    genderHint: genderHintsToApi[params.genderHint || '回答しない'] || 'unknown',
+  };
+
   const res = await fetchWithSession('/api/persons', {
     method: 'POST',
-    body: JSON.stringify(params),
+    body: JSON.stringify(apiParams),
   });
   console.log('createPerson response:', res); // debug
   return res.json();

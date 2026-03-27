@@ -108,7 +108,7 @@ export function Navigation() {
                           <p className="text-sm font-medium leading-tight truncate">
                             {person.personName}
                           </p>
-                          <p className="text-[10px] text-gray-400 leading-tight truncate">
+                          <p className={`text-[10px] leading-tight truncate px-1.5 py-0.5 rounded-full inline-block ${style.badge}`}>
                             {person.relation}
                           </p>
                         </div>
