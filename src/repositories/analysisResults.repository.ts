@@ -30,12 +30,14 @@ export async function upsert(
     const record: StoredAnalysisResult = existing
         ? {
               ...existing,
+              promptVersion: input.promptVersion,
               result: input.result,
               updatedAt: now,
           }
         : {
               id: `result_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
               analysisCaseId: input.analysisCaseId,
+              promptVersion: input.promptVersion,
               result: input.result,
               createdAt: now,
               updatedAt: now,

@@ -20,7 +20,8 @@ const SESSION_TTL_HOURS = 24;
  * 新しい session を 1 件作ります。
  *
  * 返すもの:
- * - 新しく作られた session
+ * - 仕様書に寄せた `sessionId / expiresAt`
+ * - 後方互換のための `session`
  *
  * expiresAt は作成時点から 24 時間後にしています。
  */
@@ -40,7 +41,12 @@ export async function createSession() {
 
     await sessionsRepository.create(session);
 
-    return { session };
+    return {
+        sessionId: session.id,
+        expiresAt: session.expiresAt,
+        // 既存の参照先を壊さないため、旧 shape も残します。
+        session,
+    };
 }
 
 /**

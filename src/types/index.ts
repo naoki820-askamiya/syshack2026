@@ -59,10 +59,19 @@ export interface AIAnalysisResult {
     reasons: AnalysisReason[];
 }
 
-// B 側の既存実装に合わせた analyze() の返却型です。
+// フロントがそのまま扱いやすいよう、
+// 保存済み result の識別情報も含めた返却型です。
+export interface AnalysisResultResponse extends AIAnalysisResult {
+    id: string;
+    analysisCaseId: string;
+    promptVersion: string;
+    generatedAt: string;
+}
+
+// B 側の analyze() の返却型です。
 export interface AnalyzeResponse {
     status: "analyzed";
-    result: AIAnalysisResult;
+    result: AnalysisResultResponse;
 }
 
 // B 側 service から受け取る analysisCase の入力型です。
@@ -138,6 +147,12 @@ export type RelationshipType =
 
 // Person の genderHint に入れられる候補です。
 export type GenderHint = "male" | "female" | "other" | "unknown";
+export type AnalysisToneType = "formal" | "casual" | "mixed" | "unknown";
+export type AnalysisMessageLengthType =
+    | "short"
+    | "normal"
+    | "long"
+    | "unknown";
 
 // AI に渡す Person 情報の shape です。
 // analysis-case にも snapshot として保存します。
@@ -161,9 +176,9 @@ export interface AnalyzeCaseFormInput {
     partnerSpeakingStyle: string;
     contextNote: string;
     concernText: string;
-    emojiUsed: string;
-    toneType: string;
-    messageLengthType: string;
+    emojiUsed: boolean | null;
+    toneType: AnalysisToneType;
+    messageLengthType: AnalysisMessageLengthType;
 }
 
 // `POST /api/analysis-cases` の body 型です。
@@ -172,16 +187,16 @@ export interface CreateAnalysisCaseBody {
     eventFacts: string;
     selfMessage: string;
     partnerMessage: string;
-    recentConversationText: string;
-    appType: string;
-    userEmotion: string;
-    assumedPartnerEmotion: string;
-    partnerSpeakingStyle: string;
-    contextNote: string;
-    concernText: string;
-    emojiUsed: string;
-    toneType: string;
-    messageLengthType: string;
+    recentConversationText?: string;
+    appType?: string;
+    userEmotion?: string;
+    assumedPartnerEmotion?: string;
+    partnerSpeakingStyle?: string;
+    contextNote?: string;
+    concernText?: string;
+    emojiUsed?: boolean | string | null;
+    toneType?: string;
+    messageLengthType?: string;
 }
 
 // `POST /api/persons` の body 型です。
@@ -229,6 +244,7 @@ export interface StoredAnalysisCase {
 export interface StoredAnalysisResult {
     id: string;
     analysisCaseId: string;
+    promptVersion: string;
     result: AIAnalysisResult;
     createdAt: string;
     updatedAt: string;

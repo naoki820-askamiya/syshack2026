@@ -545,13 +545,13 @@ end-to-end の analyze 確認は権限昇格して再実行した。
 ### 最初に確認したこと
 
 - `npm run lint`
-    - 失敗
-    - 理由は `lint` script 自体が未定義だった
+  - 失敗
+  - 理由は `lint` script 自体が未定義だった
 - `npx tsc --noEmit`
-    - 失敗
-    - 理由は `tsconfig.json` が無く、プロジェクトの型チェックとして動いていなかった
+  - 失敗
+  - 理由は `tsconfig.json` が無く、プロジェクトの型チェックとして動いていなかった
 - `npm run build`
-    - 成功
+  - 成功
 
 ### 今回直した主な原因
 
@@ -602,11 +602,11 @@ npm install -D @types/react @types/react-dom
 ### 修正後の結果
 
 - `npm run lint`
-    - 成功
+  - 成功
 - `npx tsc --noEmit`
-    - 成功
+  - 成功
 - `npm run build`
-    - 成功
+  - 成功
 
 ### 補足
 
@@ -625,10 +625,10 @@ npm install -D @types/react @types/react-dom
 - `markdownlint` 系の依存は入っていなかった
 - `.markdownlint` 系の設定ファイルも無かった
 - 対象の Markdown は次の 4 ファイルだった
-    - `README.md`
-    - `docs/backend-overview.md`
-    - `docs/backend-handover.md`
-    - `docs/codex-report.md`
+  - `README.md`
+  - `docs/backend-overview.md`
+  - `docs/backend-handover.md`
+  - `docs/codex-report.md`
 
 ### 今回追加・修正したもの
 
@@ -643,9 +643,9 @@ npm install -D @types/react @types/react-dom
 ### 今回の設定方針
 
 - `MD013` は無効化した
-    - `codex-report.md` のコマンド例や長いレスポンス行が多く、内容を崩さず保つほうを優先したため
+  - `codex-report.md` のコマンド例や長いレスポンス行が多く、内容を崩さず保つほうを優先したため
 - `MD024` は `siblings_only: true` にした
-    - `codex-report.md` では日付ごとの別セクション内で同じ小見出しを使っており、文書構造としては問題ないため
+  - `codex-report.md` では日付ごとの別セクション内で同じ小見出しを使っており、文書構造としては問題ないため
 
 ### 今回実行したコマンド
 
@@ -660,8 +660,169 @@ npm run lint:md
 ### 修正後の結果
 
 - `npm run lint:md`
-    - 成功
+  - 成功
 
 ### 補足
 
 - 今回は Markdown だけを修正し、TypeScript や API ロジックには触れていない
+
+## 2026-03-27 JST フロント接続前チェックと handover 更新
+
+### 今回の目的
+
+- `feat/backend-mvp-complete` で、バックエンドがフロント接続の準備としてどこまでできているか確認する
+- `仕様書.md` と現在実装の一致度を整理する
+- チーム向けの handover / check ドキュメントを更新する
+
+### 今回確認したこと
+
+- `server.ts` から対象 6 API の route がすべて mount されていること
+- `requireSession` が `POST /api/sessions` 以外で `X-Session-Id` を要求していること
+- `persons.service.ts` と `analysisCases.service.ts` に所有チェックがあること
+- `analysisCases.service.ts` で `draft -> analyzing -> analyzed/error` の status 遷移が実装されていること
+- `ALREADY_ANALYZED (409)` と `SESSION_INVALID (401)` が現在実装でも返ること
+- 仕様書との差分が、主にレスポンス shape と入力バリデーションにあること
+- フロント側はまだ API 接続前で、既存 `localStorage` はローカル完結用の保存であること
+
+### 実機で確認したこと
+
+- `POST /api/sessions`
+  - 成功
+- `POST /api/persons`
+  - 成功
+- `POST /api/analysis-cases`
+  - 成功
+- `GET /api/analysis-cases/:caseId/results`
+  - analyze 前は `status: "draft", result: null`
+- `GET /api/persons/:personId/analysis-cases`
+  - 成功
+- `POST /api/analysis-cases/:caseId/analyze`
+  - sandbox 内では OpenAI 接続制限により `AI_PROVIDER_ERROR (502)`
+  - 権限昇格して再実行し、成功を確認
+- 同じ `caseId` への 2 回目の analyze
+  - `409 ALREADY_ANALYZED`
+- 不正な `X-Session-Id`
+  - `401 SESSION_INVALID`
+
+### 今回更新したファイル
+
+- `docs/frontend-connection-check.md`
+- `docs/backend-handover.md`
+- `docs/backend-overview.md`
+- `docs/codex-report.md`
+
+### 今回まとめた結論
+
+- フロント接続に必要な 6 API はそろっている
+- そのため、MVP の front/back 接続は始められる状態
+- ただし仕様書と完全一致ではなく、次の差分がある
+  - `POST /api/sessions` のレスポンスは `session.id`
+  - `POST /api/analysis-cases` の必須チェックが仕様書よりゆるい
+  - `emojiUsed` は boolean ではなく string
+  - analyze / results の `result` に `id`, `analysisCaseId`, `generatedAt` が無い
+  - 一覧 API は仕様書より詳細な shape を返す
+
+### フロント向けの主な注意点
+
+- `localStorage` には最低限 `sessionId` と最後に使った `personId` を持つ
+- 実務上は `analysisCaseId` も持つと結果画面の再表示がしやすい
+- `401 SESSION_INVALID` を受けたら session を作り直す
+- 今はインメモリ実装なので、サーバー再起動で既存 ID が使えなくなる
+
+### 今回実行したコマンド
+
+```powershell
+rg -n "api/sessions|api/persons|analysis-cases|X-Session-Id|ALREADY_ANALYZED|SESSION_INVALID|draft|analyzing|analyzed|error" src docs 仕様書.md
+```
+
+```powershell
+npm run lint:md
+```
+
+### 補足
+
+- 今回の主目的は現状確認とドキュメント更新であり、API ロジックの追加修正はしていない
+
+## 2026-03-27 JST 仕様差分の最小修正
+
+### 今回の目的
+
+- front/back 融合の前に、フロント接続の邪魔になっていた仕様差分だけを減らす
+- shape とバリデーションのズレを、既存挙動を大きく壊さずに最小限修正する
+
+### 今回変更したファイル
+
+- `src/types/index.ts`
+- `src/services/sessions.service.ts`
+- `src/services/analysisCases.service.ts`
+- `src/repositories/analysisResults.repository.ts`
+- `src/ai/analyze.ts`
+- `docs/frontend-connection-check.md`
+- `docs/backend-handover.md`
+- `docs/backend-overview.md`
+- `docs/codex-report.md`
+
+### 今回の変更内容
+
+- `POST /api/sessions` のレスポンスに `sessionId` と `expiresAt` を追加した
+- 後方互換のため、旧 `session` object も残した
+- `POST /api/analysis-cases` で `selfMessage` と `partnerMessage` を必須化した
+- `eventFacts`, `selfMessage`, `partnerMessage` に最小限の length チェックを追加した
+- `recentConversationText` に最小限の length チェックを追加した
+- `emojiUsed` を boolean 前提へ寄せた
+- ただし後方互換のため、`あり / なし` などの旧入力も受けて boolean へ正規化するようにした
+- `toneType` を `formal / casual / mixed / unknown` へ正規化するようにした
+- `messageLengthType` を `short / normal / long / unknown` へ正規化するようにした
+- 後方互換のため、`事務的` や `短め` などの旧入力も今は受けるようにした
+- analyze と results の `result` に `id`, `analysisCaseId`, `promptVersion`, `generatedAt` を追加した
+
+### 変更理由
+
+- フロント担当が `session.id` ではなく `sessionId` を直接読めるようにするため
+- analysis-case 作成時に、相談として最低限必要な入力が揃っていることを backend 側でも保証するため
+- `emojiUsed`, `toneType`, `messageLengthType` を、フロントが分岐しやすい固定 shape に寄せるため
+- analyze 結果を、結果画面や履歴画面で識別しやすい shape にするため
+
+### 確認したこと
+
+- `npm run lint`
+  - 成功
+- `npm run build`
+  - 成功
+- `POST /api/sessions`
+  - 成功
+  - `sessionId` と `expiresAt` が返ることを確認
+  - 後方互換の `session.id` も残っていることを確認
+- `POST /api/persons`
+  - 成功
+- `POST /api/analysis-cases`
+  - 成功
+  - `emojiUsed: false`
+  - `toneType: "formal"`
+  - `messageLengthType: "short"`
+  - に正規化されることを確認
+- `POST /api/analysis-cases/:caseId/analyze`
+  - 成功
+  - `result.id`, `result.analysisCaseId`, `result.promptVersion`, `result.generatedAt` が返ることを確認
+- `GET /api/analysis-cases/:caseId/results`
+  - 成功
+  - analyze と同じ `result` shape が返ることを確認
+- `POST /api/analysis-cases`
+  - `selfMessage` 欠落時に `422 VALIDATION_ERROR` になることを確認
+- 後方互換入力
+  - `emojiUsed: "なし"`
+  - `toneType: "事務的"`
+  - `messageLengthType: "短め"`
+  - でも成功し、内部では boolean / enum に正規化されることを確認
+
+### まだ残っている仕様差分
+
+- `POST /api/sessions` には、互換性のため旧 `session` object が残っている
+- `GET /api/persons/:personId/analysis-cases` の返り値はまだ詳細形
+- 一部の細かい文字数制限は仕様書ほど厳密ではない
+- 内部エラーコードの名前は仕様書と完全一致ではない
+
+### 補足
+
+- 今回は front/back 融合をしやすくするための最小修正に限定している
+- DB 化、更新 API、本番認証、OCR などには広げていない

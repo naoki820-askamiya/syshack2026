@@ -21,9 +21,13 @@ import * as analysisCasesRepository from "../repositories/analysisCases.reposito
 import * as analysisResultsRepository from "../repositories/analysisResults.repository.ts";
 import { getOwnedPersonOrThrow } from "./persons.service.ts";
 import type {
+    AnalysisMessageLengthType,
+    AnalysisResultResponse,
+    AnalysisToneType,
     CreateAnalysisCaseBody,
     PaginationOptions,
     StoredAnalysisCase,
+    StoredAnalysisResult,
 } from "../types/index.ts";
 import {
     ANALYZE_TIMEOUT_MS,
@@ -31,6 +35,37 @@ import {
     normalizeError,
     withTimeout,
 } from "../utils/index.ts";
+
+const MAX_REQUIRED_TEXT_LENGTH = 3000;
+const MAX_RECENT_CONVERSATION_LENGTH = 5000;
+
+const TONE_TYPE_ALIASES: Record<string, AnalysisToneType> = {
+    formal: "formal",
+    casual: "casual",
+    mixed: "mixed",
+    unknown: "unknown",
+    "事務的": "formal",
+    "丁寧": "formal",
+    "カジュアル": "casual",
+    "くだけた": "casual",
+    "混在": "mixed",
+    "まざっている": "mixed",
+    "不明": "unknown",
+};
+
+const MESSAGE_LENGTH_TYPE_ALIASES: Record<string, AnalysisMessageLengthType> = {
+    short: "short",
+    normal: "normal",
+    long: "long",
+    unknown: "unknown",
+    "短め": "short",
+    "短い": "short",
+    "普通": "normal",
+    "通常": "normal",
+    "長め": "long",
+    "長い": "long",
+    "不明": "unknown",
+};
 
 /**
  * analysis-case を新しく作る service です。
@@ -64,22 +99,43 @@ export async function createAnalysisCase(
         });
     }
 
-    if (
-        !data?.personId?.trim() ||
-        !data?.eventFacts?.trim()
-    ) {
+    const personId = String(data?.personId ?? "").trim();
+    const eventFacts = requireTextField(
+        data?.eventFacts,
+        "eventFacts",
+        MAX_REQUIRED_TEXT_LENGTH,
+    );
+    const selfMessage = requireTextField(
+        data?.selfMessage,
+        "selfMessage",
+        MAX_REQUIRED_TEXT_LENGTH,
+    );
+    const partnerMessage = requireTextField(
+        data?.partnerMessage,
+        "partnerMessage",
+        MAX_REQUIRED_TEXT_LENGTH,
+    );
+
+    if (!personId) {
         throw new AppError({
             code: "VALIDATION_ERROR",
-            message: "personId, eventFacts は必須です。",
+            message: "personId は必須です。",
             status: 422,
         });
     }
 
-    const person = await getOwnedPersonOrThrow(sessionId, data.personId.trim());
+    const person = await getOwnedPersonOrThrow(sessionId, personId);
+    const normalizedCaseInput = sanitizeAnalysisCaseInput({
+        ...data,
+        personId,
+        eventFacts,
+        selfMessage,
+        partnerMessage,
+    });
 
     const analysisCase = await analysisCasesRepository.create({
         sessionId,
-        personId: data.personId.trim(),
+        personId,
         person: {
             displayName: person.displayName,
             relationshipType: person.relationshipType,
@@ -87,7 +143,7 @@ export async function createAnalysisCase(
             genderHint: person.genderHint,
             notes: person.notes,
         },
-        analysisCase: sanitizeAnalysisCaseInput(data),
+        analysisCase: normalizedCaseInput,
         status: "draft",
     });
 
@@ -156,8 +212,9 @@ export async function analyzeCase(sessionId: string, caseId: string) {
         );
 
         // AI の生レスポンス全体ではなく、検証済みの結果だけを保存します。
-        await analysisResultsRepository.upsert({
+        const savedResult = await analysisResultsRepository.upsert({
             analysisCaseId: caseId,
+            promptVersion: "v1",
             result: aiResult,
         });
 
@@ -166,7 +223,7 @@ export async function analyzeCase(sessionId: string, caseId: string) {
 
         return {
             status: "analyzed",
-            result: aiResult,
+            result: toResultResponse(savedResult),
         };
     } catch (error) {
         await analysisCasesRepository.updateStatus(caseId, "error");
@@ -201,7 +258,7 @@ export async function getResult(sessionId: string, caseId: string) {
 
     return {
         status: "analyzed",
-        result: savedResult?.result ?? null,
+        result: savedResult ? toResultResponse(savedResult) : null,
     };
 }
 
@@ -269,15 +326,149 @@ function sanitizeAnalysisCaseInput(data: CreateAnalysisCaseBody) {
         eventFacts: String(data.eventFacts ?? "").trim(),
         selfMessage: String(data.selfMessage ?? "").trim(),
         partnerMessage: String(data.partnerMessage ?? "").trim(),
-        recentConversationText: String(data.recentConversationText ?? "").trim(),
+        recentConversationText: optionalTextField(
+            data.recentConversationText,
+            "recentConversationText",
+            MAX_RECENT_CONVERSATION_LENGTH,
+        ),
         appType: String(data.appType ?? "").trim(),
         userEmotion: String(data.userEmotion ?? "").trim(),
         assumedPartnerEmotion: String(data.assumedPartnerEmotion ?? "").trim(),
         partnerSpeakingStyle: String(data.partnerSpeakingStyle ?? "").trim(),
         contextNote: String(data.contextNote ?? "").trim(),
         concernText: String(data.concernText ?? "").trim(),
-        emojiUsed: String(data.emojiUsed ?? "").trim(),
-        toneType: String(data.toneType ?? "").trim(),
-        messageLengthType: String(data.messageLengthType ?? "").trim(),
+        emojiUsed: normalizeEmojiUsed(data.emojiUsed),
+        toneType: normalizeToneType(data.toneType),
+        messageLengthType: normalizeMessageLengthType(data.messageLengthType),
+    };
+}
+
+function requireTextField(
+    value: string | undefined,
+    fieldName: "eventFacts" | "selfMessage" | "partnerMessage",
+    maxLength: number,
+): string {
+    const normalized = String(value ?? "").trim();
+
+    if (!normalized) {
+        throw new AppError({
+            code: "VALIDATION_ERROR",
+            message: `${fieldName} は必須です。`,
+            status: 422,
+        });
+    }
+
+    if (normalized.length > maxLength) {
+        throw new AppError({
+            code: "VALIDATION_ERROR",
+            message: `${fieldName} は ${maxLength} 文字以内で指定してください。`,
+            status: 422,
+        });
+    }
+
+    return normalized;
+}
+
+function optionalTextField(
+    value: string | undefined,
+    fieldName: "recentConversationText",
+    maxLength: number,
+): string {
+    const normalized = String(value ?? "").trim();
+
+    if (!normalized) {
+        return "";
+    }
+
+    if (normalized.length > maxLength) {
+        throw new AppError({
+            code: "VALIDATION_ERROR",
+            message: `${fieldName} は ${maxLength} 文字以内で指定してください。`,
+            status: 422,
+        });
+    }
+
+    return normalized;
+}
+
+function normalizeEmojiUsed(value: boolean | string | null | undefined): boolean | null {
+    if (typeof value === "boolean") {
+        return value;
+    }
+
+    if (value == null) {
+        return null;
+    }
+
+    const normalized = String(value).trim().toLowerCase();
+
+    if (!normalized) {
+        return null;
+    }
+
+    if (["true", "1", "yes", "y", "あり", "有"].includes(normalized)) {
+        return true;
+    }
+
+    if (["false", "0", "no", "n", "なし", "無"].includes(normalized)) {
+        return false;
+    }
+
+    throw new AppError({
+        code: "VALIDATION_ERROR",
+        message: "emojiUsed は boolean か、あり / なし に対応する値で指定してください。",
+        status: 422,
+    });
+}
+
+function normalizeToneType(value: string | undefined): AnalysisToneType {
+    const normalized = String(value ?? "").trim().toLowerCase();
+
+    if (!normalized) {
+        return "unknown";
+    }
+
+    const matched = TONE_TYPE_ALIASES[normalized];
+    if (matched) {
+        return matched;
+    }
+
+    throw new AppError({
+        code: "VALIDATION_ERROR",
+        message: "toneType は formal / casual / mixed / unknown のいずれかで指定してください。",
+        status: 422,
+    });
+}
+
+function normalizeMessageLengthType(
+    value: string | undefined,
+): AnalysisMessageLengthType {
+    const normalized = String(value ?? "").trim().toLowerCase();
+
+    if (!normalized) {
+        return "unknown";
+    }
+
+    const matched = MESSAGE_LENGTH_TYPE_ALIASES[normalized];
+    if (matched) {
+        return matched;
+    }
+
+    throw new AppError({
+        code: "VALIDATION_ERROR",
+        message: "messageLengthType は short / normal / long / unknown のいずれかで指定してください。",
+        status: 422,
+    });
+}
+
+function toResultResponse(
+    savedResult: StoredAnalysisResult,
+): AnalysisResultResponse {
+    return {
+        id: savedResult.id,
+        analysisCaseId: savedResult.analysisCaseId,
+        promptVersion: savedResult.promptVersion,
+        generatedAt: savedResult.updatedAt,
+        ...savedResult.result,
     };
 }

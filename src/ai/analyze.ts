@@ -53,9 +53,9 @@ const analyzeCaseSchema = z
         partnerSpeakingStyle: z.string().trim(),
         contextNote: z.string().trim(),
         concernText: z.string().trim(),
-        emojiUsed: z.string().trim(),
-        toneType: z.string().trim(),
-        messageLengthType: z.string().trim(),
+        emojiUsed: z.boolean().nullable(),
+        toneType: z.enum(["formal", "casual", "mixed", "unknown"]),
+        messageLengthType: z.enum(["short", "normal", "long", "unknown"]),
     })
     .strict();
 
@@ -235,10 +235,22 @@ export function buildUserPrompt(input: AnalyzeInput): string {
         `partnerSpeakingStyle: ${safeInput.analysisCase.partnerSpeakingStyle}`,
         `contextNote: ${safeInput.analysisCase.contextNote}`,
         `concernText: ${safeInput.analysisCase.concernText}`,
-        `emojiUsed: ${safeInput.analysisCase.emojiUsed}`,
+        `emojiUsed: ${formatEmojiUsedForPrompt(safeInput.analysisCase.emojiUsed)}`,
         `toneType: ${safeInput.analysisCase.toneType}`,
         `messageLengthType: ${safeInput.analysisCase.messageLengthType}`,
     ].join("\n");
+}
+
+function formatEmojiUsedForPrompt(value: boolean | null): string {
+    if (value === true) {
+        return "true";
+    }
+
+    if (value === false) {
+        return "false";
+    }
+
+    return "unknown";
 }
 
 /**
@@ -432,9 +444,9 @@ export const sampleAnalyzeInput: AnalyzeInput = {
         partnerSpeakingStyle: "普段から短文",
         contextNote: "今週は相手が繁忙期らしい。",
         concernText: "嫌われたのか、忙しいだけなのか知りたい。",
-        emojiUsed: "なし",
-        toneType: "事務的",
-        messageLengthType: "短め",
+        emojiUsed: false,
+        toneType: "formal",
+        messageLengthType: "short",
     },
 };
 
