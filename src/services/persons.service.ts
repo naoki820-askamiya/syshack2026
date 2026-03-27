@@ -18,11 +18,11 @@ import { AppError } from "../utils/index.ts";
 const RELATIONSHIP_TYPES: RelationshipType[] = [
     "boss",
     "coworker",
+    "subordinate",
     "lover",
-    "family",
+    "spouse",
     "friend",
-    "classmate",
-    "customer",
+    "family",
     "other",
 ];
 
