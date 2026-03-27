@@ -42,6 +42,9 @@ export interface AnalysisScores {
     justCold: number;
     positive: number;
     distance: number;
+    happy: number;
+    joy: number;
+    relief: number;
 }
 
 // B 側が結果保存に使う、AI 分析結果の本体です。

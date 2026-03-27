@@ -112,6 +112,9 @@ const scoresSchema = z
         justCold: z.number().min(0).max(1),
         positive: z.number().min(0).max(1),
         distance: z.number().min(0).max(1),
+        happy: z.number().min(0).max(1),
+        joy: z.number().min(0).max(1),
+        relief: z.number().min(0).max(1),
     })
     .strict();
 
@@ -188,7 +191,7 @@ export function buildSystemPrompt(): string {
         "Markdown を使わないでください。",
         "null は使わないでください。",
         "キー名を変更しないでください。",
-        "scores は次の 5 つだけを使ってください: angry, busy, justCold, positive, distance。",
+        "scores は次の 5 つだけを使ってください: angry, busy, justCold, positive, distance ,happy, joy, relief。",
         "scores の定義は以下の通りです。",
         "angry: 怒り、不機嫌",
         "busy: 忙しさ、余裕のなさ",
@@ -198,7 +201,7 @@ export function buildSystemPrompt(): string {
         "スコアの意味: 0.00 に近い = 可能性がかなり低い、1.00 に近い = 可能性がかなり高い。",
         "confidenceLevel の意味: low = 根拠が少なく解釈の幅が広い、medium = 根拠はあるが断定はできない、high = 複数の根拠が整合している。",
         "最終 JSON schema は次の構造に厳密に従ってください。",
-        '{"textImpression":"string","contextImpression":"string","scores":{"angry":0,"busy":0,"justCold":0,"positive":0,"distance":0},"confidenceLevel":"low|medium|high","contactTiming":"string","actions":[{"text":"string"}],"avoidExpressions":[{"text":"string"}],"goodSignals":[{"text":"string"}],"replyExamples":[{"text":"string","tone":"formal|casual|neutral"}],"reasons":[{"label":"string","detail":"string"}]}',
+        '{"textImpression":"string","contextImpression":"string","scores":{"angry":0,"busy":0,"justCold":0,"positive":0,"distance":0,"happy":0,"joy":0,"relief":0},"confidenceLevel":"low|medium|high","contactTiming":"string","actions":[{"text":"string"}],"avoidExpressions":[{"text":"string"}],"goodSignals":[{"text":"string"}],"replyExamples":[{"text":"string","tone":"formal|casual|neutral"}],"reasons":[{"label":"string","detail":"string"}]}',
     ].join("\n");
 }
 
@@ -465,6 +468,9 @@ export const sampleAnalyzeOutput: AnalyzeOutput = {
         justCold: 0.41,
         positive: 0.28,
         distance: 0.32,
+        happy: 0.15,
+        joy: 0.10,
+        relief: 0.20,
     },
     confidenceLevel: "medium",
     contactTiming:
