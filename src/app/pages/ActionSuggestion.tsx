@@ -4,7 +4,7 @@ import {
   ArrowLeft, Copy, CheckCircle2, XCircle, Lightbulb,
   ThumbsUp, AlertTriangle, MessageSquare,
 } from 'lucide-react';
-import { getConsultation, getAIAnalysis } from '../utils/storage';
+import { getConsultation, getAnalysis } from '../utils/storage';
 import { getRelationStyle } from '../utils/relationStyles';
 import { Navigation } from '../components/Navigation';
 
@@ -20,9 +20,9 @@ export function ActionSuggestion() {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
   const consultation = id ? getConsultation(id) : undefined;
-  const ai = id ? getAIAnalysis(id) : undefined;
+  const analysis = id ? getAnalysis(id) : undefined;
 
-  if (!consultation || !ai) {
+  if (!consultation || !analysis) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-pink-50 to-purple-50 flex items-center justify-center">
         <div className="text-center">
@@ -86,9 +86,6 @@ export function ActionSuggestion() {
                 <span className={`text-xs px-2 py-0.5 rounded-full ${relStyle.badge}`}>{consultation.relation}</span>
               </div>
             </div>
-            <Link to={`/analysis/${consultation.id}`} className="text-sm text-purple-600 hover:text-purple-700 flex items-center gap-1">
-              ← 分析結果に戻る
-            </Link>
           </div>
 
           {/* ── 上段: 推奨アクション + 良いサイン ── */}
@@ -103,7 +100,7 @@ export function ActionSuggestion() {
                 <h3 className="font-semibold text-gray-800">推奨アクション</h3>
               </div>
               <div className="space-y-3">
-                {ai.actions.map((action, i) => (
+                {analysis.result.actions.map((action, i) => (
                   <div key={i} className="flex items-start gap-3 bg-green-50 rounded-xl p-3.5 border border-green-100">
                     <div className="flex-shrink-0 w-6 h-6 bg-green-600 text-white rounded-full flex items-center justify-center text-xs font-semibold">
                       {i + 1}
@@ -123,7 +120,7 @@ export function ActionSuggestion() {
                 <h3 className="font-semibold text-gray-800">良いサイン</h3>
               </div>
               <div className="space-y-2.5">
-                {ai.goodSignals.map((signal, i) => (
+                {analysis.result.goodSignals.map((signal, i) => (
                   <div key={i} className="flex items-start gap-2.5 bg-teal-50 rounded-xl p-3.5 border border-teal-100">
                     <span className="text-teal-500 flex-shrink-0 mt-0.5">✓</span>
                     <p className="text-gray-800 text-sm leading-relaxed">{signal.text}</p>
@@ -142,7 +139,7 @@ export function ActionSuggestion() {
               <h3 className="font-semibold text-gray-800">避けるべき表現・行動</h3>
             </div>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-              {ai.avoidExpressions.map((expr, i) => (
+              {analysis.result.avoidExpressions.map((expr, i) => (
                 <div key={i} className="flex items-start gap-2.5 bg-red-50 rounded-xl p-3.5 border border-red-100">
                   <XCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
                   <p className="text-gray-800 text-sm leading-relaxed">{expr.text}</p>
@@ -163,7 +160,7 @@ export function ActionSuggestion() {
               そのままコピーして使えます。あなたの言葉でアレンジしてもOK！
             </p>
             <div className="space-y-3">
-              {ai.replyExamples.map((example, i) => {
+              {analysis.result.replyExamples.map((example, i) => {
                 const tone = TONE_BADGE[example.tone] ?? TONE_BADGE.neutral;
                 return (
                   <div key={i} className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
@@ -198,16 +195,23 @@ export function ActionSuggestion() {
           {/* ── ボタン ── */}
           <div className="lg:grid lg:grid-cols-2 lg:gap-4 space-y-3 lg:space-y-0">
             <button
-              onClick={() => navigate('/')}
-              className="w-full bg-gradient-to-r from-pink-500 to-purple-500 text-white py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-shadow lg:text-lg"
+              onClick={() => navigate(`/analysis/${consultation.id}`)}
+              className="w-full bg-white text-purple-700 py-3 rounded-xl font-medium border-2 border-purple-200 hover:bg-purple-50 transition-colors flex items-center justify-center gap-2"
             >
-              完了
+              <ArrowLeft className="w-4 h-4" />
+              分析結果に戻る
             </button>
             <button
               onClick={() => navigate(`/new?person=${encodeURIComponent(consultation.personName)}`)}
               className="w-full bg-white text-gray-700 py-4 rounded-xl font-medium border-2 border-gray-200 hover:border-gray-300 transition-colors lg:text-lg"
             >
               新しい相談を始める
+            </button>
+            <button
+              onClick={() => navigate('/')}
+              className="w-full bg-gradient-to-r from-pink-500 to-purple-500 text-white py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-shadow lg:text-lg"
+            >
+              完了
             </button>
           </div>
         </div>

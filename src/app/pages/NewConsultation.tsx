@@ -2,8 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { ArrowLeft, Send, MessageSquare, PenLine, X, ChevronDown, AlertCircle, UserCheck } from 'lucide-react';
 import { ConsultationData, RelationType, Reaction, Timing } from '../types';
-import { saveConsultation, saveAnalysis, saveSuggestion, saveAIAnalysis, getConsultations } from '../utils/storage';
-import { analyzeEmotion, generateActionSuggestion, generateAIAnalysis } from '../utils/analyzer';
+import { createSession, createPerson, createAnalysisCase, analyze } from '../api/session';
+import { saveConsultation, getConsultations } from '../utils/storage';
 import { getRelationStyle } from '../utils/relationStyles';
 import { Navigation } from '../components/Navigation';
 
@@ -101,6 +101,8 @@ export function NewConsultation() {
   const [chatPlatform, setChatPlatform] = useState<ChatPlatform>('LINE');
   const [otherChatText, setOtherChatText] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [apiError, setApiError] = useState("");
 
   // オートコンプリート
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -169,9 +171,11 @@ export function NewConsultation() {
       (chatPlatform === 'LINE' ? chatMessages.length === 0 : !otherChatText.trim()),
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+// フォーム送信・画面遷移
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitted(true);
+    setApiError("");
     const errors = getErrors();
     if (Object.values(errors).some(Boolean)) return;
 
@@ -187,27 +191,56 @@ export function NewConsultation() {
       ? (chatPlatform === 'LINE' ? getChatSummary() : otherChatText)
       : formData.userAction;
 
-    const consultation: ConsultationData = {
-      id: Date.now().toString(),
-      personName: formData.personName,
-      relation: effectiveRelation,
-      event: formData.event,
-      reaction: effectiveReaction,
-      userAction: effectiveUserAction,
-      timing: formData.timing,
-      createdAt: new Date().toISOString(),
-      ageGroup: formData.ageGroup,
-      gender: formData.gender,
-    };
+    // --- ここからAPI連携の実装 ---
+    setIsAnalyzing(true);
+    
+    try {
+      // 1. 相手（Person）の作成+API呼び出し+保存
+      const personRes = await createPerson({
+        displayName: formData.personName,
+        relationshipType: effectiveRelation,
+        ageRange: formData.ageGroup,
+        genderHint: formData.gender,
+      });
+      const personId = personRes.person.id;
 
-    saveConsultation(consultation);
-    const analysis = analyzeEmotion(consultation);
-    saveAnalysis(analysis);
-    const suggestion = generateActionSuggestion(consultation, analysis);
-    saveSuggestion(suggestion);
-    const aiAnalysis = generateAIAnalysis(consultation);
-    saveAIAnalysis(aiAnalysis);
-    navigate(`/analysis/${consultation.id}`);
+      // 2. 相談ケース（AnalysisCase）の作成+API呼び出し+保存
+      const caseRes = await createAnalysisCase({
+        personId,
+        eventFacts: formData.event,
+        selfMessage: effectiveUserAction,
+        partnerMessage: effectiveReaction, // APIの必須項目に合わせてマッピング
+        assumedPartnerEmotion: effectiveReaction,
+      });
+      const caseId = caseRes.analysisCase.id;
+
+      // ローカルに相談内容を保存
+      const consultation: ConsultationData = {
+        id: caseId,
+        personName: formData.personName,
+        relation: effectiveRelation,
+        event: formData.event,
+        reaction: effectiveReaction,
+        userAction: effectiveUserAction,
+        timing: formData.timing,
+        createdAt: new Date().toISOString(),
+        ageGroup: formData.ageGroup,
+        gender: formData.gender,
+      };
+      saveConsultation(consultation);
+
+      // 3. 分析の実行 (分析終了まで待機)
+      await analyze(caseId);
+
+      // 4. 結果画面へ遷移
+      navigate(`/analysis/${caseId}`);
+
+    } catch (err: any) {
+      console.error(err);
+      setApiError(err.message || "サーバーとの通信に失敗しました。時間をおいて再試行してください。");
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   const errors = submitted ? getErrors() : {} as ReturnType<typeof getErrors>;
@@ -522,7 +555,7 @@ export function NewConsultation() {
                       }`}
                     >
                       <MessageSquare className="w-4 h-4" />
-                      チャット形式
+                      会話を入力
                     </button>
                   </div>
 
@@ -555,8 +588,7 @@ export function NewConsultation() {
                             chatPlatform === 'LINE' ? selectedBtn : unselectedBtn
                           }`}
                         >
-                          <span className="text-base">💬</span>
-                          LINE
+                          対話形式 (LINEなど)
                         </button>
                         <button
                           type="button"
@@ -565,8 +597,7 @@ export function NewConsultation() {
                             chatPlatform === 'other' ? selectedBtn : unselectedBtn
                           }`}
                         >
-                          <span className="text-base">🔷</span>
-                          その他（Slack等）
+                          スレッド形式（Discord等）
                         </button>
                       </div>
 
@@ -694,12 +725,35 @@ export function NewConsultation() {
               </div>
             </div>
 
+            {/* APIエラー時の表示 */}
+            {apiError && (
+              <div className="mb-6 flex items-center gap-2 bg-red-50 border border-red-300 text-red-700 rounded-lg px-4 py-3 text-sm">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span>{apiError}</span>
+              </div>
+            )}
+
             {/* 送信ボタン */}
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-pink-500 to-purple-500 text-white py-4 lg:py-5 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-shadow lg:text-lg"
+              disabled={isAnalyzing}
+              className={`w-full text-white py-4 lg:py-5 rounded-xl font-semibold shadow-lg transition-shadow lg:text-lg flex justify-center items-center gap-2 ${
+                isAnalyzing
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-gradient-to-r from-pink-500 to-purple-500 hover:shadow-xl"
+              }`}
             >
-              分析する
+              {isAnalyzing ? (
+                <>
+                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  分析中です...
+                </>
+              ) : (
+                "分析する"
+              )}
             </button>
           </form>
         </div>
