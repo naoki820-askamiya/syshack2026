@@ -29,9 +29,9 @@ const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: { payl
   if (active && payload && payload.length) {
     const d = payload[0].payload;
     return (
-      <div className="bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-md text-sm">
-        <p className="font-medium text-gray-800">{d.subject}</p>
-        <p className="text-purple-600">{d.value}%</p>
+      <div className="bg-white border border-[#D9E1EA] rounded-lg px-3 py-2 shadow-md text-sm">
+        <p className="font-medium text-[#1F2A37]">{d.subject}</p>
+        <p className="text-[#0F4C81]">{d.value}%</p>
       </div>
     );
   }
@@ -78,14 +78,14 @@ export function EmotionRadarChart({ scores }: Props) {
   const negativeAvg = (scores.angry + scores.cold + scores.pressure + scores.distance) / 4;
   const isPositiveOverall = positiveAvg > negativeAvg;
 
-  const strokeColor = isPositiveOverall ? '#16a34a' : '#a855f7';
-  const fillColor = isPositiveOverall ? '#16a34a' : '#a855f7';
+  const strokeColor = isPositiveOverall ? '#1f7a4d' : '#0f4c81';
+  const fillColor = isPositiveOverall ? '#1f7a4d' : '#0f4c81';
 
   return (
     <div className="w-full">
       <ResponsiveContainer width="100%" height={280}>
         <RadarChart data={data} margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
-          <PolarGrid key="polar-grid" stroke="#e5e7eb" />
+          <PolarGrid key="polar-grid" stroke="#d9e1ea" />
           <PolarAngleAxis
             key="polar-angle-axis"
             dataKey="subject"
@@ -96,7 +96,7 @@ export function EmotionRadarChart({ scores }: Props) {
             angle={90}
             domain={[0, 100]}
             tickCount={4}
-            tick={{ fontSize: 9, fill: '#9ca3af' }}
+            tick={{ fontSize: 9, fill: '#8a94a6' }}
             axisLine={false}
           />
           <Radar
@@ -120,14 +120,14 @@ export function EmotionRadarChart({ scores }: Props) {
           return (
             <div key={key} className="text-center">
               <div
-                className={`text-xs font-semibold ${isPositive ? 'text-green-600' : 'text-purple-700'}`}
+                className={`text-xs font-semibold ${isPositive ? 'text-[#1F7A4D]' : 'text-[#0F4C81]'}`}
               >
                 {pct}%
               </div>
-              <div className="text-[10px] text-gray-400 leading-tight">{label}</div>
-              <div className="mt-0.5 h-1 rounded-full bg-gray-100 overflow-hidden">
+              <div className="text-[10px] text-[#8A94A6] leading-tight">{label}</div>
+              <div className="mt-0.5 h-1 rounded-full bg-[#F1F4F8] overflow-hidden">
                 <div
-                  className={`h-full rounded-full transition-all ${isPositive ? 'bg-green-500' : 'bg-purple-500'}`}
+                  className={`h-full rounded-full transition-all ${isPositive ? 'bg-[#1F7A4D]' : 'bg-[#0F4C81]'}`}
                   style={{ width: `${pct}%` }}
                 />
               </div>
