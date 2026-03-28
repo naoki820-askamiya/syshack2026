@@ -9,7 +9,7 @@ export function Home() {
   const recentConsultations = getConsultations().slice(-5).reverse();
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-pink-50 to-purple-50">
+    <div className="min-h-screen bg-[#F7F9FC]">
       <Navigation />
       
       <div className="lg:ml-64 p-4 lg:p-8 pb-24 lg:pb-8">
@@ -18,38 +18,38 @@ export function Home() {
           <div className="text-center py-8 lg:py-12 relative">
             <Link 
               to="/login"
-              className="lg:hidden absolute top-0 right-0 flex items-center gap-2 px-4 py-2 bg-white text-purple-600 rounded-lg shadow-sm hover:shadow-md transition-shadow font-medium"
+              className="lg:hidden absolute top-0 right-0 flex items-center gap-2 px-4 py-2 bg-white text-[#0F4C81] rounded-lg shadow-sm hover:bg-[#F1F4F8] transition-colors font-medium border border-[#D9E1EA]"
             >
               <LogIn className="w-4 h-4" />
               ログイン
             </Link>
             <div className="mx-auto mb-4 h-5 lg:h-5"/> {/* blank */}
             <img src="/kigen404_title_b_transparent.png" alt="KIGEN404" className="mx-auto mb-4 h-28 lg:h-32" />
-            <p className="text-gray-600 lg:text-lg">見えない感情、見つけましょうか。</p>
+            <p className="text-[#5B6573] lg:text-lg">見えない感情、見つけましょうか。</p>
           </div>
 
           {/* メインアクション */}
           <Link to="/new" className="block mb-6">
-            <button className="w-full bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-2xl p-5 lg:p-7 shadow-lg hover:shadow-xl transition-all hover:scale-[1.01] active:scale-[0.99]">
+            <button className="w-full bg-[#0F4C81] text-white rounded-2xl p-5 lg:p-7 shadow-sm hover:bg-[#0C3E69] transition-colors hover:scale-[1.01] active:scale-[0.99]">
               <div className="flex items-center justify-center gap-3">
                 <PlusCircle className="w-7 h-7 lg:w-9 lg:h-9" />
                 <span className="text-xl lg:text-2xl font-semibold">新しい人物について相談</span>
               </div>
-              <p className="text-pink-100 text-sm mt-1">状況を入力して、対応策を見つけよう</p>
+              <p className="text-[#E8F1F8] text-sm mt-1">状況を入力して、対応策を見つけよう</p>
             </button>
           </Link>
 
           <div className="lg:grid lg:grid-cols-3 lg:gap-6 space-y-6 lg:space-y-0">
             {/* 左カラム: 過去の人物 */}
             <div className="lg:col-span-1">
-              <div className="bg-white rounded-2xl p-5 shadow-sm h-full">
+              <div className="bg-white rounded-2xl p-5 shadow-sm h-full border border-[#D9E1EA]">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
-                    <Users className="w-5 h-5 text-purple-500" />
-                    <h2 className="text-base font-semibold text-gray-800">過去の人物</h2>
+                    <Users className="w-5 h-5 text-[#0F4C81]" />
+                    <h2 className="text-base font-semibold text-[#1F2A37]">過去の人物</h2>
                   </div>
                   {persons.length > 0 && (
-                    <span className="text-xs bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full font-medium">
+                    <span className="text-xs bg-[#E8F1F8] text-[#0F4C81] px-2 py-0.5 rounded-full font-medium">
                       {persons.length}人
                     </span>
                   )}
@@ -65,26 +65,26 @@ export function Home() {
                         <Link
                           key={person}
                           to={`/history?person=${encodeURIComponent(person)}`}
-                          className={`flex items-center justify-between bg-gray-50 ${style.bgHover} rounded-xl px-4 py-3 transition-colors group`}
+                          className={`flex items-center justify-between bg-[#F1F4F8] ${style.bgHover} rounded-xl px-4 py-3 transition-colors group`}
                         >
                           <div className="flex items-center gap-3">
                             {/* 絵文字アイコン */}
                             <span className="text-2xl">{style.emoji}</span>
                             <div>
                               {/* ニックネームを大きめに */}
-                              <p className="text-base font-semibold text-gray-800 leading-tight">{person}</p>
+                              <p className="text-base font-semibold text-[#1F2A37] leading-tight">{person}</p>
                               <div className="flex items-center gap-1.5 mt-1">
                                 {/* 関係性バッジ（丸くくる） */}
                                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${style.badge}`}>
                                   {latest?.relation ?? 'その他'}
                                 </span>
                                 {latest && (
-                                  <span className="text-xs text-gray-400">{personConsultations.length}件</span>
+                                  <span className="text-xs text-[#8A94A6]">{personConsultations.length}件</span>
                                 )}
                               </div>
                             </div>
                           </div>
-                          <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors flex-shrink-0" />
+                          <ChevronRight className="w-4 h-4 text-[#B8C2CF] group-hover:text-[#5B6573] transition-colors flex-shrink-0" />
                         </Link>
                       );
                     })}
@@ -92,8 +92,8 @@ export function Home() {
                 ) : (
                   <div className="flex flex-col items-center justify-center py-8 text-center">
                     <div className="text-4xl mb-3">👥</div>
-                    <p className="text-sm text-gray-500">まだ相談した人物はいません</p>
-                    <p className="text-xs text-gray-400 mt-1">相談すると人物が登録されます</p>
+                    <p className="text-sm text-[#5B6573]">まだ相談した人物はいません</p>
+                    <p className="text-xs text-[#8A94A6] mt-1">相談すると人物が登録されます</p>
                   </div>
                 )}
               </div>
@@ -101,14 +101,14 @@ export function Home() {
 
             {/* 右カラム: 最近の相談履歴 */}
             <div className="lg:col-span-2">
-              <div className="bg-white rounded-2xl p-5 shadow-sm">
+              <div className="bg-white rounded-2xl p-5 shadow-sm border border-[#D9E1EA]">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
-                    <History className="w-5 h-5 text-purple-500" />
-                    <h2 className="text-base font-semibold text-gray-800">最近の相談履歴</h2>
+                    <History className="w-5 h-5 text-[#0F4C81]" />
+                    <h2 className="text-base font-semibold text-[#1F2A37]">最近の相談履歴</h2>
                   </div>
                   {recentConsultations.length > 0 && (
-                    <Link to="/history" className="flex items-center gap-1 text-sm text-purple-600 hover:text-purple-700 font-medium">
+                    <Link to="/history" className="flex items-center gap-1 text-sm text-[#0F4C81] hover:text-[#0C3E69] font-medium">
                       すべて見る
                       <ChevronRight className="w-4 h-4" />
                     </Link>
@@ -124,7 +124,7 @@ export function Home() {
                         <Link
                           key={consultation.id}
                           to={`/action/${consultation.id}`}
-                          className={`flex items-start gap-4 bg-gray-50 ${style.bgHover} rounded-xl p-4 transition-colors group`}
+                          className={`flex items-start gap-4 bg-[#F1F4F8] ${style.bgHover} rounded-xl p-4 transition-colors group`}
                         >
                           <div className="flex-shrink-0 text-2xl mt-0.5">
                             {style.emoji}
@@ -132,24 +132,24 @@ export function Home() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between mb-1">
                               <div className="flex items-center gap-2">
-                                <span className="font-medium text-gray-800 text-sm">{consultation.personName}</span>
+                                <span className="font-medium text-[#1F2A37] text-sm">{consultation.personName}</span>
                                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${style.badge}`}>
                                   {consultation.relation}
                                 </span>
                               </div>
-                              <span className="text-xs text-gray-400 flex-shrink-0">
+                              <span className="text-xs text-[#8A94A6] flex-shrink-0">
                                 {new Date(consultation.createdAt).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })}
                               </span>
                             </div>
-                            <p className="text-sm text-gray-600 line-clamp-1">{consultation.event}</p>
+                            <p className="text-sm text-[#5B6573] line-clamp-1">{consultation.event}</p>
                             <div className="flex items-center gap-1.5 mt-1.5">
-                              <span className="text-xs text-gray-400">感情</span>
+                              <span className="text-xs text-[#8A94A6]">感情</span>
                               <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${reactionStyle.text} ${reactionStyle.bg}`}>
                                 {consultation.reaction}
                               </span>
                             </div>
                           </div>
-                          <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors flex-shrink-0 mt-1" />
+                          <ChevronRight className="w-4 h-4 text-[#B8C2CF] group-hover:text-[#5B6573] transition-colors flex-shrink-0 mt-1" />
                         </Link>
                       );
                     })}
@@ -157,15 +157,15 @@ export function Home() {
                 ) : (
                   <div className="flex flex-col items-center justify-center py-10 text-center">
                     <div className="text-5xl mb-4">💭</div>
-                    <h3 className="text-base font-semibold text-gray-800 mb-2">
+                    <h3 className="text-base font-semibold text-[#1F2A37] mb-2">
                       人間関係の悩み、相談してみませんか？
                     </h3>
-                    <p className="text-gray-500 text-sm leading-relaxed max-w-xs">
+                    <p className="text-[#5B6573] text-sm leading-relaxed max-w-xs">
                       「相手の機嫌が分からない」「どう対応すればいいか分からない」そんな時、具体的な行動を提案します。
                     </p>
                     <Link
                       to="/new"
-                      className="mt-5 inline-flex items-center gap-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white px-5 py-2.5 rounded-xl text-sm font-medium shadow-md hover:shadow-lg transition-shadow"
+                      className="mt-5 inline-flex items-center gap-2 bg-[#0F4C81] text-white px-5 py-2.5 rounded-xl text-sm font-medium shadow-sm hover:bg-[#0C3E69] transition-colors"
                     >
                       <PlusCircle className="w-4 h-4" />
                       最初の相談を始める

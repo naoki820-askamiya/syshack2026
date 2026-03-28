@@ -45,9 +45,9 @@ export function Navigation() {
   return (
     <>
       {/* デスクトップ版: サイドバーナビゲーション */}
-      <nav className="hidden lg:flex lg:fixed lg:left-0 lg:top-0 lg:h-screen lg:w-64 lg:flex-col lg:bg-white lg:border-r lg:border-gray-200 lg:z-50">
+      <nav className="hidden lg:flex lg:fixed lg:left-0 lg:top-0 lg:h-screen lg:w-64 lg:flex-col lg:bg-white lg:border-r lg:border-[#D9E1EA] lg:z-50">
         {/* ロゴ */}
-        <div className="flex items-center justify-center h-24 border-b border-gray-200">
+        <div className="flex items-center justify-center h-24 border-b border-[#D9E1EA]">
           <Link to="/">
             <img src="/kigen404_title_b_transparent.png" alt="KIGEN404" className="h-20" />
           </Link>
@@ -64,8 +64,8 @@ export function Navigation() {
                 to={item.path}
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                   isActive
-                    ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
-                    : 'text-gray-700 hover:bg-gray-100'
+                    ? 'bg-[#0F4C81] text-white'
+                    : 'text-[#5B6573] hover:bg-[#F1F4F8]'
                 }`}
               >
                 <Icon className="w-5 h-5" />
@@ -77,7 +77,7 @@ export function Navigation() {
           {/* ── 相談した人物リスト ── */}
           {persons.length > 0 && (
             <div className="pt-2">
-              <p className="px-4 py-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
+              <p className="px-4 py-1.5 text-[11px] font-semibold text-[#8A94A6] uppercase tracking-wider">
                 最近の相談相手
               </p>
               <div className="space-y-0.5">
@@ -91,7 +91,7 @@ export function Navigation() {
                         onClick={() =>
                           setExpandedPerson(isExpanded ? null : person.personName)
                         }
-                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors group text-gray-600 hover:bg-gray-100"
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors group text-[#5B6573] hover:bg-[#F1F4F8]"
                       >
                         {/* アバター */}
                         <div className={`w-7 h-7 rounded-full flex items-center justify-center text-sm flex-shrink-0 ${style.badge}`}>
@@ -107,8 +107,8 @@ export function Navigation() {
                           </p>
                         </div>
                         {isExpanded
-                          ? <ChevronDown className="w-3.5 h-3.5 text-gray-400 flex-shrink-0 transition-transform" />
-                          : <ChevronRight className="w-3.5 h-3.5 text-gray-300 group-hover:text-gray-500 flex-shrink-0 transition-colors" />
+                          ? <ChevronDown className="w-3.5 h-3.5 text-[#8A94A6] flex-shrink-0 transition-transform" />
+                          : <ChevronRight className="w-3.5 h-3.5 text-[#B8C2CF] group-hover:text-[#5B6573] flex-shrink-0 transition-colors" />
                         }
                       </button>
 
@@ -117,14 +117,14 @@ export function Navigation() {
                         <div className="ml-10 mt-0.5 mb-1 space-y-0.5">
                           <Link
                             to={`/new?person=${encodeURIComponent(person.personName)}`}
-                            className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm text-pink-600 hover:bg-pink-50 transition-colors font-medium"
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm text-[#0F4C81] hover:bg-[#E8F1F8] transition-colors font-medium"
                           >
                             <MessageCircle className="w-3.5 h-3.5" />
                             その人について相談
                           </Link>
                           <Link
                             to={`/history?person=${encodeURIComponent(person.personName)}`}
-                            className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm text-purple-600 hover:bg-purple-50 transition-colors font-medium"
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm text-[#0F4C81] hover:bg-[#E8F1F8] transition-colors font-medium"
                           >
                             <History className="w-3.5 h-3.5" />
                             履歴
@@ -140,10 +140,10 @@ export function Navigation() {
         </div>
 
         {/* ログインボタン */}
-        <div className="p-4 border-t border-gray-200">
+        <div className="p-4 border-t border-[#D9E1EA]">
           <Link
             to="/login"
-            className="flex items-center gap-3 px-4 py-3 rounded-lg text-purple-600 hover:bg-purple-50 transition-colors"
+            className="flex items-center gap-3 px-4 py-3 rounded-lg text-[#0F4C81] hover:bg-[#E8F1F8] transition-colors"
           >
             <LogIn className="w-5 h-5" />
             <span className="font-medium">ログイン</span>
@@ -152,7 +152,7 @@ export function Navigation() {
       </nav>
 
       {/* スマホ版: ボトムナビゲーション */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-50">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[#D9E1EA] p-4 z-50">
         <div className="max-w-2xl mx-auto flex justify-around">
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -162,7 +162,7 @@ export function Navigation() {
                 key={item.path}
                 to={item.path}
                 className={`flex flex-col items-center gap-1 transition-colors ${
-                  isActive ? 'text-purple-600' : 'text-gray-400 hover:text-gray-600'
+                  isActive ? 'text-[#0F4C81]' : 'text-[#8A94A6] hover:text-[#5B6573]'
                 }`}
               >
                 <Icon className="w-6 h-6" />

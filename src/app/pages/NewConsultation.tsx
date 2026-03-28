@@ -246,14 +246,14 @@ export function NewConsultation() {
   const errors = submitted ? getErrors() : {} as ReturnType<typeof getErrors>;
 
   const inputClass = (hasError?: boolean) =>
-    `w-full px-4 py-3 rounded-lg border-2 focus:ring-2 focus:border-transparent outline-none transition ${
+    `w-full px-4 py-3 rounded-lg border-2 focus:ring-2 outline-none transition text-[#1F2A37] placeholder:text-[#8A94A6] ${
       hasError
         ? 'border-red-400 bg-red-50 focus:ring-red-300'
-        : 'border-gray-300 bg-white focus:ring-purple-500'
+        : 'border-[#D9E1EA] bg-white focus:ring-[#0F4C81]/20 focus:border-[#0F4C81]'
     }`;
 
-  const selectedBtn = 'border-purple-500 bg-purple-50 text-purple-700 font-medium';
-  const unselectedBtn = 'border-gray-200 bg-white text-gray-700 hover:border-gray-300';
+  const selectedBtn = 'border-[#0F4C81] bg-[#E8F1F8] text-[#0F4C81] font-medium';
+  const unselectedBtn = 'border-[#D9E1EA] bg-white text-[#5B6573] hover:border-[#0F4C81]';
 
   const RelationButton = ({ relation }: { relation: RelationType }) => (
     <button
@@ -268,14 +268,14 @@ export function NewConsultation() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-pink-50 to-purple-50">
+    <div className="min-h-screen bg-[#F7F9FC]">
       <Navigation />
 
       <div className="lg:ml-64 pb-24 lg:pb-8">
         {/* ヘッダー */}
-        <div className="bg-white border-b border-gray-200 p-4 lg:px-8 sticky top-0 z-10">
+        <div className="bg-white border-b border-[#D9E1EA] p-4 lg:px-8 sticky top-0 z-10">
           <div className="max-w-4xl mx-auto flex items-center gap-3">
-            <button onClick={() => navigate('/')} className="text-gray-600 hover:text-gray-800">
+            <button onClick={() => navigate('/')} className="text-[#5B6573] hover:text-[#1F2A37]">
               <ArrowLeft className="w-6 h-6" />
             </button>
             <h1 className="text-xl lg:text-2xl font-semibold">状況を入力</h1>
@@ -285,7 +285,7 @@ export function NewConsultation() {
         <div className="max-w-4xl mx-auto p-4 lg:p-8">
           {/* 自動入力バナー */}
           {prefilled && (
-            <div className="mb-6 flex items-center gap-2 bg-purple-50 border border-purple-200 text-purple-700 rounded-lg px-4 py-3 text-sm">
+            <div className="mb-6 flex items-center gap-2 bg-[#E8F1F8] border border-[#D9E1EA] text-[#0F4C81] rounded-lg px-4 py-3 text-sm">
               <UserCheck className="w-4 h-4 flex-shrink-0" />
               <span>
                 過去の相談から <strong>{formData.personName}</strong> さんの情報を自動で入力しました。内容を確認してください。
@@ -309,10 +309,10 @@ export function NewConsultation() {
 
                 {/* ① ニックネーム */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-[#5B6573] mb-1">
                     ニックネーム<span className="text-red-500 ml-0.5">*</span>
                   </label>
-                  <p className="text-xs text-gray-400 mb-2">本名は入力しないでください</p>
+                  <p className="text-xs text-[#8A94A6] mb-2">本名は入力しないでください</p>
                   <div className="relative">
                     <input
                       ref={nameInputRef}
@@ -328,8 +328,8 @@ export function NewConsultation() {
                     />
                     {/* オートコンプリートドロップダウン */}
                     {showSuggestions && (
-                      <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 overflow-hidden">
-                        <p className="px-3 pt-2 pb-1 text-[10px] text-gray-400 font-semibold uppercase tracking-wide">
+                      <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-[#D9E1EA] rounded-xl shadow-lg z-20 overflow-hidden">
+                        <p className="px-3 pt-2 pb-1 text-[10px] text-[#8A94A6] font-semibold uppercase tracking-wide">
                           過去の相談相手
                         </p>
                         {suggestions.map((person) => {
@@ -339,18 +339,18 @@ export function NewConsultation() {
                               key={person.id}
                               type="button"
                               onMouseDown={() => applyPerson(person)}
-                              className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-purple-50 transition-colors text-left"
+                              className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-[#F1F4F8] transition-colors text-left"
                             >
                               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm flex-shrink-0 ${style.badge}`}>
                                 {style.emoji}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-gray-800">{person.personName}</p>
-                                <p className="text-xs text-gray-400">
+                                <p className="text-sm font-medium text-[#1F2A37]">{person.personName}</p>
+                                <p className="text-xs text-[#8A94A6]">
                                   {person.relation}{person.ageGroup ? ` · ${person.ageGroup}` : ''}{person.gender ? ` · ${person.gender}` : ''}
                                 </p>
                               </div>
-                              <span className="text-xs text-purple-500 flex-shrink-0">自動入力</span>
+                              <span className="text-xs text-[#0F4C81] flex-shrink-0">自動入力</span>
                             </button>
                           );
                         })}
@@ -367,7 +367,7 @@ export function NewConsultation() {
                 {/* ② 年代・性別 */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-[#5B6573] mb-2">
                       あなたの年代<span className="text-red-500 ml-0.5">*</span>
                     </label>
                     <div className="relative">
@@ -380,11 +380,11 @@ export function NewConsultation() {
                           <option key={age} value={age}>{age}</option>
                         ))}
                       </select>
-                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8A94A6] pointer-events-none" />
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-[#5B6573] mb-2">
                       あなたの性別<span className="text-red-500 ml-0.5">*</span>
                     </label>
                     <div className="relative">
@@ -397,19 +397,19 @@ export function NewConsultation() {
                           <option key={g} value={g}>{g}</option>
                         ))}
                       </select>
-                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8A94A6] pointer-events-none" />
                     </div>
                   </div>
                 </div>
 
                 {/* ③ 相手との関係 */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-[#5B6573] mb-2">
                     相手との関係<span className="text-red-500 ml-0.5">*</span>
                   </label>
                   <div className="mb-2">
-                    <p className="text-xs text-gray-400 mb-1.5 flex items-center gap-1">
-                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                    <p className="text-xs text-[#8A94A6] mb-1.5 flex items-center gap-1">
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#0F4C81]"></span>
                       ビジネス
                     </p>
                     <div className="grid grid-cols-3 gap-2">
@@ -419,8 +419,8 @@ export function NewConsultation() {
                     </div>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-400 mb-1.5 flex items-center gap-1">
-                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-pink-400"></span>
+                    <p className="text-xs text-[#8A94A6] mb-1.5 flex items-center gap-1">
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#5B6573]"></span>
                       プライベート
                     </p>
                     <div className="grid grid-cols-3 gap-2">
@@ -449,7 +449,7 @@ export function NewConsultation() {
 
                 {/* ④ 起きた出来事 */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-[#5B6573] mb-2">
                     起きた出来事<span className="text-red-500 ml-0.5">*</span>
                   </label>
                   <textarea
@@ -472,7 +472,7 @@ export function NewConsultation() {
 
                 {/* ⑤ 相手の反応 */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-[#5B6573] mb-2">
                     相手の反応<span className="text-red-500 ml-0.5">*</span>
                   </label>
                   <div className="grid grid-cols-3 gap-2">
@@ -510,7 +510,7 @@ export function NewConsultation() {
 
                 {/* ⑥ 出来事からの経過時間 */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-[#5B6573] mb-2">
                     出来事からの経過時間<span className="text-red-500 ml-0.5">*</span>
                   </label>
                   <div className="grid grid-cols-4 lg:grid-cols-2 gap-2">
@@ -531,7 +531,7 @@ export function NewConsultation() {
 
                 {/* ⑦ 自分の行動 */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-[#5B6573] mb-2">
                     自分の行動（その後どうしたか）<span className="text-red-500 ml-0.5">*</span>
                   </label>
 
@@ -602,13 +602,13 @@ export function NewConsultation() {
                       </div>
 
                       {chatPlatform === 'LINE' && (
-                        <div className={`border-2 rounded-lg overflow-hidden bg-gray-50 ${
-                          errors.chatContent ? 'border-red-400' : 'border-gray-200'
+                        <div className={`border-2 rounded-lg overflow-hidden bg-[#F1F4F8] ${
+                          errors.chatContent ? 'border-red-400' : 'border-[#D9E1EA]'
                         }`}>
                           <div className="h-48 overflow-y-auto p-3 space-y-2">
                             {chatMessages.length === 0 ? (
                               <div className="h-full flex items-center justify-center">
-                                <p className={`text-xs text-center ${errors.chatContent ? 'text-red-400' : 'text-gray-400'}`}>
+                                <p className={`text-xs text-center ${errors.chatContent ? 'text-red-400' : 'text-[#8A94A6]'}`}>
                                   やり取りを順番に入力してください
                                 </p>
                               </div>
@@ -624,8 +624,8 @@ export function NewConsultation() {
                                   <div
                                     className={`relative max-w-[75%] px-3 py-2 rounded-2xl text-sm leading-relaxed group ${
                                       msg.sender === '自分'
-                                        ? 'bg-purple-500 text-white rounded-br-sm'
-                                        : 'bg-white text-gray-800 border border-gray-200 rounded-bl-sm'
+                                        ? 'bg-[#0F4C81] text-white rounded-br-sm'
+                                        : 'bg-white text-[#1F2A37] border border-[#D9E1EA] rounded-bl-sm'
                                     }`}
                                   >
                                     <p>{msg.text}</p>
@@ -642,15 +642,15 @@ export function NewConsultation() {
                             )}
                             <div ref={chatEndRef} />
                           </div>
-                          <div className="border-t border-gray-200 bg-white p-2">
+                          <div className="border-t border-[#D9E1EA] bg-white p-2">
                             <div className="flex gap-1.5 mb-2">
                               <button
                                 type="button"
                                 onClick={() => setChatSender('自分')}
                                 className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-colors ${
                                   chatSender === '自分'
-                                    ? 'bg-purple-500 text-white'
-                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                    ? 'bg-[#0F4C81] text-white'
+                                    : 'bg-[#F1F4F8] text-[#5B6573] hover:bg-[#E8F1F8]'
                                 }`}
                               >
                                 🙋 自分
@@ -660,8 +660,8 @@ export function NewConsultation() {
                                 onClick={() => setChatSender('相手')}
                                 className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-colors ${
                                   chatSender === '相手'
-                                    ? 'bg-gray-700 text-white'
-                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                    ? 'bg-[#5B6573] text-white'
+                                    : 'bg-[#F1F4F8] text-[#5B6573] hover:bg-[#E8F1F8]'
                                 }`}
                               >
                                 👤 相手
@@ -678,14 +678,14 @@ export function NewConsultation() {
                                     addChatMessage();
                                   }
                                 }}
-                                className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                                className="flex-1 px-3 py-2 text-sm rounded-lg border border-[#D9E1EA] bg-white text-[#1F2A37] placeholder:text-[#8A94A6] focus:ring-2 focus:ring-[#0F4C81]/20 focus:border-[#0F4C81] outline-none"
                                 placeholder={`${chatSender}のメッセージを入力…`}
                               />
                               <button
                                 type="button"
                                 onClick={addChatMessage}
                                 disabled={!chatInput.trim()}
-                                className="w-9 h-9 flex items-center justify-center rounded-lg bg-purple-500 text-white hover:bg-purple-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+                                className="w-9 h-9 flex items-center justify-center rounded-lg bg-[#0F4C81] text-white hover:bg-[#0C3E69] disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex-shrink-0"
                               >
                                 <Send className="w-4 h-4" />
                               </button>
@@ -696,11 +696,11 @@ export function NewConsultation() {
 
                       {chatPlatform === 'other' && (
                         <div className="space-y-2">
-                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                            <p className="text-xs text-blue-700 leading-relaxed">
+                          <div className="bg-[#F1F4F8] border border-[#D9E1EA] rounded-lg p-3">
+                            <p className="text-xs text-[#5B6573] leading-relaxed">
                               <span className="font-semibold">📋 貼り付け方法：</span><br />
                               Slackなどのチャット画面で、やり取り部分をそのまま選択してコピーし、下のボックスに貼り付けてください。<br />
-                              <span className="text-blue-600">ユーザー名も含めてコピーするとより正確に分析できます。</span>
+                              <span className="text-[#0F4C81]">ユーザー名も含めてコピーするとより正確に分析できます。</span>
                             </p>
                           </div>
                           <textarea
@@ -737,10 +737,10 @@ export function NewConsultation() {
             <button
               type="submit"
               disabled={isAnalyzing}
-              className={`w-full text-white py-4 lg:py-5 rounded-xl font-semibold shadow-lg transition-shadow lg:text-lg flex justify-center items-center gap-2 ${
+              className={`w-full text-white py-4 lg:py-5 rounded-xl font-semibold shadow-sm transition-colors lg:text-lg flex justify-center items-center gap-2 ${
                 isAnalyzing
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-gradient-to-r from-pink-500 to-purple-500 hover:shadow-xl"
+                  ? "bg-[#B8C2CF] cursor-not-allowed"
+                  : "bg-[#0F4C81] hover:bg-[#0C3E69]"
               }`}
             >
               {isAnalyzing ? (
