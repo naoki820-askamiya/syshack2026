@@ -23,11 +23,9 @@ export function Home() {
               <LogIn className="w-4 h-4" />
               ログイン
             </Link>
-            <div className="inline-flex items-center justify-center w-16 h-16 lg:w-20 lg:h-20 bg-gradient-to-r from-pink-500 to-purple-500 rounded-2xl mb-4 shadow-lg">
-              <MessageCircle className="w-8 h-8 lg:w-10 lg:h-10 text-white" />
-            </div>
-            <h1 className="text-3xl lg:text-5xl font-bold text-gray-800 mb-2">感情ナビ</h1>
-            <p className="text-gray-600 lg:text-lg">次に送る一言、もう迷わない。</p>
+            <div className="mx-auto mb-4 h-5 lg:h-5"/> {/* blank */}
+            <img src="/public/kigen404_title_b_transparent.png" alt="KIGEN404" className="mx-auto mb-4 h-30 lg:h-30" />
+            <p className="text-gray-600 lg:text-lg">見えない感情、見つけましょうか。</p>
           </div>
 
           {/* メインアクション */}
