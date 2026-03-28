@@ -24,7 +24,7 @@ export function Home() {
               ログイン
             </Link>
             <div className="mx-auto mb-4 h-5 lg:h-5"/> {/* blank */}
-            <img src="/public/kigen404_title_b_transparent.png" alt="KIGEN404" className="mx-auto mb-4 h-30 lg:h-30" />
+            <img src="/kigen404_title_b_transparent.png" alt="KIGEN404" className="mx-auto mb-4 h-28 lg:h-32" />
             <p className="text-gray-600 lg:text-lg">見えない感情、見つけましょうか。</p>
           </div>
 
