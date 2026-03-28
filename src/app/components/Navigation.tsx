@@ -47,9 +47,9 @@ export function Navigation() {
       {/* デスクトップ版: サイドバーナビゲーション */}
       <nav className="hidden lg:flex lg:fixed lg:left-0 lg:top-0 lg:h-screen lg:w-64 lg:flex-col lg:bg-white lg:border-r lg:border-gray-200 lg:z-50">
         {/* ロゴ */}
-        <div className="flex items-center justify-center h-25 border-b border-gray-200">
+        <div className="flex items-center justify-center h-24 border-b border-gray-200">
           <Link to="/">
-            <img src="/public/kigen404_title_b_transparent.png" alt="KIGEN404" className="h-20" />
+            <img src="/kigen404_title_b_transparent.png" alt="KIGEN404" className="h-20" />
           </Link>
         </div>
 
