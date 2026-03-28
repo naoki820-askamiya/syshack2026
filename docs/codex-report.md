@@ -1,24 +1,35 @@
 # Codex Report
 
+## 2026-03-28 JST レビュー反映の現行仕様
+
+- 正式なバックエンド起動入口は `src/backend/server.ts`
+- `npm run server` / `npm run server:dev` は `src/backend/server.ts` を起動する
+- `relationshipType` の正式仕様は `boss / coworker / lover / family / friend / classmate / customer / other`
+- リクエストヘッダー表記は docs 上 `X-Session-Id` に統一する
+- `emojiUsed` は boolean、`toneType` は `formal / casual / mixed / unknown`、`messageLengthType` は `short / normal / long / unknown` を現行仕様とする
+- 下の 2026-03-26 時点の生ログは履歴として残しつつ、curl 例と主要レスポンス例は現行仕様に合わせて更新した
+- 下の過去ログに残る `src/*` 表記は pull 漏れ前の記録を含むため、現行の実体ファイルは `src/backend/*` を正とする
+
 ## 変更したファイル一覧
 
 - `package.json`
 - `package-lock.json`
-- `src/server.ts`
-- `src/ai/analyze.ts`
-- `src/types/index.ts`
-- `src/utils/index.ts`
-- `src/middlewares/errorHandler.ts`
-- `src/middlewares/requireSession.ts`
-- `src/repositories/analysisCases.repository.ts`
-- `src/repositories/analysisResults.repository.ts`
-- `src/repositories/persons.repository.ts`
-- `src/controllers/analysisCases.controller.ts`
-- `src/controllers/persons.controller.ts`
-- `src/routes/analysisCases.routes.ts`
-- `src/routes/persons.routes.ts`
-- `src/services/analysisCases.service.ts`
-- `src/services/persons.service.ts`
+- `src/backend/server.ts`
+- `src/backend/ai/analyze.ts`
+- `src/backend/types/index.ts`
+- `src/backend/utils/index.ts`
+- `src/backend/middlewares/errorHandler.ts`
+- `src/backend/middlewares/requireSession.ts`
+- `src/backend/repositories/analysisCases.repository.ts`
+- `src/backend/repositories/analysisResults.repository.ts`
+- `src/backend/repositories/persons.repository.ts`
+- `src/backend/controllers/analysisCases.controller.ts`
+- `src/backend/controllers/persons.controller.ts`
+- `src/backend/routes/analysisCases.routes.ts`
+- `src/backend/routes/persons.routes.ts`
+- `src/backend/services/analysisCases.service.ts`
+- `src/backend/services/persons.service.ts`
+- `src/backend/services/sessions.service.ts`
 - `docs/codex-report.md`
 
 ## サーバー起動前提の確認
@@ -26,8 +37,8 @@
 - `.env.local` が存在することを確認
 - `.env.local` に `OPENAI_API_KEY` があることを確認
 - `.env.local` に `OPENAI_MODEL` があることを確認
-- バックエンド起動入口は `src/server.ts`
-- 起動コマンドは `node --experimental-strip-types src/server.ts`
+- バックエンド起動入口は `src/backend/server.ts`
+- 起動コマンドは `node --experimental-strip-types src/backend/server.ts`
 
 ## 実行したコマンド
 
@@ -36,7 +47,7 @@ npm run build
 ```
 
 ```powershell
-node --experimental-strip-types src/server.ts
+node --experimental-strip-types src/backend/server.ts
 ```
 
 実 curl 実行時の session:
@@ -48,7 +59,7 @@ codex-demo-session-001
 `POST /api/persons`
 
 ```powershell
-curl.exe -s -X POST "http://127.0.0.1:3000/api/persons" -H "Content-Type: application/json" -H "x-session-id: codex-demo-session-001" -d "{\"ageRange\":\"30代\",\"relationshipType\":\"customer\",\"notes\":\"普段は返信が早く、文面は簡潔。\",\"displayName\":\"取引先A\",\"genderHint\":\"unknown\"}"
+curl.exe -s -X POST "http://127.0.0.1:3000/api/persons" -H "Content-Type: application/json" -H "X-Session-Id: codex-demo-session-001" -d "{\"ageRange\":\"30代\",\"relationshipType\":\"customer\",\"notes\":\"普段は返信が早く、文面は簡潔。\",\"displayName\":\"取引先A\",\"genderHint\":\"unknown\"}"
 ```
 
 返却された `person.id`:
@@ -60,7 +71,7 @@ person_1774542061979_khkb9n
 `POST /api/analysis-cases`
 
 ```powershell
-curl.exe -s -X POST "http://127.0.0.1:3000/api/analysis-cases" -H "Content-Type: application/json" -H "x-session-id: codex-demo-session-001" -d "{\"assumedPartnerEmotion\":\"少し冷たいかも\",\"personId\":\"person_1774542061979_khkb9n\",\"toneType\":\"事務的\",\"userEmotion\":\"不安\",\"selfMessage\":\"ご確認よろしくお願いします\",\"concernText\":\"嫌われたのか忙しいだけなのか知りたい\",\"appType\":\"LINE\",\"messageLengthType\":\"短め\",\"contextNote\":\"今週は相手が繁忙期らしい\",\"partnerSpeakingStyle\":\"普段から短文\",\"eventFacts\":\"提案資料を送ったあと短い返信が返ってきた\",\"partnerMessage\":\"確認します\",\"emojiUsed\":\"なし\",\"recentConversationText\":\"昨日は打ち合わせの後に資料送付。相手は会議続きだった。\"}"
+curl.exe -s -X POST "http://127.0.0.1:3000/api/analysis-cases" -H "Content-Type: application/json" -H "X-Session-Id: codex-demo-session-001" -d "{\"assumedPartnerEmotion\":\"少し冷たいかも\",\"personId\":\"person_1774542061979_khkb9n\",\"toneType\":\"formal\",\"userEmotion\":\"不安\",\"selfMessage\":\"ご確認よろしくお願いします\",\"concernText\":\"嫌われたのか忙しいだけなのか知りたい\",\"appType\":\"LINE\",\"messageLengthType\":\"short\",\"contextNote\":\"今週は相手が繁忙期らしい\",\"partnerSpeakingStyle\":\"普段から短文\",\"eventFacts\":\"提案資料を送ったあと短い返信が返ってきた\",\"partnerMessage\":\"確認します\",\"emojiUsed\":false,\"recentConversationText\":\"昨日は打ち合わせの後に資料送付。相手は会議続きだった。\"}"
 ```
 
 返却された `analysisCase.id`:
@@ -72,25 +83,25 @@ case_1774542062022_vpe1e8
 `POST /api/analysis-cases/:caseId/analyze`
 
 ```powershell
-curl.exe -s -X POST "http://127.0.0.1:3000/api/analysis-cases/case_1774542062022_vpe1e8/analyze" -H "x-session-id: codex-demo-session-001"
+curl.exe -s -X POST "http://127.0.0.1:3000/api/analysis-cases/case_1774542062022_vpe1e8/analyze" -H "X-Session-Id: codex-demo-session-001"
 ```
 
 `GET /api/analysis-cases/:caseId/results`
 
 ```powershell
-curl.exe -s "http://127.0.0.1:3000/api/analysis-cases/case_1774542062022_vpe1e8/results" -H "x-session-id: codex-demo-session-001"
+curl.exe -s "http://127.0.0.1:3000/api/analysis-cases/case_1774542062022_vpe1e8/results" -H "X-Session-Id: codex-demo-session-001"
 ```
 
 `GET /api/persons/:personId/analysis-cases`
 
 ```powershell
-curl.exe -s "http://127.0.0.1:3000/api/persons/person_1774542061979_khkb9n/analysis-cases" -H "x-session-id: codex-demo-session-001"
+curl.exe -s "http://127.0.0.1:3000/api/persons/person_1774542061979_khkb9n/analysis-cases?limit=20&offset=0" -H "X-Session-Id: codex-demo-session-001"
 ```
 
 2回目の analyze
 
 ```powershell
-curl.exe -s -i -X POST "http://127.0.0.1:3000/api/analysis-cases/case_1774542062022_vpe1e8/analyze" -H "x-session-id: codex-demo-session-001"
+curl.exe -s -i -X POST "http://127.0.0.1:3000/api/analysis-cases/case_1774542062022_vpe1e8/analyze" -H "X-Session-Id: codex-demo-session-001"
 ```
 
 ## 各 curl の結果
@@ -141,9 +152,9 @@ curl.exe -s -i -X POST "http://127.0.0.1:3000/api/analysis-cases/case_1774542062
             "partnerSpeakingStyle": "普段から短文",
             "contextNote": "今週は相手が繁忙期らしい",
             "concernText": "嫌われたのか忙しいだけなのか知りたい",
-            "emojiUsed": "なし",
-            "toneType": "事務的",
-            "messageLengthType": "短め"
+            "emojiUsed": false,
+            "toneType": "formal",
+            "messageLengthType": "short"
         },
         "status": "draft"
     }
@@ -156,6 +167,10 @@ curl.exe -s -i -X POST "http://127.0.0.1:3000/api/analysis-cases/case_1774542062
 {
     "status": "analyzed",
     "result": {
+        "id": "result_1774542067290_x8v1qn",
+        "analysisCaseId": "case_1774542062022_vpe1e8",
+        "promptVersion": "v1",
+        "generatedAt": "2026-03-26T16:21:07.290Z",
         "textImpression": "短い返信ですが、内容自体は資料確認の意思があり、事務的で簡潔なやり取りに見えます。冷たさを示す可能性はありますが、普段から短文とのことや繁忙期の状況を踏まえると、忙しさや簡潔な運用の範囲である可能性もあります。",
         "contextImpression": "打ち合わせ後に資料を送付し、相手は会議続きで今週も繁忙期とのことなので、返信が短くなった背景には余裕のなさがあるかもしれません。普段は返信が早い点は良い材料で、今回だけで関係悪化や嫌悪感と結びつける根拠は強くありません。",
         "scores": {
@@ -231,6 +246,10 @@ curl.exe -s -i -X POST "http://127.0.0.1:3000/api/analysis-cases/case_1774542062
 {
     "status": "analyzed",
     "result": {
+        "id": "result_1774542067290_x8v1qn",
+        "analysisCaseId": "case_1774542062022_vpe1e8",
+        "promptVersion": "v1",
+        "generatedAt": "2026-03-26T16:21:07.290Z",
         "textImpression": "短い返信ですが、内容自体は資料確認の意思があり、事務的で簡潔なやり取りに見えます。冷たさを示す可能性はありますが、普段から短文とのことや繁忙期の状況を踏まえると、忙しさや簡潔な運用の範囲である可能性もあります。",
         "contextImpression": "打ち合わせ後に資料を送付し、相手は会議続きで今週も繁忙期とのことなので、返信が短くなった背景には余裕のなさがあるかもしれません。普段は返信が早い点は良い材料で、今回だけで関係悪化や嫌悪感と結びつける根拠は強くありません。",
         "scores": {
@@ -329,9 +348,9 @@ curl.exe -s -i -X POST "http://127.0.0.1:3000/api/analysis-cases/case_1774542062
                 "partnerSpeakingStyle": "普段から短文",
                 "contextNote": "今週は相手が繁忙期らしい",
                 "concernText": "嫌われたのか忙しいだけなのか知りたい",
-                "emojiUsed": "なし",
-                "toneType": "事務的",
-                "messageLengthType": "短め"
+                "emojiUsed": false,
+                "toneType": "formal",
+                "messageLengthType": "short"
             },
             "status": "analyzed"
         }
@@ -382,7 +401,7 @@ Keep-Alive: timeout=5
 1. `.env.local` に `OPENAI_API_KEY` と `OPENAI_MODEL` を設定する
 2. `npm install` を実行する
 3. `npm run build` を実行する
-4. `node --experimental-strip-types src/server.ts` でサーバを起動する
+4. `node --experimental-strip-types src/backend/server.ts` でサーバを起動する
 5. `POST /api/persons` で Person を作成する
 6. レスポンスの `person.id` を使って `POST /api/analysis-cases` を実行する
 7. レスポンスの `analysisCase.id` を使って `POST /api/analysis-cases/:caseId/analyze` を実行する
@@ -399,7 +418,7 @@ Keep-Alive: timeout=5
 
 ### 今回追加したこと
 
-- `src/server.ts` にサーバー起動順の説明コメントを追加
+- `src/backend/server.ts` にサーバー起動順の説明コメントを追加
 - `src/routes/*.ts` に URL と controller のつながりを説明するコメントを追加
 - `src/controllers/*.ts` に request / response の役割説明を追加
 - `src/services/*.ts` に処理の流れと status 更新理由のコメントを追加
@@ -436,8 +455,8 @@ Keep-Alive: timeout=5
 ### 今回修正した点
 
 - `docs/backend-handover.md` の冒頭で、`POST /api/sessions` が未実装であることをより目立つ形にした
-- `docs/backend-handover.md` に、今は `x-session-id` を手動で決めて使う運用であることを早い段階で明記した
-- `.env.local` の例のモデル名を `OPENAI_MODEL=gpt-5.4-mini` に修正した
+- `docs/backend-handover.md` に、今は `X-Session-Id` を手動で決めて使う運用であることを早い段階で明記した
+- `.env.local` の例のモデル名を `OPENAI_MODEL=gpt-5.4-nano` に修正した
 - `docs/backend-handover.md` の Windows 向け curl 例の前に、`<personId>` と `<caseId>` はダミーであり、そのまま打ってはいけないことを強く注意書きした
 - `src/ai/analyze.ts` の `sampleAnalyzeInput` で、`relationshipType` と `genderHint` を enum に合う値へ修正した
 
@@ -574,7 +593,7 @@ end-to-end の analyze 確認は権限昇格して再実行した。
 - `tsconfig.json`
 - `src/controllers/analysisCases.controller.ts`
 - `src/middlewares/errorHandler.ts`
-- `src/server.ts`
+- `src/backend/server.ts`
 - `docs/codex-report.md`
 
 ### 今回の修正内容

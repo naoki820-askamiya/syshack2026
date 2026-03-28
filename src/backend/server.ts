@@ -127,5 +127,7 @@ async function mountOptionalRouter(
 }
 
 // このファイルが読み込まれたら、最後にサーバーを起動します。
-// つまり `node src/server.ts` を実行すると、ここから全体が動き始めます。
+// つまり `npm run server` または
+// `node --experimental-strip-types src/backend/server.ts` を実行すると、
+// ここから全体が動き始めます。
 await startServer();

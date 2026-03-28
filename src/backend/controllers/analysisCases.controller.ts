@@ -27,7 +27,7 @@ type SessionRequest<TBody = unknown> = Request & {
  * analysis-case 作成 API の controller です。
  *
  * 受け取るもの:
- * - header の `x-session-id`
+ * - header の `X-Session-Id`
  * - body の `CreateAnalysisCaseBody`
  *
  * 返すもの:
@@ -107,8 +107,8 @@ export async function getCasesByPerson(
     next: NextFunction,
 ) {
     try {
-        const limit = Number(req.query.limit ?? 20);
-        const offset = Number(req.query.offset ?? 0);
+        const limit = normalizeLimit(req.query.limit);
+        const offset = normalizeOffset(req.query.offset);
 
         const result = await analysisCasesService.getCasesByPerson(
             req.sessionId ?? "",
@@ -128,4 +128,32 @@ function getSingleParam(value: string | string[] | undefined): string {
     }
 
     return value ?? "";
+}
+
+function normalizeLimit(value: unknown): number {
+    const parsed = Number(getSingleQueryValue(value));
+
+    if (Number.isNaN(parsed)) {
+        return 20;
+    }
+
+    return Math.min(50, Math.max(1, Math.trunc(parsed)));
+}
+
+function normalizeOffset(value: unknown): number {
+    const parsed = Number(getSingleQueryValue(value));
+
+    if (Number.isNaN(parsed)) {
+        return 0;
+    }
+
+    return Math.max(0, Math.trunc(parsed));
+}
+
+function getSingleQueryValue(value: unknown): string {
+    if (Array.isArray(value)) {
+        return String(value[0] ?? "");
+    }
+
+    return String(value ?? "");
 }

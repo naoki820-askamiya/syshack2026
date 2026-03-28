@@ -32,6 +32,7 @@ import type {
 import {
     ANALYZE_TIMEOUT_MS,
     AppError,
+    buildSessionHeaderRequiredError,
     normalizeError,
     withTimeout,
 } from "../utils/index.ts";
@@ -92,11 +93,7 @@ export async function createAnalysisCase(
     data: CreateAnalysisCaseBody,
 ) {
     if (!sessionId) {
-        throw new AppError({
-            code: "SESSION_INVALID",
-            message: "x-session-id is required",
-            status: 401,
-        });
+        throw buildSessionHeaderRequiredError();
     }
 
     const personId = String(data?.personId ?? "").trim();
@@ -203,11 +200,11 @@ export async function analyzeCase(sessionId: string, caseId: string) {
         // AI 呼び出しは時間が読みにくいので、共通 timeout で包みます。
         // ここでは実際の AI 呼び出し本体は `analyzeMood()` に任せています。
         const aiResult = await withTimeout(
-            async () =>
+            async (signal) =>
                 analyzeMood({
                     person: analysisCase.person,
                     analysisCase: analysisCase.analysisCase,
-                }),
+                }, signal),
             ANALYZE_TIMEOUT_MS,
         );
 
@@ -286,11 +283,7 @@ export async function getCasesByPerson(
  */
 async function getOwnedCaseOrThrow(sessionId: string, caseId: string): Promise<StoredAnalysisCase> {
     if (!sessionId) {
-        throw new AppError({
-            code: "SESSION_INVALID",
-            message: "x-session-id is required",
-            status: 401,
-        });
+        throw buildSessionHeaderRequiredError();
     }
 
     const analysisCase = await analysisCasesRepository.findById(caseId);

@@ -9,6 +9,11 @@
 - `analyze` は同期処理です。レスポンスが返るまでフロントはローディング表示にしてください
 - データ保存は今もインメモリです。サーバー再起動で `session / person / analysis-case / result` は消えます
 
+### 起動入口
+
+- 正式な起動入口は `src/backend/server.ts` です
+- `npm run server` と `npm run server:dev` はこのファイルを起動します
+
 ## 2. 今のバックエンドでフロント接続に使う API 一覧
 
 | API | 実装状況 | フロントで必要なもの | 今の主な返り値 |
@@ -122,6 +127,17 @@
 
 - `displayName`
 - `relationshipType`
+
+`relationshipType` の正式 enum:
+
+- `boss`
+- `coworker`
+- `lover`
+- `family`
+- `friend`
+- `classmate`
+- `customer`
+- `other`
 
 任意 body:
 
@@ -274,6 +290,15 @@
 必須ヘッダー:
 
 - `X-Session-Id`
+
+query:
+
+- `limit`
+  - `NaN` は `20` にフォールバック
+  - `1〜50` にクランプされます
+- `offset`
+  - `NaN` は `0` にフォールバック
+  - `0` 未満にはなりません
 
 何が返るか:
 

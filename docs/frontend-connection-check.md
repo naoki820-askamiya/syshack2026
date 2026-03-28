@@ -6,12 +6,12 @@
 
 | API | 実装 | ルート接続 | フロントから叩ける前提 | 主な注意 |
 | --- | --- | --- | --- | --- |
-| `POST /api/sessions` | あり | `server.ts` -> `sessions.routes.ts` | はい | 仕様書向けの `sessionId` を返しつつ、旧 `session` も残しています |
-| `POST /api/persons` | あり | `server.ts` -> `persons.routes.ts` | はい | `X-Session-Id` 必須です |
-| `POST /api/analysis-cases` | あり | `server.ts` -> `analysisCases.routes.ts` | はい | `selfMessage`, `partnerMessage` も必須になりました |
-| `POST /api/analysis-cases/:caseId/analyze` | あり | `server.ts` -> `analysisCases.routes.ts` | はい | `result.id` などのメタ情報も返ります |
-| `GET /api/analysis-cases/:caseId/results` | あり | `server.ts` -> `analysisCases.routes.ts` | はい | `result.id`, `analysisCaseId`, `generatedAt` が返ります |
-| `GET /api/persons/:personId/analysis-cases` | あり | `server.ts` -> `persons.routes.ts` | はい | 一覧の返り値はまだ詳細形です |
+| `POST /api/sessions` | あり | `src/backend/server.ts` -> `sessions.routes.ts` | はい | 仕様書向けの `sessionId` を返しつつ、旧 `session` も残しています |
+| `POST /api/persons` | あり | `src/backend/server.ts` -> `persons.routes.ts` | はい | `X-Session-Id` 必須です |
+| `POST /api/analysis-cases` | あり | `src/backend/server.ts` -> `analysisCases.routes.ts` | はい | `selfMessage`, `partnerMessage` も必須になりました |
+| `POST /api/analysis-cases/:caseId/analyze` | あり | `src/backend/server.ts` -> `analysisCases.routes.ts` | はい | `result.id` などのメタ情報も返ります |
+| `GET /api/analysis-cases/:caseId/results` | あり | `src/backend/server.ts` -> `analysisCases.routes.ts` | はい | `result.id`, `analysisCaseId`, `generatedAt` が返ります |
+| `GET /api/persons/:personId/analysis-cases` | あり | `src/backend/server.ts` -> `persons.routes.ts` | はい | 一覧の返り値はまだ詳細形です |
 
 ### 補足
 

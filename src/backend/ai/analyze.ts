@@ -356,7 +356,10 @@ function parseAnalyzeOutput(rawText: string): AnalyzeOutput {
  * 実際の OpenAI 呼び出しを行う本体です。
  * prompt 構築、SDK 呼び出し、JSON 抽出、schema 検証を順番に担当します。
  */
-export async function analyzeMood(input: AnalyzeInput): Promise<AnalyzeOutput> {
+export async function analyzeMood(
+    input: AnalyzeInput,
+    signal?: AbortSignal,
+): Promise<AnalyzeOutput> {
     const sanitizedInput = analyzeInputSchema.parse(input);
 
     // OpenAI を呼ぶ前に、必要な環境変数があるか確認します。
@@ -394,7 +397,7 @@ export async function analyzeMood(input: AnalyzeInput): Promise<AnalyzeOutput> {
                 { role: "system", content: systemPrompt },
                 { role: "user", content: userPrompt },
             ],
-        });
+        }, { signal });
 
         // OpenAI の返答本文だけを取り出します。
         rawText = completion.choices[0]?.message?.content?.trim() ?? "";

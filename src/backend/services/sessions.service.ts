@@ -12,7 +12,7 @@
 import { randomBytes } from "node:crypto";
 import * as sessionsRepository from "../repositories/sessions.repository.ts";
 import type { StoredSession } from "../types/index.ts";
-import { AppError } from "../utils/index.ts";
+import { buildSessionInvalidError } from "../utils/index.ts";
 
 const SESSION_TTL_HOURS = 24;
 
@@ -77,12 +77,4 @@ export async function getValidSessionOrThrow(
 
 function buildSessionId(): string {
     return `sess_${randomBytes(24).toString("hex")}`;
-}
-
-function buildSessionInvalidError() {
-    return new AppError({
-        code: "SESSION_INVALID",
-        message: "session が無効または期限切れです。",
-        status: 401,
-    });
 }

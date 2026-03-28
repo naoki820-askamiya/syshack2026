@@ -10,7 +10,7 @@
  */
 import type { NextLike, RequestLike, ResponseLike } from "../types/index.ts";
 import { getValidSessionOrThrow } from "../services/sessions.service.ts";
-import { AppError } from "../utils/index.ts";
+import { buildSessionInvalidError } from "../utils/index.ts";
 
 // すべての protected API で、X-Session-Id が有効かどうかを確認する middleware です。
 // ヘッダーがあるだけでは足りず、
@@ -20,9 +20,9 @@ export async function requireSession(
     _res: ResponseLike,
     next: NextLike,
 ): Promise<void> {
-    // ヘッダー名の大文字小文字の揺れを吸収しつつ読み取ります。
-    const rawHeader =
-        req.headers?.["x-session-id"] ?? req.headers?.["X-Session-Id"];
+    // Node/Express 側ではヘッダー名が小文字化されるので、
+    // 実装上は `x-session-id` だけを見れば十分です。
+    const rawHeader = req.headers?.["x-session-id"];
     const sessionId = Array.isArray(rawHeader) ? rawHeader[0] : rawHeader;
 
     // session が無いと、どの人のデータなのか区別できません。
@@ -44,12 +44,4 @@ export async function requireSession(
     } catch (error) {
         next(error);
     }
-}
-
-function buildSessionInvalidError() {
-    return new AppError({
-        code: "SESSION_INVALID",
-        message: "session が無効または期限切れです。",
-        status: 401,
-    });
 }

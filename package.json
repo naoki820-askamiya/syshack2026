@@ -9,8 +9,8 @@
     "typecheck": "tsc --noEmit",
     "build": "vite build",
     "dev": "vite",
-    "server": "node --experimental-strip-types src/server.ts",
-    "server:dev": "node --watch --experimental-strip-types src/server.ts"
+    "server": "node --experimental-strip-types src/backend/server.ts",
+    "server:dev": "node --watch --experimental-strip-types src/backend/server.ts"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
@@ -77,7 +77,7 @@
   "devDependencies": {
     "@tailwindcss/vite": "4.1.12",
     "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.1",
+    "@types/express": "^4.17.25",
     "@types/node": "^24.0.15",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

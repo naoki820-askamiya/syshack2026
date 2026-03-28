@@ -19,6 +19,7 @@ import type {
 // Analyze API の共通 timeout 値です。
 // 複数箇所に数字を散らさず、仕様変更時もここだけ直せるようにしています。
 export const ANALYZE_TIMEOUT_MS = 15000;
+export const SESSION_HEADER_NAME = "X-Session-Id";
 
 // アプリ内で共通利用するエラークラスです。
 // code / message / status を必ず持たせることで、最終的な API 返却形式をそろえやすくしています。
@@ -65,7 +66,7 @@ export function normalizeError(error: unknown): AppError {
     if (error instanceof Error) {
         return new AppError({
             code: "INTERNAL_SERVER_ERROR",
-            message: error.message || "Unexpected error",
+            message: "サーバー内部エラーが発生しました。",
             status: 500,
             cause: error,
         });
@@ -73,7 +74,7 @@ export function normalizeError(error: unknown): AppError {
 
     return new AppError({
         code: "INTERNAL_SERVER_ERROR",
-        message: "Unexpected error",
+        message: "サーバー内部エラーが発生しました。",
         status: 500,
         cause: error,
     });
@@ -111,29 +112,55 @@ export async function withTimeout<T>(
     timeoutMs = ANALYZE_TIMEOUT_MS,
 ): Promise<T> {
     const controller = new AbortController();
-    const timer = setTimeout(() => {
-        controller.abort();
-    }, timeoutMs);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeoutPromise = new Promise<T>((_resolve, reject) => {
+        timer = setTimeout(() => {
+            controller.abort();
+            reject(buildAiTimeoutError());
+        }, timeoutMs);
+    });
 
     try {
-        return await task(controller.signal);
+        return await Promise.race([task(controller.signal), timeoutPromise]);
     } catch (error) {
         if (
             (error as { name?: string } | undefined)?.name === "AbortError" ||
             controller.signal.aborted
         ) {
-            throw new AppError({
-                code: "AI_TIMEOUT",
-                message: "AI analysis timed out",
-                status: 503,
-                cause: error,
-            });
+            throw buildAiTimeoutError(error);
         }
 
         throw error;
     } finally {
-        clearTimeout(timer);
+        if (timer) {
+            clearTimeout(timer);
+        }
     }
+}
+
+export function buildSessionHeaderRequiredError(): AppError {
+    return new AppError({
+        code: "SESSION_INVALID",
+        message: `${SESSION_HEADER_NAME} ヘッダーが必要です。`,
+        status: 401,
+    });
+}
+
+export function buildSessionInvalidError(): AppError {
+    return new AppError({
+        code: "SESSION_INVALID",
+        message: `${SESSION_HEADER_NAME} が無効または期限切れです。`,
+        status: 401,
+    });
+}
+
+function buildAiTimeoutError(cause?: unknown): AppError {
+    return new AppError({
+        code: "AI_TIMEOUT",
+        message: "AI 分析がタイムアウトしました。",
+        status: 503,
+        cause,
+    });
 }
 
 // スコアを 0〜1 の範囲に丸めます。

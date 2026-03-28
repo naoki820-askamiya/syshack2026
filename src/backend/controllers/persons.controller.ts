@@ -23,7 +23,7 @@ type SessionRequest<TBody = unknown> = Request & {
  * Person 作成 API の controller です。
  *
  * 受け取るもの:
- * - header の `x-session-id`
+ * - header の `X-Session-Id`
  * - body の `CreatePersonBody`
  *
  * 返すもの:

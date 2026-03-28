@@ -16,7 +16,7 @@ import { requireSession } from "../middlewares/requireSession.ts";
 const router = Router();
 
 // Person を新しく作る URL です。
-// Person は session にひも付くので、x-session-id を必須にしています。
+// Person は session にひも付くので、X-Session-Id を必須にしています。
 router.post("/", requireSession, createPerson);
 
 // 特定の Person にひも付く analysis-case 一覧を取る URL です。

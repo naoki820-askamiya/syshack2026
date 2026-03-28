@@ -13,16 +13,16 @@ import type {
     RelationshipType,
     StoredPerson,
 } from "../types/index.ts";
-import { AppError } from "../utils/index.ts";
+import { AppError, buildSessionHeaderRequiredError } from "../utils/index.ts";
 
 const RELATIONSHIP_TYPES: RelationshipType[] = [
     "boss",
     "coworker",
-    "subordinate",
     "lover",
-    "spouse",
-    "friend",
     "family",
+    "friend",
+    "classmate",
+    "customer",
     "other",
 ];
 
@@ -46,11 +46,7 @@ const GENDER_HINTS: GenderHint[] = ["male", "female", "other", "unknown"];
  */
 export async function createPerson(sessionId: string, data: CreatePersonBody) {
     if (!sessionId) {
-        throw new AppError({
-            code: "SESSION_INVALID",
-            message: "x-session-id is required",
-            status: 401,
-        });
+        throw buildSessionHeaderRequiredError();
     }
 
     const displayName = String(data?.displayName ?? "").trim();
@@ -116,11 +112,7 @@ export async function getOwnedPersonOrThrow(
     personId: string,
 ): Promise<StoredPerson> {
     if (!sessionId) {
-        throw new AppError({
-            code: "SESSION_INVALID",
-            message: "x-session-id is required",
-            status: 401,
-        });
+        throw buildSessionHeaderRequiredError();
     }
 
     const person = await personsRepository.findById(personId);
