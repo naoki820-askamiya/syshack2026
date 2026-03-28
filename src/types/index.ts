@@ -144,8 +144,8 @@ export type RelationshipType =
     | "lover"
     | "family"
     | "friend"
-    | "classmate"
-    | "customer"
+    | "subordinate"
+    | "spouse"
     | "other";
 
 // Person の genderHint に入れられる候補です。
