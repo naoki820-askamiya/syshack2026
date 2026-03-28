@@ -1,10 +1,8 @@
-import { ConsultationData, AnalysisResult, ActionSuggestion, AIAnalysisResult } from '../types';
+import { ConsultationData, AnalysisResult } from '../types';
 
 const STORAGE_KEYS = {
   CONSULTATIONS: 'kanjo-navi-consultations',
   ANALYSES: 'kanjo-navi-analyses',
-  SUGGESTIONS: 'kanjo-navi-suggestions',
-  AI_ANALYSES: 'kanjo-navi-ai-analyses',
 };
 
 // 相談データの保存
@@ -27,9 +25,15 @@ export const getConsultation = (id: string): ConsultationData | undefined => {
 };
 
 // 分析結果の保存
-export const saveAnalysis = (data: AnalysisResult): void => {
+export const saveAnalysis = (consultationId: string, data: AnalysisResult): void => {
   const analyses = getAnalyses();
-  analyses.push(data);
+  const newAnalysis = { ...data, consultationId };
+  const existingIndex = analyses.findIndex(a => a.consultationId === consultationId);
+  if (existingIndex > -1) {
+    analyses[existingIndex] = newAnalysis;
+  } else {
+    analyses.push(newAnalysis);
+  }
   localStorage.setItem(STORAGE_KEYS.ANALYSES, JSON.stringify(analyses));
 };
 
@@ -43,44 +47,6 @@ export const getAnalyses = (): AnalysisResult[] => {
 export const getAnalysis = (consultationId: string): AnalysisResult | undefined => {
   const analyses = getAnalyses();
   return analyses.find(a => a.consultationId === consultationId);
-};
-
-// 行動提案の保存
-export const saveSuggestion = (data: ActionSuggestion): void => {
-  const suggestions = getSuggestions();
-  suggestions.push(data);
-  localStorage.setItem(STORAGE_KEYS.SUGGESTIONS, JSON.stringify(suggestions));
-};
-
-// 全行動提案の取得
-export const getSuggestions = (): ActionSuggestion[] => {
-  const data = localStorage.getItem(STORAGE_KEYS.SUGGESTIONS);
-  return data ? JSON.parse(data) : [];
-};
-
-// 特定の行動提案取得
-export const getSuggestion = (consultationId: string): ActionSuggestion | undefined => {
-  const suggestions = getSuggestions();
-  return suggestions.find(s => s.consultationId === consultationId);
-};
-
-// AI 分析結果の保存
-export const saveAIAnalysis = (data: AIAnalysisResult): void => {
-  const list = getAIAnalyses();
-  list.push(data);
-  localStorage.setItem(STORAGE_KEYS.AI_ANALYSES, JSON.stringify(list));
-};
-
-// 全 AI 分析結果の取得
-export const getAIAnalyses = (): AIAnalysisResult[] => {
-  const data = localStorage.getItem(STORAGE_KEYS.AI_ANALYSES);
-  return data ? JSON.parse(data) : [];
-};
-
-// 特定の AI 分析結果取得
-export const getAIAnalysis = (consultationId: string): AIAnalysisResult | undefined => {
-  const list = getAIAnalyses();
-  return list.find(a => a.consultationId === consultationId);
 };
 
 // 人物ごとの相談履歴を取得

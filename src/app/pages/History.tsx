@@ -1,14 +1,22 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router';
-import { ArrowLeft, MessageCircle, Calendar, User } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router';
+import { ArrowLeft, MessageCircle, Calendar, User, PlusCircle } from 'lucide-react';
 import { getConsultations, getRegisteredPersons } from '../utils/storage';
 import { Navigation } from '../components/Navigation';
 import { getRelationStyle, getReactionStyle } from '../utils/relationStyles';
 
 export function History() {
   const navigate = useNavigate();
-  const [filterPerson, setFilterPerson] = useState<string>('すべて');
-  
+  const [searchParams] = useSearchParams();
+  const initialPerson = searchParams.get('person') ?? 'すべて';
+  const [filterPerson, setFilterPerson] = useState<string>(initialPerson);
+
+  // URLパラメータが変わったときにフィルターを更新
+  useEffect(() => {
+    const p = searchParams.get('person') ?? 'すべて';
+    setFilterPerson(p);
+  }, [searchParams]);
+
   const allConsultations = getConsultations();
   const persons = ['すべて', ...getRegisteredPersons()];
   
@@ -86,6 +94,15 @@ export function History() {
                 <span className="text-sm text-gray-600">
                   {sortedConsultations.length}件の相談
                 </span>
+                {filterPerson !== 'すべて' && (
+                  <Link
+                    to={`/new?person=${encodeURIComponent(filterPerson)}`}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-xl text-sm font-medium shadow-sm hover:shadow-md transition-shadow"
+                  >
+                    <PlusCircle className="w-4 h-4" />
+                    その人について相談
+                  </Link>
+                )}
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-4">
                 {sortedConsultations.map((consultation) => {
@@ -94,7 +111,7 @@ export function History() {
                   return (
                     <Link
                       key={consultation.id}
-                      to={`/action/${consultation.id}`}
+                      to={`/analysis/${consultation.id}`}
                       className={`block bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow ${relStyle.bgHover}`}
                     >
                       {/* ヘッダー行 */}

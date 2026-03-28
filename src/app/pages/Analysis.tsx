@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router';
 import { ArrowLeft, ArrowRight, Clock, AlertCircle, CheckCircle2, Info } from 'lucide-react';
-import { getConsultation, getAIAnalysis } from '../utils/storage';
-import { getRelationStyle } from '../utils/relationStyles';
+import { getConsultation, getAnalysis } from '../utils/storage';
+import { getRelationStyle, getReactionStyle } from '../utils/relationStyles';
 import { EmotionRadarChart } from '../components/EmotionRadarChart';
 import { Navigation } from '../components/Navigation';
 
@@ -16,9 +16,9 @@ export function Analysis() {
   const navigate = useNavigate();
 
   const consultation = id ? getConsultation(id) : undefined;
-  const ai = id ? getAIAnalysis(id) : undefined;
+  const analysis = id ? getAnalysis(id) : undefined;
 
-  if (!consultation || !ai) {
+  if (!consultation || !analysis) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-pink-50 to-purple-50 flex items-center justify-center">
         <div className="text-center">
@@ -32,7 +32,8 @@ export function Analysis() {
   }
 
   const relStyle = getRelationStyle(consultation.relation);
-  const conf = CONFIDENCE_MAP[ai.confidenceLevel];
+  const reactionStyle = getReactionStyle(consultation.reaction);
+  const conf = CONFIDENCE_MAP[analysis.result.confidenceLevel];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-pink-50 to-purple-50">
@@ -66,14 +67,24 @@ export function Analysis() {
                 {new Date(consultation.createdAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
               </div>
             </div>
-            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+            <div className="mt-3 space-y-2 text-sm">
               <div className="bg-gray-50 rounded-lg p-3">
                 <span className="text-xs text-gray-500 block mb-1">出来事</span>
                 <p className="text-gray-800 leading-relaxed">{consultation.event}</p>
               </div>
-              <div className="bg-gray-50 rounded-lg p-3">
-                <span className="text-xs text-gray-500 block mb-1">相手の反応・経過時間</span>
-                <p className="text-gray-800">{consultation.reaction} ／ {consultation.timing}</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <span className="text-xs text-gray-500 block mb-1">相手の反応</span>
+                  <p className="text-gray-800">
+                    <span className={`inline-block px-3 py-1 text-sm rounded-full ${reactionStyle.text} ${reactionStyle.bg}`}>
+                      {consultation.reaction}
+                    </span>
+                  </p>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <span className="text-xs text-gray-500 block mb-1">経過時間</span>
+                  <p className="text-gray-800">{consultation.timing}</p>
+                </div>
               </div>
             </div>
           </div>
@@ -89,7 +100,7 @@ export function Analysis() {
                   確信度：{conf.label}
                 </span>
               </div>
-              <EmotionRadarChart scores={ai.scores} />
+              <EmotionRadarChart scores={analysis.result.scores} />
             </div>
 
             {/* 右: 印象 + 連絡タイミング */}
@@ -102,7 +113,7 @@ export function Analysis() {
                   </div>
                   <h3 className="font-semibold text-gray-800 text-sm">文面の印象</h3>
                 </div>
-                <p className="text-gray-700 text-sm leading-relaxed">{ai.textImpression}</p>
+                <p className="text-gray-700 text-sm leading-relaxed">{analysis.result.textImpression}</p>
               </div>
 
               {/* 状況の印象 */}
@@ -113,7 +124,7 @@ export function Analysis() {
                   </div>
                   <h3 className="font-semibold text-gray-800 text-sm">状況からの読み取り</h3>
                 </div>
-                <p className="text-gray-700 text-sm leading-relaxed">{ai.contextImpression}</p>
+                <p className="text-gray-700 text-sm leading-relaxed">{analysis.result.contextImpression}</p>
               </div>
 
               {/* 連絡タイミング */}
@@ -122,7 +133,7 @@ export function Analysis() {
                   <Clock className="w-4 h-4 text-purple-600 flex-shrink-0" />
                   <h3 className="font-semibold text-purple-800 text-sm">連絡のタイミング</h3>
                 </div>
-                <p className="text-purple-700 text-sm leading-relaxed">{ai.contactTiming}</p>
+                <p className="text-purple-700 text-sm leading-relaxed">{analysis.result.contactTiming}</p>
               </div>
             </div>
           </div>
@@ -134,7 +145,7 @@ export function Analysis() {
               <h3 className="font-semibold text-gray-800">この分析の根拠</h3>
             </div>
             <div className="space-y-3">
-              {ai.reasons.map((reason, i) => (
+              {analysis.result.reasons.map((reason, i) => (
                 <div key={i} className="flex gap-3">
                   <div className="flex-shrink-0">
                     <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">

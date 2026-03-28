@@ -85,12 +85,14 @@ export function EmotionRadarChart({ scores }: Props) {
     <div className="w-full">
       <ResponsiveContainer width="100%" height={280}>
         <RadarChart data={data} margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
-          <PolarGrid stroke="#e5e7eb" />
+          <PolarGrid key="polar-grid" stroke="#e5e7eb" />
           <PolarAngleAxis
+            key="polar-angle-axis"
             dataKey="subject"
             tick={(props) => <CustomTick {...props} />}
           />
           <PolarRadiusAxis
+            key="polar-radius-axis"
             angle={90}
             domain={[0, 100]}
             tickCount={4}
@@ -98,6 +100,7 @@ export function EmotionRadarChart({ scores }: Props) {
             axisLine={false}
           />
           <Radar
+            key="radar"
             name="感情スコア"
             dataKey="value"
             stroke={strokeColor}
@@ -106,7 +109,7 @@ export function EmotionRadarChart({ scores }: Props) {
             strokeWidth={2}
             dot={{ fill: strokeColor, r: 3 }}
           />
-          <Tooltip content={<CustomTooltip />} />
+          <Tooltip key="tooltip" content={<CustomTooltip />} />
         </RadarChart>
       </ResponsiveContainer>
 
