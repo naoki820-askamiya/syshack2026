@@ -315,18 +315,14 @@ src/
 
 ### フロントエンド
 
-- Web フロントエンド
-- フォーム入力 UI
-- 結果表示 UI
-- `localStorage` による sessionId / personId / caseId の保持
+- vite
+- react
+- TypeScript
 
 ### バックエンド
 
 - Node.js
 - TypeScript
-- Express 想定の API サーバー構成
-- AI API 呼び出しレイヤー
-- repository 分離構成
 
 ---
 
