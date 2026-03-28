@@ -3,10 +3,19 @@ import { saveAnalysis } from '../utils/storage';
 
 const serverUrl = import.meta.env.VITE_SERVER_URL;
 
+function requireServerUrl(): string {
+  if (!serverUrl) {
+    throw new Error('VITE_SERVER_URL が未設定です');
+  }
+
+  return serverUrl;
+}
+
 /**
  * API共通ラッパー：ヘッダーの付与と，401エラー時のセッション自動再生成を行います
  */
 async function fetchWithSession(endpoint: string, options: RequestInit = {}): Promise<Response> {
+  const baseUrl = requireServerUrl();
   let sessionId = localStorage.getItem("sessionId");
 
   // セッションがない場合は新規作成
@@ -23,7 +32,7 @@ async function fetchWithSession(endpoint: string, options: RequestInit = {}): Pr
     headers.set('Content-Type', 'application/json');
   }
 
-  let res = await fetch(`${serverUrl}${endpoint}`, { ...options, headers });
+  let res = await fetch(`${baseUrl}${endpoint}`, { ...options, headers });
 
   // 401エラー時はセッションを作り直して1度だけリトライする
   if (res.status === 401) {
@@ -32,7 +41,7 @@ async function fetchWithSession(endpoint: string, options: RequestInit = {}): Pr
     const newSessionId = localStorage.getItem("sessionId");
     if (newSessionId) {
       headers.set('X-Session-Id', newSessionId);
-      res = await fetch(`${serverUrl}${endpoint}`, { ...options, headers });
+      res = await fetch(`${baseUrl}${endpoint}`, { ...options, headers });
     }
   }
 
@@ -46,8 +55,12 @@ async function fetchWithSession(endpoint: string, options: RequestInit = {}): Pr
 }
 
 export async function createSession(): Promise<{ sessionId: string, expiresAt: string }> {
-  const res = await fetch(`${serverUrl}/api/sessions`, { method: 'POST' });
-  if (!res.ok) throw new Error("セッションの作成に失敗しました");
+  const baseUrl = requireServerUrl();
+  const res = await fetch(`${baseUrl}/api/sessions`, { method: 'POST' });
+  if (!res.ok) {
+    const errorText = await res.text().catch(() => "");
+    throw new Error(`セッションの作成に失敗しました: ${res.status}${errorText ? ` ${errorText}` : ""}`);
+  }
   
   const data = await res.json();
   if (import.meta.env.DEV) {

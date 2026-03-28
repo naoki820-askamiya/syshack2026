@@ -139,6 +139,14 @@ export const analyzeOutputSchema = z
 
 export type AnalyzeOutput = z.infer<typeof analyzeOutputSchema>;
 
+const OUTPUT_ARRAY_LIMITS = {
+    actions: 3,
+    avoidExpressions: 3,
+    goodSignals: 3,
+    replyExamples: 4,
+    reasons: 5,
+} as const;
+
 /**
  * エラーの分類を見やすくするための専用クラスです。
  * status と code を持たせて、上位層でそのまま API エラーへ変換しやすくしています。
@@ -182,9 +190,14 @@ export function buildSystemPrompt(): string {
         "相手を責める方向の助言をしないでください。",
         "攻撃的な追撃や圧の強い催促を勧めないでください。",
         "textImpression と contextImpression は断定を避けてください。",
+        "actions は 1〜3 件にしてください。",
+        "avoidExpressions は 1〜3 件にしてください。",
         "goodSignals は必ず 1 件以上返してください。",
+        "goodSignals は 1〜3 件にしてください。",
         "contactTiming は 200 文字以内にしてください。",
+        "replyExamples は 2〜4 件にしてください。",
         "replyExamples は実際にそのまま使える短文にしてください。",
+        "reasons は 2〜5 件にしてください。",
         "不明点が多い場合は confidenceLevel を下げてください。",
         "JSON のみ返してください。",
         "JSON の外に文章を書かないでください。",
@@ -311,6 +324,23 @@ function formatZodIssues(error: z.ZodError<unknown>): string {
         .join("; ");
 }
 
+function clampArrayFields(candidate: unknown): unknown {
+    if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
+        return candidate;
+    }
+
+    const normalized = { ...candidate } as Record<string, unknown>;
+
+    for (const [fieldName, maxLength] of Object.entries(OUTPUT_ARRAY_LIMITS)) {
+        const value = normalized[fieldName];
+        if (Array.isArray(value) && value.length > maxLength) {
+            normalized[fieldName] = value.slice(0, maxLength);
+        }
+    }
+
+    return normalized;
+}
+
 /**
  * OpenAI の返答テキストを JSON.parse し、Zod で厳密に検証します。
  * parse 失敗と schema 不一致を分けて扱うことで、何が壊れていたかを追いやすくします。
@@ -329,6 +359,8 @@ function parseAnalyzeOutput(rawText: string): AnalyzeOutput {
             error,
         );
     }
+
+    parsedJson = clampArrayFields(parsedJson);
 
     const validated = analyzeOutputSchema.safeParse(parsedJson);
     if (!validated.success) {
