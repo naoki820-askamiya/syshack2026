@@ -50,8 +50,10 @@ export async function createSession(): Promise<{ sessionId: string, expiresAt: s
   if (!res.ok) throw new Error("セッションの作成に失敗しました");
   
   const data = await res.json();
-  console.log('セッションID:', data.sessionId);
-  console.log('有効期限:', data.expiresAt);
+  if (import.meta.env.DEV) {
+    console.log('セッションID:', data.sessionId);
+    console.log('有効期限:', data.expiresAt);
+  }
 
   localStorage.setItem("sessionId", data.sessionId);
   return data;
