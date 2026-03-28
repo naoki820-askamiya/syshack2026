@@ -102,16 +102,19 @@ const reasonSchema = z
     .strict();
 
 /**
- * スコアは最終 schema を正として 5 つだけに統一します。
- * cold / pressure / happy / joy / relief は出力に含めません。
+ * 感情スコアは最終 schema を正として 8 種類に統一します。
+ * フロントのレーダーチャートとも同じキーでそろえます。
  */
 const scoresSchema = z
     .object({
         angry: z.number().min(0).max(1),
+        cold: z.number().min(0).max(1),
         busy: z.number().min(0).max(1),
-        justCold: z.number().min(0).max(1),
-        positive: z.number().min(0).max(1),
+        pressure: z.number().min(0).max(1),
         distance: z.number().min(0).max(1),
+        happy: z.number().min(0).max(1),
+        joy: z.number().min(0).max(1),
+        relief: z.number().min(0).max(1),
     })
     .strict();
 
@@ -169,7 +172,7 @@ export function buildSystemPrompt(): string {
         "あなたは『相手の機嫌・感情傾向分析』AIです。",
         "これはチャットアプリではなく、フォーム入力型の分析アプリのバックエンド用処理です。",
         "ユーザー入力の出来事・会話文・補足情報をもとに分析してください。",
-        "怒りだけでなく、忙しさ、そっけなさ、距離感、前向きさも分析対象に含めてください。",
+        "怒りだけでなく、冷たさ、忙しさ、圧の強さ、距離感、機嫌のよさ、嬉しさ、安心感も分析対象に含めてください。",
         "ユーザーの不安をそのまま事実として扱わないでください。",
         "悪い兆候だけでなく、良い兆候も必ず拾ってください。",
         "断定ではなく『可能性』として表現してください。",
@@ -188,17 +191,20 @@ export function buildSystemPrompt(): string {
         "Markdown を使わないでください。",
         "null は使わないでください。",
         "キー名を変更しないでください。",
-        "scores は次の 5 つだけを使ってください: angry, busy, justCold, positive, distance。",
+        "scores は次の 8 つだけを使ってください: angry, cold, busy, pressure, distance, happy, joy, relief。",
         "scores の定義は以下の通りです。",
         "angry: 怒り、不機嫌",
+        "cold: 冷たさ、そっけなさ",
         "busy: 忙しさ、余裕のなさ",
-        "justCold: 冷たさ、そっけなさ",
-        "positive: 前向きさ、機嫌のよさ、安心感、好意的反応",
+        "pressure: 圧の強さ、厳しさ",
         "distance: 距離感、引いている感じ",
+        "happy: 機嫌のよさ、前向きさ",
+        "joy: 嬉しさ、喜び",
+        "relief: 安心、ほっとしている状態",
         "スコアの意味: 0.00 に近い = 可能性がかなり低い、1.00 に近い = 可能性がかなり高い。",
         "confidenceLevel の意味: low = 根拠が少なく解釈の幅が広い、medium = 根拠はあるが断定はできない、high = 複数の根拠が整合している。",
         "最終 JSON schema は次の構造に厳密に従ってください。",
-        '{"textImpression":"string","contextImpression":"string","scores":{"angry":0,"busy":0,"justCold":0,"positive":0,"distance":0},"confidenceLevel":"low|medium|high","contactTiming":"string","actions":[{"text":"string"}],"avoidExpressions":[{"text":"string"}],"goodSignals":[{"text":"string"}],"replyExamples":[{"text":"string","tone":"formal|casual|neutral"}],"reasons":[{"label":"string","detail":"string"}]}',
+        '{"textImpression":"string","contextImpression":"string","scores":{"angry":0,"cold":0,"busy":0,"pressure":0,"distance":0,"happy":0,"joy":0,"relief":0},"confidenceLevel":"low|medium|high","contactTiming":"string","actions":[{"text":"string"}],"avoidExpressions":[{"text":"string"}],"goodSignals":[{"text":"string"}],"replyExamples":[{"text":"string","tone":"formal|casual|neutral"}],"reasons":[{"label":"string","detail":"string"}]}',
     ].join("\n");
 }
 
@@ -461,10 +467,13 @@ export const sampleAnalyzeOutput: AnalyzeOutput = {
         "繁忙期という状況や普段から短文という情報を踏まえると、そっけなさがそのまま否定的感情とは限らない可能性があります。",
     scores: {
         angry: 0.18,
+        cold: 0.41,
         busy: 0.74,
-        justCold: 0.41,
-        positive: 0.28,
+        pressure: 0.24,
         distance: 0.32,
+        happy: 0.28,
+        joy: 0.18,
+        relief: 0.26,
     },
     confidenceLevel: "medium",
     contactTiming:

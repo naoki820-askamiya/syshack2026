@@ -26,5 +26,6 @@
 - `emojiUsed` は boolean に寄せています
 - `toneType` は `formal / casual / mixed / unknown`、`messageLengthType` は `short / normal / long / unknown` を基本値にしています
 - `POST /api/analysis-cases/:caseId/analyze` と `GET /api/analysis-cases/:caseId/results` の `result` には、`id`, `analysisCaseId`, `generatedAt`, `promptVersion` が入ります
+- `result.scores` は `angry / cold / busy / pressure / distance / happy / joy / relief` の 8 ラベルです
 - 一方で、一覧 API の返り値はまだ仕様書より詳細です
 - 保存はインメモリなので、サーバー再起動でデータは消えます

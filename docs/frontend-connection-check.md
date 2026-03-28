@@ -36,6 +36,7 @@
 | `emojiUsed` | boolean 前提 | boolean へ正規化。旧 `あり / なし` も受ける | 大筋一致 |
 | `toneType`, `messageLengthType` | enum 想定 | enum へ正規化。旧日本語値も受ける | 大筋一致 |
 | analyze / results の `result` 形 | `id`, `analysisCaseId`, `generatedAt` を含む | 追加済み。`promptVersion: "v1"` も返す | 大筋一致 |
+| analyze / results の `scores` 形 | 8 ラベルで扱いたい | `angry`, `cold`, `busy`, `pressure`, `distance`, `happy`, `joy`, `relief` | 完全一致 |
 | 一覧 API のレスポンス | 最小形 | まだ詳細形 | 未一致 |
 | エラーコード | `INTERNAL_ERROR` など | `INTERNAL_SERVER_ERROR`, `AI_PROVIDER_ERROR` などもある | 未一致 |
 
@@ -46,6 +47,7 @@
 3. `emojiUsed` は boolean に寄せました
 4. `toneType` と `messageLengthType` は enum に寄せました
 5. analyze と results の `result` に、識別用のメタ情報が付きました
+6. `result.scores` は frontend と同じ 8 ラベルになりました
 
 ## 3. フロントから叩く順番
 
@@ -110,6 +112,7 @@
 
 - `GET /api/persons/:personId/analysis-cases` の詳細形レスポンスを、表示用 shape へ整える処理
 - `POST /api/analysis-cases` の作成レスポンスを、表示用 shape へ整える処理
+- `result.scores` は backend で 8 ラベル返却されるので、そのままレーダーチャートへ流しやすいです
 - `401`, `409`, `503` の画面分岐
 
 ### まだ完全にはそろっていない範囲
@@ -128,6 +131,7 @@
 6. 後方互換として、`toneType: "事務的"` や `messageLengthType: "短め"` も今は受けますが、新しいフロントでは使わない方が分かりやすいです
 7. `analyze` は同期処理なので、ボタン連打を防がないと `409 ALREADY_ANALYZING` や `409 ALREADY_ANALYZED` に当たりやすいです
 8. 一覧 API の各 item は `eventFacts` が top-level ではなく `analysisCase.eventFacts` の位置にあります
+9. `result.scores` のキーは `justCold` や `positive` ではなく、`cold / pressure / happy / joy / relief` を含む 8 ラベルです
 
 ## 7. 結論
 
@@ -141,6 +145,7 @@
 - `toneType`
 - `messageLengthType`
 - analyze / results の `result` shape
+- `result.scores` の 8 ラベル化
 
 は、フロントが扱いやすい方向へ寄っています。
 
@@ -155,3 +160,4 @@
 - front/back 接続はかなり進めやすくなった
 - ただし一覧 API だけは、まだ軽いマッピングが必要
 - 新しいフロントは `sessionId`, boolean の `emojiUsed`, enum 化された `toneType / messageLengthType`, メタ情報付き `result` を前提に組むのがよい
+- `result.scores` は `angry / cold / busy / pressure / distance / happy / joy / relief` 前提で扱えばよい

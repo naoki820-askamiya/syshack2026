@@ -216,10 +216,13 @@
     "contextImpression": "...",
     "scores": {
       "angry": 0.08,
+      "cold": 0.46,
       "busy": 0.82,
-      "justCold": 0.46,
-      "positive": 0.34,
-      "distance": 0.28
+      "pressure": 0.18,
+      "distance": 0.28,
+      "happy": 0.34,
+      "joy": 0.24,
+      "relief": 0.31
     },
     "confidenceLevel": "medium",
     "contactTiming": "...",
@@ -236,6 +239,7 @@
 
 - すでに analyze 済みの case に対してもう一度呼ぶと `409 ALREADY_ANALYZED` になります
 - 分析中なら `409 ALREADY_ANALYZING` です
+- `result.scores` のキーは `angry / cold / busy / pressure / distance / happy / joy / relief` です
 
 ### `GET /api/analysis-cases/:caseId/results`
 
@@ -298,6 +302,7 @@
 - `emojiUsed` は boolean に寄せた
 - `toneType` と `messageLengthType` は enum に寄せた
 - analyze / results の `result` には `id`, `analysisCaseId`, `generatedAt`, `promptVersion` を付けた
+- `result.scores` は frontend と同じ 8 ラベルへそろえた
 
 ### まだ残っている差分
 

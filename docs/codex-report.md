@@ -160,10 +160,13 @@ curl.exe -s -i -X POST "http://127.0.0.1:3000/api/analysis-cases/case_1774542062
         "contextImpression": "打ち合わせ後に資料を送付し、相手は会議続きで今週も繁忙期とのことなので、返信が短くなった背景には余裕のなさがあるかもしれません。普段は返信が早い点は良い材料で、今回だけで関係悪化や嫌悪感と結びつける根拠は強くありません。",
         "scores": {
             "angry": 0.08,
+            "cold": 0.46,
             "busy": 0.82,
-            "justCold": 0.46,
-            "positive": 0.28,
-            "distance": 0.22
+            "pressure": 0.18,
+            "distance": 0.22,
+            "happy": 0.28,
+            "joy": 0.18,
+            "relief": 0.26
         },
         "confidenceLevel": "medium",
         "contactTiming": "相手の確認待ちで問題ありません。急ぎでなければ、1〜2営業日ほど様子を見てから軽く進捗確認すると自然です。",
@@ -232,10 +235,13 @@ curl.exe -s -i -X POST "http://127.0.0.1:3000/api/analysis-cases/case_1774542062
         "contextImpression": "打ち合わせ後に資料を送付し、相手は会議続きで今週も繁忙期とのことなので、返信が短くなった背景には余裕のなさがあるかもしれません。普段は返信が早い点は良い材料で、今回だけで関係悪化や嫌悪感と結びつける根拠は強くありません。",
         "scores": {
             "angry": 0.08,
+            "cold": 0.46,
             "busy": 0.82,
-            "justCold": 0.46,
-            "positive": 0.28,
-            "distance": 0.22
+            "pressure": 0.18,
+            "distance": 0.22,
+            "happy": 0.28,
+            "joy": 0.18,
+            "relief": 0.26
         },
         "confidenceLevel": "medium",
         "contactTiming": "相手の確認待ちで問題ありません。急ぎでなければ、1〜2営業日ほど様子を見てから軽く進捗確認すると自然です。",
@@ -775,6 +781,7 @@ npm run lint:md
 - `messageLengthType` を `short / normal / long / unknown` へ正規化するようにした
 - 後方互換のため、`事務的` や `短め` などの旧入力も今は受けるようにした
 - analyze と results の `result` に `id`, `analysisCaseId`, `promptVersion`, `generatedAt` を追加した
+- `result.scores` を frontend と同じ 8 ラベルへそろえた
 
 ### 変更理由
 
@@ -782,6 +789,7 @@ npm run lint:md
 - analysis-case 作成時に、相談として最低限必要な入力が揃っていることを backend 側でも保証するため
 - `emojiUsed`, `toneType`, `messageLengthType` を、フロントが分岐しやすい固定 shape に寄せるため
 - analyze 結果を、結果画面や履歴画面で識別しやすい shape にするため
+- レーダーチャート側の型と backend の scores を一致させるため
 
 ### 確認したこと
 
@@ -804,6 +812,8 @@ npm run lint:md
 - `POST /api/analysis-cases/:caseId/analyze`
   - 成功
   - `result.id`, `result.analysisCaseId`, `result.promptVersion`, `result.generatedAt` が返ることを確認
+- `result.scores`
+  - `angry / cold / busy / pressure / distance / happy / joy / relief` の 8 ラベルで返るように変更した
 - `GET /api/analysis-cases/:caseId/results`
   - 成功
   - analyze と同じ `result` shape が返ることを確認
@@ -826,3 +836,24 @@ npm run lint:md
 
 - 今回は front/back 融合をしやすくするための最小修正に限定している
 - DB 化、更新 API、本番認証、OCR などには広げていない
+
+## 2026-03-27 JST 分析スコアラベルを 8 種類へ統一
+
+### 今回の変更内容
+
+- backend の `result.scores` を 5 項目から 8 項目へ変更した
+- 追加したラベルは `cold`, `pressure`, `happy`, `joy`, `relief`
+- 置き換えたラベルは `justCold`, `positive`
+- `src/app/types.ts` と同じキーへそろえた
+- AI prompt と Zod schema も 8 ラベル前提へ更新した
+
+### 変更理由
+
+- frontend のレーダーチャートと backend の result shape をそのまま接続できるようにするため
+- `positive` では粒度が粗く、`happy / joy / relief` を分けたいという要件に合わせるため
+- `cold` と `pressure` を独立して見たいという要件に合わせるため
+
+### 補足
+
+- この変更で `result.scores.justCold` と `result.scores.positive` は返らなくなった
+- 新しい frontend は `result.scores.angry / cold / busy / pressure / distance / happy / joy / relief` を前提に使う

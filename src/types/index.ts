@@ -38,10 +38,13 @@ export interface AnalysisReason {
 // 画面や保存処理で利用する感情スコアのまとまりです。
 export interface AnalysisScores {
     angry: number;
+    cold: number;
     busy: number;
-    justCold: number;
-    positive: number;
+    pressure: number;
     distance: number;
+    happy: number;
+    joy: number;
+    relief: number;
 }
 
 // B 側が結果保存に使う、AI 分析結果の本体です。

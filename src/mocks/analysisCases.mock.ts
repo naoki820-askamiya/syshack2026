@@ -6,10 +6,13 @@ export async function analyze(caseId: string) {
       contextImpression: "忙しさが影響している可能性がある",
       scores: {
         angry: 0.2,
+        cold: 0.4,
         busy: 0.75,
-        justCold: 0.4,
-        positive: 0.3,
-        distance: 0.35
+        pressure: 0.25,
+        distance: 0.35,
+        happy: 0.3,
+        joy: 0.2,
+        relief: 0.28
       },
       confidenceLevel: "medium",
       contactTiming: "少し時間を置いてから簡潔に連絡するのがよい",
@@ -57,10 +60,13 @@ export async function getResult(caseId: string) {
       contextImpression: "忙しさの影響が強い可能性",
       scores: {
         angry: 0.2,
+        cold: 0.4,
         busy: 0.75,
-        justCold: 0.4,
-        positive: 0.3,
-        distance: 0.35
+        pressure: 0.25,
+        distance: 0.35,
+        happy: 0.3,
+        joy: 0.2,
+        relief: 0.28
       },
       confidenceLevel: "medium",
       contactTiming: "少し待つのが無難",
