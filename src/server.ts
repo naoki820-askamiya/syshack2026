@@ -13,6 +13,7 @@
  */
 import { config as loadDotenv } from "dotenv";
 import express from "express";
+import cors from "cors";
 import type { Express, Router } from "express";
 import { errorHandler } from "./middlewares/errorHandler.ts";
 import { readEnv } from "./utils/index.ts";
@@ -39,6 +40,14 @@ loadDotenv({ path: ".env.local", override: true });
  */
 export async function createServerApp() {
     const app = express();
+
+    //cors設定(一旦ローカル用のみ)
+    app.use(
+        cors({
+            origin: "http://localhost:5173",
+        })
+    );
+
 
     // JSON の body を使えるようにする設定です。
     // `POST` で送られた JSON を `req.body` から読めるようになります。
