@@ -1,6 +1,6 @@
 import { useState, useEffect, useSyncExternalStore } from 'react';
 import { Link, useLocation } from 'react-router';
-import { MessageCircle, History, LogIn, ChevronRight, ChevronDown } from 'lucide-react';
+import { MessageCircle, History, ChevronRight, ChevronDown } from 'lucide-react';
 import { getConsultations } from '../utils/storage';
 import { getRelationStyle } from '../utils/relationStyles';
 import { ConsultationData } from '../types';
@@ -37,8 +37,14 @@ export function Navigation() {
 
   // ※ パス変更時のリセットは行わない（展開状態を保持するため）
 
-  const navItems = [
-    { path: '/', icon: MessageCircle, label: '新しい人物について質問' },
+  const sideNavItems = [
+    { path: '/new', icon: MessageCircle, label: '新しい相談を作成' },
+    { path: '/history', icon: History, label: '履歴' },
+  ];
+
+  const buttomNavItems = [
+    { path: '/', icon: MessageCircle, label: 'ホーム' },
+    { path: '/new', icon: MessageCircle, label: '新しい相談を作成' },
     { path: '/history', icon: History, label: '履歴' },
   ];
 
@@ -47,15 +53,16 @@ export function Navigation() {
       {/* デスクトップ版: サイドバーナビゲーション */}
       <nav className="hidden lg:flex lg:fixed lg:left-0 lg:top-0 lg:h-screen lg:w-64 lg:flex-col lg:bg-white lg:border-r lg:border-[#D9E1EA] lg:z-50">
         {/* ロゴ */}
-        <div className="flex items-center justify-center h-24 border-b border-[#D9E1EA]">
+        <div className="flex items-center justify-center h-32 border-b border-[#D9E1EA] bg-[#F7F9FC]">
           <Link to="/">
             <img src="/kigen404_title_b_transparent.png" alt="KIGEN404" className="h-20" />
+            <p className="text-[#5B6573] lg:text-xs text-center">感情、見失ってませんか</p>
           </Link>
         </div>
 
         {/* メニュー + 人物リスト */}
         <div className="flex-1 overflow-y-auto p-4 space-y-1">
-          {navItems.map((item) => {
+          {sideNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
             return (
@@ -78,7 +85,7 @@ export function Navigation() {
           {persons.length > 0 && (
             <div className="pt-2">
               <p className="px-4 py-1.5 text-[11px] font-semibold text-[#8A94A6] uppercase tracking-wider">
-                最近の相談相手
+                最近の相談対象
               </p>
               <div className="space-y-0.5">
                 {persons.map((person) => {
@@ -138,23 +145,12 @@ export function Navigation() {
             </div>
           )}
         </div>
-
-        {/* ログインボタン */}
-        <div className="p-4 border-t border-[#D9E1EA]">
-          <Link
-            to="/login"
-            className="flex items-center gap-3 px-4 py-3 rounded-lg text-[#0F4C81] hover:bg-[#E8F1F8] transition-colors"
-          >
-            <LogIn className="w-5 h-5" />
-            <span className="font-medium">ログイン</span>
-          </Link>
-        </div>
       </nav>
 
       {/* スマホ版: ボトムナビゲーション */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[#D9E1EA] p-4 z-50">
         <div className="max-w-2xl mx-auto flex justify-around">
-          {navItems.map((item) => {
+          {buttomNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
             return (

@@ -56,7 +56,9 @@ export function Analysis() {
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-[#D9E1EA]">
             <div className="flex items-start justify-between flex-wrap gap-2">
               <div className="flex items-center gap-3">
-                <span className="text-2xl">{relStyle.emoji}</span>
+                <div className="w-12 h-12 rounded-full bg-[#F1F4F8] border border-[#D9E1EA] flex items-center justify-center shadow-sm">
+                  <span className="text-2xl">{relStyle.emoji}</span>
+                </div>
                 <div>
                   <h2 className="font-semibold text-[#1F2A37] text-lg">{consultation.personName}さん</h2>
                   <span className={`text-xs px-2 py-0.5 rounded-full ${relStyle.badge}`}>{consultation.relation}</span>
