@@ -40,34 +40,14 @@ export interface ConsultationData {
   gender?: string;
 }
 
-// 分析結果（旧）
-export interface AnalysisResult {
-  consultationId: string;
-  moodLevel: MoodLevel;
-  emotionType: EmotionType;
-  dangerLevel: DangerLevel;
-  summary: string;
-}
-
-// 行動提案（旧）
-export interface ActionSuggestion {
-  consultationId: string;
-  recommendedActions: string[];
-  suggestedMessages: string[];
-  ngActions: string[];
-}
-
-// ── AI 分析結果（新） ──────────────────────────────────
+// ── 分析結果（新） ──────────────────────────────────
 
 export interface EmotionScores {
-  angry: number;    // 怒り・不機嫌
-  cold: number;     // 冷たさ・そっけなさ
-  busy: number;     // 忙しさ・余裕のなさ
-  pressure: number; // 圧の強さ・厳しさ
-  distance: number; // 距離感・引いている感じ
-  happy: number;    // 機嫌のよさ・前向きさ
-  joy: number;      // 嬉しさ・喜び
-  relief: number;   // 安心・ほっとしている状態
+  angry: number;
+  busy: number;
+  justCold: number;
+  positive: number;
+  distance: number;
 }
 
 export interface ReplyExample {
@@ -80,16 +60,19 @@ export interface AnalysisReason {
   detail: string;
 }
 
-export interface AIAnalysisResult {
+export interface AnalysisResult {
   consultationId: string;
-  textImpression: string;
-  contextImpression: string;
-  scores: EmotionScores;
-  confidenceLevel: 'low' | 'medium' | 'high';
-  contactTiming: string;
-  actions: { text: string }[];
-  avoidExpressions: { text: string }[];
-  goodSignals: { text: string }[];
-  replyExamples: ReplyExample[];
-  reasons: AnalysisReason[];
+  status: "analyzed";
+  result: {
+    textImpression: string;
+    contextImpression: string;
+    scores: EmotionScores;
+    confidenceLevel: 'low' | 'medium' | 'high';
+    contactTiming: string;
+    actions: { text: string }[];
+    avoidExpressions: { text: string }[];
+    goodSignals: { text: string }[];
+    replyExamples: ReplyExample[];
+    reasons: AnalysisReason[];
+  }
 }
