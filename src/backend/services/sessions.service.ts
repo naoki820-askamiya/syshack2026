@@ -10,9 +10,9 @@
  * `X-Session-Id` ヘッダーに入れて使います。
  */
 import { randomBytes } from "node:crypto";
-import * as sessionsRepository from "../repositories/sessions.repository.ts";
-import type { StoredSession } from "../types/index.ts";
-import { buildSessionInvalidError } from "../utils/index.ts";
+import * as sessionsRepository from "../repositories/sessions.repository.js";
+import type { StoredSession } from "../types/index.js";
+import { buildSessionInvalidError } from "../utils/index.js";
 
 const SESSION_TTL_HOURS = 24;
 

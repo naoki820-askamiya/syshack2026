@@ -6,14 +6,14 @@
  * - Person を作る
  * - personId が実在するか、同じ session の持ち物か確認する
  */
-import * as personsRepository from "../repositories/persons.repository.ts";
+import * as personsRepository from "../repositories/persons.repository.js";
 import type {
     CreatePersonBody,
     GenderHint,
     RelationshipType,
     StoredPerson,
-} from "../types/index.ts";
-import { AppError, buildSessionHeaderRequiredError } from "../utils/index.ts";
+} from "../types/index.js";
+import { AppError, buildSessionHeaderRequiredError } from "../utils/index.js";
 
 const RELATIONSHIP_TYPES: RelationshipType[] = [
     "boss",

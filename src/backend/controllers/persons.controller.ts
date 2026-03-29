@@ -10,8 +10,8 @@
  * つまり、ここは「入口と出口の整理役」です。
  */
 import type { NextFunction, Request, Response } from "express";
-import type { CreatePersonBody } from "../types/index.ts";
-import * as personsService from "../services/persons.service.ts";
+import type { CreatePersonBody } from "../types/index.js";
+import * as personsService from "../services/persons.service.js";
 
 // middleware で付与された sessionId を安全に扱うための型です。
 type SessionRequest<TBody = unknown> = Request & {

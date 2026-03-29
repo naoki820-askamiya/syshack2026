@@ -8,7 +8,7 @@
  * - サーバーを再起動するとデータは消えます
  * - 本番向けではなく、MVP を素早く動かすための形です
  */
-import type { StoredPerson } from "../types/index.ts";
+import type { StoredPerson } from "../types/index.js";
 
 // `person.id` をキーにして Person を保存します。
 // `Map` は「ID で素早く探したい」ときに分かりやすい入れ物です。

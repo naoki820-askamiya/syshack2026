@@ -14,7 +14,7 @@
  * `Map` を使う理由:
  * - `id` をキーにして素早く取り出しやすいからです
  */
-import type { PaginationOptions, StoredAnalysisCase } from "../types/index.ts";
+import type { PaginationOptions, StoredAnalysisCase } from "../types/index.js";
 
 const analysisCases = new Map<string, StoredAnalysisCase>();
 

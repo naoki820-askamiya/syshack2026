@@ -15,11 +15,32 @@ import { config as loadDotenv } from "dotenv";
 import express from "express";
 import cors from "cors";
 import type { Express, Router } from "express";
-import { errorHandler } from "./middlewares/errorHandler.ts";
-import { readEnv } from "./utils/index.ts";
+import type { CorsOptions } from "cors";
+import { errorHandler } from "./middlewares/errorHandler.js";
+import { readEnv } from "./utils/index.js";
 
 type OptionalRouterModule = {
     default?: Router;
+};
+
+const allowedOrigins = [
+    "http://localhost:5173",
+    "https://kigen404.vercel.app",
+    "https://syshack2026.vercel.app",
+];
+
+const corsOptions: CorsOptions = {
+    origin(origin, callback) {
+        // ブラウザ以外のヘルスチェックや curl は Origin を付けないため、
+        // それらは通しつつ、ブラウザからのアクセスは許可した URL のみに絞ります。
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+            return;
+        }
+
+        callback(new Error(`Origin ${origin} is not allowed by CORS.`));
+    },
+    credentials: true,
 };
 
 // まず通常の `.env` を読みます。
@@ -41,15 +62,9 @@ loadDotenv({ path: ".env.local", override: true });
 export async function createServerApp() {
     const app = express();
 
-    //cors設定(一旦ローカル用のみ)
-    app.use(cors({
-  origin: [
-    "http://localhost:5173",
-    "https://syshack2026.vercel.app"
-  ],
-  credentials: true
-}));
-
+    // CORS は、この API を呼び出してよいフロントエンドの URL を制御する設定です。
+    // ローカル開発用と、本番で利用する Vercel のフロント URL を許可します。
+    app.use(cors(corsOptions));
 
     // JSON の body を使えるようにする設定です。
     // `POST` で送られた JSON を `req.body` から読めるようになります。
@@ -67,17 +82,17 @@ export async function createServerApp() {
     await mountOptionalRouter(
         app,
         "/api/sessions",
-        () => import("./routes/sessions.routes.ts"),
+        () => import("./routes/sessions.routes.js"),
     );
     await mountOptionalRouter(
         app,
         "/api/persons",
-        () => import("./routes/persons.routes.ts"),
+        () => import("./routes/persons.routes.js"),
     );
     await mountOptionalRouter(
         app,
         "/api/analysis-cases",
-        () => import("./routes/analysisCases.routes.ts"),
+        () => import("./routes/analysisCases.routes.js"),
     );
 
     // 共通エラーハンドラは最後につなぎます。
@@ -128,8 +143,5 @@ async function mountOptionalRouter(
     }
 }
 
-// このファイルが読み込まれたら、最後にサーバーを起動します。
-// つまり `npm run server` または
-// `node --experimental-strip-types src/backend/server.ts` を実行すると、
-// ここから全体が動き始めます。
-await startServer();
+// 実際の起動は `src/server.ts` から行います。
+// ここは「Express アプリの組み立て」と「起動関数の定義」までを担当します。

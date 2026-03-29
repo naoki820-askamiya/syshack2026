@@ -10,7 +10,7 @@
  * `requireSession` は付けません。
  */
 import { Router } from "express";
-import { createSession } from "../controllers/sessions.controller.ts";
+import { createSession } from "../controllers/sessions.controller.js";
 
 const router = Router();
 

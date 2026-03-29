@@ -10,7 +10,7 @@
  * controller では service を呼んでそのまま 201 で返します。
  */
 import type { NextFunction, Request, Response } from "express";
-import * as sessionsService from "../services/sessions.service.ts";
+import * as sessionsService from "../services/sessions.service.js";
 
 /**
  * 新しい session を発行する controller です。
