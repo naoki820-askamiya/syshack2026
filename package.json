@@ -4,13 +4,15 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "lint": "tsc --noEmit --pretty false",
+    "lint": "tsc --noEmit --pretty false -p tsconfig.json",
     "lint:md": "markdownlint-cli2 \"README.md\" \"docs/**/*.md\"",
-    "typecheck": "tsc --noEmit",
-    "build": "vite build",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "build": "tsc -p tsconfig.server.json",
+    "build:client": "vite build",
     "dev": "vite",
-    "server": "node --experimental-strip-types src/backend/server.ts",
-    "server:dev": "node --watch --experimental-strip-types src/backend/server.ts"
+    "server": "tsx src/server.ts",
+    "server:dev": "tsx watch src/server.ts",
+    "start": "node dist/server.js"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",

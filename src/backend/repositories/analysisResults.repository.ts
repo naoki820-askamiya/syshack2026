@@ -9,7 +9,7 @@
  * - caseId から保存済み結果を取り出す
  * の 2 つです。
  */
-import type { StoredAnalysisResult } from "../types/index.ts";
+import type { StoredAnalysisResult } from "../types/index.js";
 
 const analysisResults = new Map<string, StoredAnalysisResult>();
 

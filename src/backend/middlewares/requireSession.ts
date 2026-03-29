@@ -8,9 +8,9 @@
  * 「この API を使う人が、どの session なのか」を
  * `X-Session-Id` ヘッダーから確認することです。
  */
-import type { NextLike, RequestLike, ResponseLike } from "../types/index.ts";
-import { getValidSessionOrThrow } from "../services/sessions.service.ts";
-import { buildSessionInvalidError } from "../utils/index.ts";
+import type { NextLike, RequestLike, ResponseLike } from "../types/index.js";
+import { getValidSessionOrThrow } from "../services/sessions.service.js";
+import { buildSessionInvalidError } from "../utils/index.js";
 
 // すべての protected API で、X-Session-Id が有効かどうかを確認する middleware です。
 // ヘッダーがあるだけでは足りず、

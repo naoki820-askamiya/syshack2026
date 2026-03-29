@@ -13,8 +13,8 @@ import {
     analyzeCase,
     createAnalysisCase,
     getResult,
-} from "../controllers/analysisCases.controller.ts";
-import { requireSession } from "../middlewares/requireSession.ts";
+} from "../controllers/analysisCases.controller.js";
+import { requireSession } from "../middlewares/requireSession.js";
 
 const router = Router();
 

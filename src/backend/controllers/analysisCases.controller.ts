@@ -13,8 +13,8 @@
  * という「入出力の整理」に集中しています。
  */
 import type { NextFunction, Request, Response } from "express";
-import type { CreateAnalysisCaseBody } from "../types/index.ts";
-import * as analysisCasesService from "../services/analysisCases.service.ts";
+import type { CreateAnalysisCaseBody } from "../types/index.js";
+import * as analysisCasesService from "../services/analysisCases.service.js";
 
 // `requireSession` middleware を通ったあとに、
 // `req.sessionId` を使えるようにするための型です。

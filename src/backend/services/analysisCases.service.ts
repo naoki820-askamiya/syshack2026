@@ -16,10 +16,10 @@
  * 「HTTP の細かい入出力」ではなく
  * 「業務上の流れそのもの」を書く点です。
  */
-import { analyzeMood } from "../ai/analyze.ts";
-import * as analysisCasesRepository from "../repositories/analysisCases.repository.ts";
-import * as analysisResultsRepository from "../repositories/analysisResults.repository.ts";
-import { getOwnedPersonOrThrow } from "./persons.service.ts";
+import { analyzeMood } from "../ai/analyze.js";
+import * as analysisCasesRepository from "../repositories/analysisCases.repository.js";
+import * as analysisResultsRepository from "../repositories/analysisResults.repository.js";
+import { getOwnedPersonOrThrow } from "./persons.service.js";
 import type {
     AnalysisMessageLengthType,
     AnalysisResultResponse,
@@ -28,14 +28,14 @@ import type {
     PaginationOptions,
     StoredAnalysisCase,
     StoredAnalysisResult,
-} from "../types/index.ts";
+} from "../types/index.js";
 import {
     ANALYZE_TIMEOUT_MS,
     AppError,
     buildSessionHeaderRequiredError,
     normalizeError,
     withTimeout,
-} from "../utils/index.ts";
+} from "../utils/index.js";
 
 const MAX_REQUIRED_TEXT_LENGTH = 3000;
 const MAX_RECENT_CONVERSATION_LENGTH = 5000;

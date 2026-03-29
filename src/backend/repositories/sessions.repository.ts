@@ -8,7 +8,7 @@
  * 今は DB ではなく、`Map` を使ったインメモリ実装です。
  * そのため、サーバーを再起動すると session は消えます。
  */
-import type { StoredSession } from "../types/index.ts";
+import type { StoredSession } from "../types/index.js";
 
 const sessions = new Map<string, StoredSession>();
 

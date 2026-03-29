@@ -9,9 +9,9 @@
  * と考えると分かりやすいです。
  */
 import { Router } from "express";
-import { createPerson } from "../controllers/persons.controller.ts";
-import { getCasesByPerson } from "../controllers/analysisCases.controller.ts";
-import { requireSession } from "../middlewares/requireSession.ts";
+import { createPerson } from "../controllers/persons.controller.js";
+import { getCasesByPerson } from "../controllers/analysisCases.controller.js";
+import { requireSession } from "../middlewares/requireSession.js";
 
 const router = Router();
 
