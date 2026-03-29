@@ -48,23 +48,13 @@ loadDotenv({ path: ".env.local", override: true });
 export async function createServerApp() {
     const app = express();
 
-    // CORS は「どの画面からこの API を呼んでよいか」を決める設定です。
-    // ブラウザ以外の health check などは Origin を付けないので許可しつつ、
-    // フロントエンドからの呼び出しは allowlist のみ通します。
-    const corsOptions: CorsOptions = {
-        origin(origin, callback) {
-            if (!origin || allowedOrigins.includes(origin)) {
-                callback(null, true);
-                return;
-            }
-
-            callback(new Error(`Origin ${origin} is not allowed by CORS.`));
-        },
-        credentials: true,
-    };
-
-    app.use(cors(corsOptions));
-
+    //cors設定(一旦ローカル用のみ)
+    app.use(
+        cors({
+            origin: ["http://localhost:5173", "https://syshack2026.vercel.app"],
+            credentials: true,
+        }),
+    );
 
     // JSON の body を使えるようにする設定です。
     // `POST` で送られた JSON を `req.body` から読めるようになります。
