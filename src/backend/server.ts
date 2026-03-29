@@ -42,11 +42,13 @@ export async function createServerApp() {
     const app = express();
 
     //cors設定(一旦ローカル用のみ)
-    app.use(
-        cors({
-            origin: "http://localhost:5173",
-        })
-    );
+    app.use(cors({
+  origin: [
+    "http://localhost:5173",
+    "https://syshack2026.vercel.app"
+  ],
+  credentials: true
+}));
 
 
     // JSON の body を使えるようにする設定です。
