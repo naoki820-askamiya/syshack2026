@@ -597,7 +597,7 @@ export function NewConsultation() {
                             chatPlatform === 'other' ? selectedBtn : unselectedBtn
                           }`}
                         >
-                          スレッド形式（Discord等）
+                          スレッド形式（Discordなど）
                         </button>
                       </div>
 

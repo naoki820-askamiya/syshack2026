@@ -1,12 +1,16 @@
+import { useMemo } from 'react';
 import { Link } from 'react-router';
 import { History, Users, PlusCircle, ChevronRight } from 'lucide-react';
 import { getRegisteredPersons, getConsultations } from '../utils/storage';
 import { Navigation } from '../components/Navigation';
 import { getRelationStyle, getReactionStyle } from '../utils/relationStyles';
+import { getRandomSubtitle } from '../utils/randomSubtitle';
 
 export function Home() {
   const persons = getRegisteredPersons();
   const recentConsultations = getConsultations().slice(-5).reverse();
+
+  const randomMessage = useMemo(() => getRandomSubtitle(), []);
 
   return (
     <div className="min-h-screen bg-[#F7F9FC]">
@@ -18,7 +22,7 @@ export function Home() {
           <div className="text-center py-8 lg:py-12 relative">
             <div className="mx-auto mb-4 h-5 lg:h-5"/> {/* blank */}
             <img src="/kigen404_title_b_transparent.png" alt="KIGEN404" className="mx-auto mb-4 h-28 lg:h-32" />
-            <p className="text-[#5B6573] lg:text-lg">見えない感情、見つけましょうか。</p>
+            <p className="text-[#5B6573] lg:text-lg">{randomMessage}<br/>相手のLINEから“本音”をAIが予測、最適な返しまで提案</p>
           </div>
 
           {/* メインアクション */}
@@ -26,9 +30,9 @@ export function Home() {
             <button className="w-full bg-[#0F4C81] text-white rounded-2xl p-5 lg:p-7 shadow-sm hover:bg-[#0C3E69] transition-colors hover:scale-[1.01] active:scale-[0.99]">
               <div className="flex items-center justify-center gap-3">
                 <PlusCircle className="w-7 h-7 lg:w-9 lg:h-9" />
-                <span className="text-xl lg:text-2xl font-semibold">新しい人物について相談</span>
+                <span className="text-xl lg:text-2xl font-semibold">新しい相談を作成</span>
               </div>
-              <p className="text-[#E8F1F8] text-sm mt-1">状況を入力して、対応策を見つけよう</p>
+              <p className="text-[#E8F1F8] text-sm mt-1">Find their invisible emotion.</p>
             </button>
           </Link>
 
@@ -39,7 +43,7 @@ export function Home() {
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
                     <Users className="w-5 h-5 text-[#0F4C81]" />
-                    <h2 className="text-base font-semibold text-[#1F2A37]">過去の人物</h2>
+                    <h2 className="text-base font-semibold text-[#1F2A37]">最近の相談対象</h2>
                   </div>
                   {persons.length > 0 && (
                     <span className="text-xs bg-[#E8F1F8] text-[#0F4C81] px-2 py-0.5 rounded-full font-medium">
