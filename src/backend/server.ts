@@ -45,7 +45,7 @@ export async function createServerApp() {
     app.use(cors({
   origin: [
     "http://localhost:5173",
-    "https://syshack2026.vercel.app"
+    "https://kigen404.vercel.app"
   ],
   credentials: true
 }));
