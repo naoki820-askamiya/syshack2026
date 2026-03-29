@@ -1,5 +1,5 @@
 
-export function getRandomSubtitle(): string | null {
+export function getRandomSubtitle(): string {
 
   const MESSAGES = [
     "感情の404、解析します。",
