@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import { MessageCircle, History, Users, LogIn, PlusCircle, ChevronRight } from 'lucide-react';
+import { History, Users, PlusCircle, ChevronRight } from 'lucide-react';
 import { getRegisteredPersons, getConsultations } from '../utils/storage';
 import { Navigation } from '../components/Navigation';
 import { getRelationStyle, getReactionStyle } from '../utils/relationStyles';
@@ -16,13 +16,6 @@ export function Home() {
         <div className="max-w-4xl mx-auto">
           {/* ヘッダー */}
           <div className="text-center py-8 lg:py-12 relative">
-            <Link 
-              to="/login"
-              className="lg:hidden absolute top-0 right-0 flex items-center gap-2 px-4 py-2 bg-white text-[#0F4C81] rounded-lg shadow-sm hover:bg-[#F1F4F8] transition-colors font-medium border border-[#D9E1EA]"
-            >
-              <LogIn className="w-4 h-4" />
-              ログイン
-            </Link>
             <div className="mx-auto mb-4 h-5 lg:h-5"/> {/* blank */}
             <img src="/kigen404_title_b_transparent.png" alt="KIGEN404" className="mx-auto mb-4 h-28 lg:h-32" />
             <p className="text-[#5B6573] lg:text-lg">見えない感情、見つけましょうか。</p>

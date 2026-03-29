@@ -1,6 +1,6 @@
 import { useState, useEffect, useSyncExternalStore } from 'react';
 import { Link, useLocation } from 'react-router';
-import { MessageCircle, History, LogIn, ChevronRight, ChevronDown } from 'lucide-react';
+import { MessageCircle, History, ChevronRight, ChevronDown } from 'lucide-react';
 import { getConsultations } from '../utils/storage';
 import { getRelationStyle } from '../utils/relationStyles';
 import { ConsultationData } from '../types';
@@ -137,17 +137,6 @@ export function Navigation() {
               </div>
             </div>
           )}
-        </div>
-
-        {/* ログインボタン */}
-        <div className="p-4 border-t border-[#D9E1EA]">
-          <Link
-            to="/login"
-            className="flex items-center gap-3 px-4 py-3 rounded-lg text-[#0F4C81] hover:bg-[#E8F1F8] transition-colors"
-          >
-            <LogIn className="w-5 h-5" />
-            <span className="font-medium">ログイン</span>
-          </Link>
         </div>
       </nav>
 
