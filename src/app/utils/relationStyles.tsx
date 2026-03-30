@@ -1,13 +1,13 @@
+import React from 'react';
 import {
   BriefcaseBusiness,
-  Gem,
-  HandMetal,
   Handshake,
+  ChessPawn,
   Heart,
+  ChessQueen,
+  HandMetal,
   Home,
-  Rabbit,
   User,
-  type LucideIcon,
 } from 'lucide-react';
 
 /**
@@ -21,65 +21,65 @@ export type RelationStyle = {
   bgHover: string;     // カードホバー背景
   dot: string;         // アクセントカラー（ドットなど）
   emoji: string;
-  lucideIcon?: LucideIcon; // Lucideアイコン（必要に応じて）
+  lucideIcon?: React.ReactNode; // Lucideアイコン（必要に応じて）
 };
 
 export const RELATION_STYLES: Record<string, RelationStyle> = {
   上司: {
-    badge: 'bg-[#EDF2F7] text-[#1F3A4D]',
-    bgHover: 'hover:bg-[#E8EEF7]',
-    dot: 'bg-[#1F3A4D]',
-    emoji: '👤',
-    lucideIcon: BriefcaseBusiness,
-  },
-  同僚: {
-    badge: 'bg-[#E0EEFF] text-[#0F4C81]',
-    bgHover: 'hover:bg-[#DCE8FA]',
+    badge: 'bg-[#E8F1F8] text-[#0F4C81]',
+    bgHover: 'hover:bg-[#F1F4F8]',
     dot: 'bg-[#0F4C81]',
     emoji: '👤',
-    lucideIcon: Handshake,
+    lucideIcon: <BriefcaseBusiness className="w-4 h-4" />
+  },
+  同僚: {
+    badge: 'bg-[#E8F1F8] text-[#0F4C81]',
+    bgHover: 'hover:bg-[#F1F4F8]',
+    dot: 'bg-[#0F4C81]',
+    emoji: '👤',
+    lucideIcon: <Handshake className="w-4 h-4" />
   },
   部下: {
-    badge: 'bg-[#E0F7FF] text-[#086A86]',
-    bgHover: 'hover:bg-[#D9F0FA]',
-    dot: 'bg-[#086A86]',
+    badge: 'bg-[#E8F1F8] text-[#0F4C81]',
+    bgHover: 'hover:bg-[#F1F4F8]',
+    dot: 'bg-[#0F4C81]',
     emoji: '👤',
-    lucideIcon: Rabbit,
+    lucideIcon: <ChessPawn className="w-4 h-4" />
   },
   恋人: {
-    badge: 'bg-[#FFE4E9] text-[#A71D30]',
-    bgHover: 'hover:bg-[#FCE1E6]',
-    dot: 'bg-[#A71D30]',
+    badge: 'bg-[#F1F4F8] text-[#5B6573]',
+    bgHover: 'hover:bg-[#F1F4F8]',
+    dot: 'bg-[#5B6573]',
     emoji: '👤',
-    lucideIcon: Heart,
+    lucideIcon: <Heart className="w-4 h-4" />
   },
   配偶者: {
-    badge: 'bg-[#FFF0D6] text-[#995800]',
-    bgHover: 'hover:bg-[#F9ECD8]',
-    dot: 'bg-[#995800]',
+    badge: 'bg-[#F1F4F8] text-[#5B6573]',
+    bgHover: 'hover:bg-[#F1F4F8]',
+    dot: 'bg-[#5B6573]',
     emoji: '👤',
-    lucideIcon: Gem,
+    lucideIcon: <ChessQueen className="w-4 h-4" />
   },
   友人: {
-    badge: 'bg-[#E8F8E8] text-[#2A6D4F]',
-    bgHover: 'hover:bg-[#E3F4E3]',
-    dot: 'bg-[#2A6D4F]',
+    badge: 'bg-[#F1F4F8] text-[#5B6573]',
+    bgHover: 'hover:bg-[#F1F4F8]',
+    dot: 'bg-[#5B6573]',
     emoji: '👤',
-    lucideIcon: HandMetal,
+    lucideIcon: <HandMetal className="w-4 h-4" />
   },
   家族: {
-    badge: 'bg-[#FFE8E8] text-[#8B3A3A]',
-    bgHover: 'hover:bg-[#FBE3E3]',
-    dot: 'bg-[#8B3A3A]',
+    badge: 'bg-[#F1F4F8] text-[#5B6573]',
+    bgHover: 'hover:bg-[#F1F4F8]',
+    dot: 'bg-[#5B6573]',
     emoji: '👤',
-    lucideIcon: Home,
+    lucideIcon: <Home className="w-4 h-4" />
   },
   その他: {
-    badge: 'bg-[#E8EBEE] text-[#4A5568]',
-    bgHover: 'hover:bg-[#E2E6EB]',
-    dot: 'bg-[#7F8A9F]',
+    badge: 'bg-[#F1F4F8] text-[#5B6573]',
+    bgHover: 'hover:bg-[#F1F4F8]',
+    dot: 'bg-[#8A94A6]',
     emoji: '👤',
-    lucideIcon: User,
+    lucideIcon: <User className="w-4 h-4" />
   },
 };
 

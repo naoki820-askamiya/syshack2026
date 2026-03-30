@@ -32,6 +32,7 @@ export function Analysis() {
   }
 
   const relStyle = getRelationStyle(consultation.relation);
+  const RelationIcon = relStyle.lucideIcon;
   const reactionStyle = getReactionStyle(consultation.reaction);
   const conf = CONFIDENCE_MAP[analysis.result.confidenceLevel];
 
@@ -56,8 +57,8 @@ export function Analysis() {
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-[#D9E1EA]">
             <div className="flex items-start justify-between flex-wrap gap-2">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-[#F1F4F8] border border-[#D9E1EA] flex items-center justify-center shadow-sm">
-                  <span className="text-2xl">{relStyle.emoji}</span>
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-sm ${relStyle.badge}`}>
+                  {RelationIcon ? <RelationIcon className="w-6 h-6" /> : <span className="text-2xl">{relStyle.emoji}</span>}
                 </div>
                 <div>
                   <h2 className="font-semibold text-[#1F2A37] text-lg">{consultation.personName}さん</h2>

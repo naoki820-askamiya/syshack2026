@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
-import { ArrowLeft, MessageCircle, Calendar, User, PlusCircle } from 'lucide-react';
+import { ArrowLeft, Calendar, User, PlusCircle } from 'lucide-react';
 import { getConsultations, getRegisteredPersons } from '../utils/storage';
 import { Navigation } from '../components/Navigation';
 import { getRelationStyle, getReactionStyle } from '../utils/relationStyles';
@@ -108,6 +108,7 @@ export function History() {
                 {sortedConsultations.map((consultation) => {
                   const relStyle = getRelationStyle(consultation.relation);
                   const reactionStyle = getReactionStyle(consultation.reaction);
+                  const RelationIcon = relStyle.lucideIcon;
                   return (
                     <Link
                       key={consultation.id}
@@ -117,7 +118,9 @@ export function History() {
                       {/* ヘッダー行 */}
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center gap-2">
-                          <span className="text-xl">{relStyle.emoji}</span>
+                          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-sm flex-shrink-0 ${relStyle.badge}`}>
+                            {RelationIcon ? <RelationIcon className="w-4 h-4" /> : relStyle.emoji}
+                          </div>
                           <div>
                             <h3 className="font-semibold text-[#1F2A37]">
                               {consultation.personName}

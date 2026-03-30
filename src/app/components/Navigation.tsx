@@ -90,6 +90,7 @@ export function Navigation() {
               <div className="space-y-0.5">
                 {persons.map((person) => {
                   const style = getRelationStyle(person.relation);
+                  const RelationIcon = style.lucideIcon;
                   const isExpanded = expandedPerson === person.personName;
                   return (
                     <div key={person.id}>
@@ -102,7 +103,7 @@ export function Navigation() {
                       >
                         {/* アバター */}
                         <div className={`w-7 h-7 rounded-full flex items-center justify-center text-sm flex-shrink-0 ${style.badge}`}>
-                          {style.emoji}
+                          {RelationIcon ? <RelationIcon className="w-4 h-4" /> : style.emoji}
                         </div>
                         {/* 名前 + 関係性 */}
                         <div className="flex-1 min-w-0 text-left">
@@ -124,14 +125,14 @@ export function Navigation() {
                         <div className="ml-10 mt-0.5 mb-1 space-y-0.5">
                           <Link
                             to={`/new?person=${encodeURIComponent(person.personName)}`}
-                            className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm text-[#0F4C81] hover:bg-[#E8F1F8] transition-colors font-medium"
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm text-[#E67300] hover:bg-[#E8F1F8] transition-colors font-medium"
                           >
                             <MessageCircle className="w-3.5 h-3.5" />
                             その人について相談
                           </Link>
                           <Link
                             to={`/history?person=${encodeURIComponent(person.personName)}`}
-                            className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm text-[#0F4C81] hover:bg-[#E8F1F8] transition-colors font-medium"
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm text-[#004D99] hover:bg-[#E8F1F8] transition-colors font-medium"
                           >
                             <History className="w-3.5 h-3.5" />
                             履歴

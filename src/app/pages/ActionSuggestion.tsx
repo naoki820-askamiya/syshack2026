@@ -47,6 +47,7 @@ export function ActionSuggestion() {
     }
 
     const relStyle = getRelationStyle(consultation.relation);
+    const RelationIcon = relStyle.lucideIcon;
 
     const handleCopy = (text: string, index: number) => {
         // Clipboard API が使えない環境（iframe内など）ではフォールバック
@@ -99,8 +100,8 @@ export function ActionSuggestion() {
                     {/* 相手情報 */}
                     <div className="bg-white rounded-2xl p-4 lg:p-5 shadow-sm flex items-center justify-between flex-wrap gap-2 border border-[#D9E1EA]">
                         <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-full bg-[#F1F4F8] border border-[#D9E1EA] flex items-center justify-center shadow-sm">
-                                <span className="text-2xl">{relStyle.emoji}</span>
+                            <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-sm ${relStyle.badge}`}>
+                                {RelationIcon ? <RelationIcon className="w-6 h-6" /> : <span className="text-2xl">{relStyle.emoji}</span>}
                             </div>
                             <div>
                                 <h2 className="font-semibold text-[#1F2A37] lg:text-lg">

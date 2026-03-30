@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router';
-import { History, Users, PlusCircle, ChevronRight } from 'lucide-react';
+import { History, Users, PlusCircle, ChevronRight, UserRoundSearch, MessageSquareDashed } from 'lucide-react';
 import { getRegisteredPersons, getConsultations } from '../utils/storage';
 import { Navigation } from '../components/Navigation';
 import { getRelationStyle, getReactionStyle } from '../utils/relationStyles';
@@ -58,6 +58,7 @@ export function Home() {
                       const personConsultations = getConsultations().filter(c => c.personName === person);
                       const latest = personConsultations.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
                       const style = getRelationStyle(latest?.relation ?? 'その他');
+                      const RelationIcon = style.lucideIcon;
                       return (
                         <Link
                           key={person}
@@ -65,8 +66,9 @@ export function Home() {
                           className={`flex items-center justify-between bg-[#F1F4F8] ${style.bgHover} rounded-xl px-4 py-3 transition-colors group`}
                         >
                           <div className="flex items-center gap-3">
-                            {/* 絵文字アイコン */}
-                            <span className="text-2xl">{style.emoji}</span>
+                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-sm flex-shrink-0 ${style.badge}`}>
+                              {RelationIcon ? <RelationIcon className="w-4 h-4" /> : style.emoji}
+                            </div>
                             <div>
                               {/* ニックネームを大きめに */}
                               <p className="text-base font-semibold text-[#1F2A37] leading-tight">{person}</p>
@@ -88,8 +90,8 @@ export function Home() {
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center py-8 text-center">
-                    <div className="text-4xl mb-3">👥</div>
-                    <p className="text-sm text-[#5B6573]">まだ相談した人物はいません</p>
+                    <UserRoundSearch className="w-15 h-15 text-4xl mb-3" /> {/* Icon */}
+                    <p className="text-sm">まだ相談した人物はいません</p>
                     <p className="text-xs text-[#8A94A6] mt-1">相談すると人物が登録されます</p>
                   </div>
                 )}
@@ -117,14 +119,15 @@ export function Home() {
                     {recentConsultations.map((consultation) => {
                       const style = getRelationStyle(consultation.relation);
                       const reactionStyle = getReactionStyle(consultation.reaction);
+                      const RelationIcon = style.lucideIcon;
                       return (
                         <Link
                           key={consultation.id}
                           to={`/action/${consultation.id}`}
                           className={`flex items-start gap-4 bg-[#F1F4F8] ${style.bgHover} rounded-xl p-4 transition-colors group`}
                         >
-                          <div className="flex-shrink-0 text-2xl mt-0.5">
-                            {style.emoji}
+                          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-sm flex-shrink-0 mt-0.5 ${style.badge}`}>
+                            {RelationIcon ? <RelationIcon className="w-4 h-4" /> : style.emoji}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between mb-1">
@@ -153,20 +156,13 @@ export function Home() {
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center py-10 text-center">
-                    <div className="text-5xl mb-4">💭</div>
+                    <MessageSquareDashed className="w-15 h-15 text-4xl mb-3" /> {/* Icon */}
                     <h3 className="text-base font-semibold text-[#1F2A37] mb-2">
                       人間関係の悩み、相談してみませんか？
                     </h3>
                     <p className="text-[#5B6573] text-sm leading-relaxed max-w-xs">
                       「相手の機嫌が分からない」「どう対応すればいいか分からない」そんな時、具体的な行動を提案します。
                     </p>
-                    <Link
-                      to="/new"
-                      className="mt-5 inline-flex items-center gap-2 bg-[#0F4C81] text-white px-5 py-2.5 rounded-xl text-sm font-medium shadow-sm hover:bg-[#0C3E69] transition-colors"
-                    >
-                      <PlusCircle className="w-4 h-4" />
-                      最初の相談を始める
-                    </Link>
                   </div>
                 )}
               </div>
