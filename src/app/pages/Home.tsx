@@ -90,7 +90,7 @@ export function Home() {
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center py-8 text-center">
-                    <UserRoundSearch className="w-15 h-15 text-4xl mb-3" /> {/* Icon */}
+                    <UserRoundSearch className="w-16 h-16 text-4xl mb-3" /> {/* Icon */}
                     <p className="text-sm">まだ相談した人物はいません</p>
                     <p className="text-xs text-[#8A94A6] mt-1">相談すると人物が登録されます</p>
                   </div>
