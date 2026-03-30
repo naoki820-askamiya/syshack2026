@@ -16,13 +16,13 @@ export function Home() {
     <div className="min-h-screen bg-[#F7F9FC]">
       <Navigation />
       
-      <div className="lg:ml-64 p-4 lg:p-8 pb-24 lg:pb-8">
+      <div className="lg:ml-64 p-4 lg:p-4 pb-24 lg:pb-8">
         <div className="max-w-4xl mx-auto">
           {/* ヘッダー */}
-          <div className="text-center py-8 lg:py-12 relative">
+          <div className="text-center py-8 lg:py-8 relative">
             <div className="mx-auto mb-4 h-5 lg:h-5"/> {/* blank */}
-            <img src="/kigen404_title_b_transparent.png" alt="KIGEN404" className="mx-auto mb-4 h-28 lg:h-32" />
-            <p className="text-[#5B6573] lg:text-lg">{randomMessage}<br/>相手のLINEから“本音”をAIが予測、最適な返しまで提案</p>
+            <img src="/kigen404_title_b_transparent.png" alt="KIGEN404" className="mx-auto mb-4 h-28 lg:h-44" />
+            <p className="text-[#5B6573] lg:text-lg">{randomMessage}<br/>相手の反応から「本音」をAIが予測、最適な返しまで提案</p>
           </div>
 
           {/* メインアクション */}
