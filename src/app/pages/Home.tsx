@@ -156,7 +156,7 @@ export function Home() {
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center py-10 text-center">
-                    <MessageSquareDashed className="w-15 h-15 text-4xl mb-3" /> {/* Icon */}
+                    <MessageSquareDashed className="w-16 h-16 text-4xl mb-3" /> {/* Icon */}
                     <h3 className="text-base font-semibold text-[#1F2A37] mb-2">
                       人間関係の悩み、相談してみませんか？
                     </h3>
