@@ -1,6 +1,6 @@
 import { useState, useEffect, useSyncExternalStore } from 'react';
 import { Link, useLocation } from 'react-router';
-import { MessageCircle, History, ChevronRight, ChevronDown } from 'lucide-react';
+import { MessageCircle, History, ChevronRight, ChevronDown, Home } from 'lucide-react';
 import { getConsultations } from '../utils/storage';
 import { getRelationStyle } from '../utils/relationStyles';
 import { ConsultationData } from '../types';
@@ -43,7 +43,7 @@ export function Navigation() {
   ];
 
   const buttomNavItems = [
-    { path: '/', icon: MessageCircle, label: 'ホーム' },
+    { path: '/', icon: Home, label: 'ホーム' },
     { path: '/new', icon: MessageCircle, label: '新しい相談を作成' },
     { path: '/history', icon: History, label: '履歴' },
   ];

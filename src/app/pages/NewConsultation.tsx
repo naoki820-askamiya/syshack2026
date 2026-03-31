@@ -368,7 +368,7 @@ export function NewConsultation() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-[#5B6573] mb-2">
-                      あなたの年代<span className="text-red-500 ml-0.5">*</span>
+                      相談相手の年代<span className="text-red-500 ml-0.5">*</span>
                     </label>
                     <div className="relative">
                       <select
@@ -385,7 +385,7 @@ export function NewConsultation() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-[#5B6573] mb-2">
-                      あなたの性別<span className="text-red-500 ml-0.5">*</span>
+                      相談相手の性別<span className="text-red-500 ml-0.5">*</span>
                     </label>
                     <div className="relative">
                       <select
