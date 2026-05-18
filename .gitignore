@@ -25,3 +25,11 @@ dist-ssr
 
 # add by user
 .env
+
+.env.local
+
+src/backend/generated/
+
+/docs/*
+!/docs/
+!/docs/database-setup-prisma-supabase.md

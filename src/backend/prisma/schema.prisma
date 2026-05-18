@@ -1,0 +1,191 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum RelationshipType {
+  boss
+  coworker
+  lover
+  family
+  friend
+  classmate
+  customer
+  other
+
+  @@map("relationship_type")
+}
+
+enum GenderHint {
+  male
+  female
+  other
+  unknown
+
+  @@map("gender_hint")
+}
+
+enum AnalysisCaseStatus {
+  draft
+  analyzing
+  analyzed
+  failed
+
+  @@map("analysis_case_status")
+}
+
+enum ToneType {
+  formal
+  casual
+  mixed
+  unknown
+
+  @@map("tone_type")
+}
+
+enum MessageLengthType {
+  short
+  normal
+  long
+  unknown
+
+  @@map("message_length_type")
+}
+
+model Person {
+  id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId           String           @map("user_id") @db.Uuid
+  displayName      String           @map("display_name") @db.VarChar(50)
+  relationshipType RelationshipType @map("relationship_type")
+  ageRange         String?          @map("age_range") @db.VarChar(20)
+  genderHint       GenderHint?      @map("gender_hint")
+  notes            String?
+  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+  archivedAt       DateTime?        @map("archived_at") @db.Timestamptz(6)
+
+  analysisCases AnalysisCase[]
+  profile       PersonProfile?
+
+  @@unique([userId, id])
+  @@index([userId, updatedAt])
+  @@index([userId, archivedAt])
+  @@map("persons")
+}
+
+model AnalysisCase {
+  id                     String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId                 String             @map("user_id") @db.Uuid
+  personId               String             @map("person_id") @db.Uuid
+  status                 AnalysisCaseStatus @default(draft)
+  eventFacts             String             @map("event_facts")
+  selfMessage            String             @map("self_message")
+  partnerMessage         String             @map("partner_message")
+  recentConversationText String?            @map("recent_conversation_text")
+  appType                String?            @map("app_type") @db.VarChar(50)
+  userEmotion            String?            @map("user_emotion") @db.VarChar(100)
+  assumedPartnerEmotion  String?            @map("assumed_partner_emotion") @db.VarChar(100)
+  partnerSpeakingStyle   String?            @map("partner_speaking_style")
+  contextNote            String?            @map("context_note")
+  concernText            String?            @map("concern_text")
+  emojiUsed              Boolean?           @map("emoji_used")
+  toneType               ToneType?          @map("tone_type")
+  messageLengthType      MessageLengthType? @map("message_length_type")
+  personSnapshot         Json               @map("person_snapshot") @db.JsonB
+  analyzeRunId           String?            @map("analyze_run_id") @db.Uuid
+  analyzeStartedAt       DateTime?          @map("analyze_started_at") @db.Timestamptz(6)
+  analyzeAttemptCount    Int                @default(0) @map("analyze_attempt_count")
+  lastAnalyzedAt         DateTime?          @map("last_analyzed_at") @db.Timestamptz(6)
+  failureCode            String?            @map("failure_code") @db.VarChar(100)
+  failureMessage         String?            @map("failure_message")
+  createdAt              DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  person    Person             @relation(fields: [userId, personId], references: [userId, id], onDelete: NoAction)
+  results   AnalysisResult[]
+  feedbacks AnalysisFeedback[]
+
+  @@unique([userId, id])
+  @@index([userId, createdAt])
+  @@index([userId, personId, createdAt])
+  @@index([userId, personId, status, createdAt])
+  @@index([userId, status])
+  @@map("analysis_cases")
+}
+
+model AnalysisResult {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId              String   @map("user_id") @db.Uuid
+  analysisCaseId      String   @map("analysis_case_id") @db.Uuid
+  analyzeRunId        String   @map("analyze_run_id") @db.Uuid
+  version             Int
+  promptVersion       String   @map("prompt_version") @db.VarChar(50)
+  resultSchemaVersion String   @map("result_schema_version") @db.VarChar(50)
+  model               String   @db.VarChar(100)
+  resultJson          Json     @map("result_json") @db.JsonB
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  analysisCase AnalysisCase      @relation(fields: [userId, analysisCaseId], references: [userId, id], onDelete: Cascade)
+  feedback     AnalysisFeedback?
+
+  @@unique([userId, id])
+  @@unique([analysisCaseId, version])
+  @@unique([analysisCaseId, analyzeRunId])
+  @@index([userId, analysisCaseId])
+  @@map("analysis_results")
+}
+
+model AnalysisFeedback {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId            String   @map("user_id") @db.Uuid
+  analysisCaseId    String   @map("analysis_case_id") @db.Uuid
+  analysisResultId  String   @unique @map("analysis_result_id") @db.Uuid
+  wasHelpful        Boolean? @map("was_helpful")
+  outcomeType       String?  @map("outcome_type") @db.VarChar(50)
+  actualOutcomeNote String?  @map("actual_outcome_note")
+  userCorrection    String?  @map("user_correction")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  analysisCase   AnalysisCase   @relation(fields: [userId, analysisCaseId], references: [userId, id], onDelete: Cascade)
+  analysisResult AnalysisResult @relation(fields: [userId, analysisResultId], references: [userId, id], onDelete: Cascade)
+
+  @@unique([userId, analysisResultId])
+  @@index([userId, analysisCaseId])
+  @@map("analysis_feedbacks")
+}
+
+model PersonProfile {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId               String    @map("user_id") @db.Uuid
+  personId             String    @unique @map("person_id") @db.Uuid
+  profileSchemaVersion String    @map("profile_schema_version") @db.VarChar(50)
+  profileJson          Json      @map("profile_json") @db.JsonB
+  sourceCaseCount      Int       @default(0) @map("source_case_count")
+  lastGeneratedAt      DateTime? @map("last_generated_at") @db.Timestamptz(6)
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  person Person @relation(fields: [userId, personId], references: [userId, id], onDelete: Cascade)
+
+  @@unique([userId, personId])
+  @@index([userId])
+  @@map("person_profiles")
+}
+
+model UserPatternSummary {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId               String    @unique @map("user_id") @db.Uuid
+  summarySchemaVersion String    @map("summary_schema_version") @db.VarChar(50)
+  summaryJson          Json      @map("summary_json") @db.JsonB
+  sourceCaseCount      Int       @default(0) @map("source_case_count")
+  lastGeneratedAt      DateTime? @map("last_generated_at") @db.Timestamptz(6)
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("user_pattern_summaries")
+}
