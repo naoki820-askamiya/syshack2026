@@ -32,7 +32,6 @@ import type {
 import {
     ANALYZE_TIMEOUT_MS,
     AppError,
-    buildSessionHeaderRequiredError,
     normalizeError,
     withTimeout,
 } from "../utils/index.js";
@@ -89,12 +88,9 @@ const MESSAGE_LENGTH_TYPE_ALIASES: Record<string, AnalysisMessageLengthType> = {
  * 後で analyze するときに AI へ渡せるようにするためです。
  */
 export async function createAnalysisCase(
-    sessionId: string,
+    userId: string,
     data: CreateAnalysisCaseBody,
 ) {
-    if (!sessionId) {
-        throw buildSessionHeaderRequiredError();
-    }
 
     const personId = String(data?.personId ?? "").trim();
     const eventFacts = requireTextField(
@@ -121,7 +117,7 @@ export async function createAnalysisCase(
         });
     }
 
-    const person = await getOwnedPersonOrThrow(sessionId, personId);
+    const person = await getOwnedPersonOrThrow(userId,personId);
     const normalizedCaseInput = sanitizeAnalysisCaseInput({
         ...data,
         personId,
@@ -131,7 +127,7 @@ export async function createAnalysisCase(
     });
 
     const analysisCase = await analysisCasesRepository.create({
-        sessionId,
+        userId,
         personId,
         person: {
             displayName: person.displayName,
@@ -164,7 +160,7 @@ export async function createAnalysisCase(
  * 4. AI を呼ぶ
  * 5. 結果を保存する
  * 6. status を `analyzed` にする
- * 7. 失敗したら status を `error` に戻す
+ * 7. 失敗したら status を `failed` に戻す
  *
  * `ALREADY_ANALYZED` を 409 にしている理由:
  * - 同じ case を何度も再分析させると、結果の整合が分かりにくくなるためです
@@ -173,8 +169,8 @@ export async function createAnalysisCase(
  * timeout を入れている理由:
  * - OpenAI 呼び出しが長く止まったときに、サーバーが待ち続けないようにするためです
  */
-export async function analyzeCase(sessionId: string, caseId: string) {
-    const analysisCase = await getOwnedCaseOrThrow(sessionId, caseId);
+export async function analyzeCase( userId :string,caseId: string) {
+    const analysisCase = await getOwnedCaseOrThrow(userId,caseId);
 
     if (analysisCase.status === "analyzing") {
         throw new AppError({
@@ -194,7 +190,7 @@ export async function analyzeCase(sessionId: string, caseId: string) {
 
     // 分析を始める前に status を更新しておくと、
     // 「今まさに処理中かどうか」を後から判定しやすくなります。
-    await analysisCasesRepository.updateStatus(caseId, "analyzing");
+    await analysisCasesRepository.updateStatus(userId,caseId, "analyzing");
 
     try {
         // AI 呼び出しは時間が読みにくいので、共通 timeout で包みます。
@@ -209,21 +205,26 @@ export async function analyzeCase(sessionId: string, caseId: string) {
         );
 
         // AI の生レスポンス全体ではなく、検証済みの結果だけを保存します。
-        const savedResult = await analysisResultsRepository.upsert({
+        const savedResult = await analysisResultsRepository.create({
+            userId,
             analysisCaseId: caseId,
-            promptVersion: "v1",
-            result: aiResult,
+            analyzeRunId: crypto.randomUUID(),
+            version: 1,
+            promptVersion: aiResult.promptVersion,
+            resultSchemaVersion: aiResult.resultSchemaVersion,
+            model: aiResult.model,
+            resultJson: aiResult,
         });
 
         // 正常終了したら status を analyzed にします。
-        await analysisCasesRepository.updateStatus(caseId, "analyzed");
+        await analysisCasesRepository.updateStatus(userId, caseId, "analyzed");
 
         return {
             status: "analyzed",
             result: toResultResponse(savedResult),
         };
     } catch (error) {
-        await analysisCasesRepository.updateStatus(caseId, "error");
+        await analysisCasesRepository.updateStatus(userId, caseId, "failed");
 
         const normalized = normalizeError(error);
         throw new AppError({
@@ -241,8 +242,8 @@ export async function analyzeCase(sessionId: string, caseId: string) {
  * まだ analyzed されていない場合は、
  * `result: null` で現在の status だけ返します。
  */
-export async function getResult(sessionId: string, caseId: string) {
-    const analysisCase = await getOwnedCaseOrThrow(sessionId, caseId);
+export async function getResult(caseId: string , userId:string) {
+    const analysisCase = await getOwnedCaseOrThrow(userId, caseId);
 
     if (analysisCase.status !== "analyzed") {
         return {
@@ -251,7 +252,7 @@ export async function getResult(sessionId: string, caseId: string) {
         };
     }
 
-    const savedResult = await analysisResultsRepository.findByCaseId(caseId);
+    const savedResult = await analysisResultsRepository.findLatestByCaseId(userId,caseId);
 
     return {
         status: "analyzed",
@@ -266,13 +267,13 @@ export async function getResult(sessionId: string, caseId: string) {
  * 他の session の Person 一覧を見えてしまわないようにするためです。
  */
 export async function getCasesByPerson(
-    sessionId: string,
+    userId: string,
     personId: string,
     options: PaginationOptions,
 ) {
-    await getOwnedPersonOrThrow(sessionId, personId);
+    await getOwnedPersonOrThrow(userId, personId);
 
-    return analysisCasesRepository.findByPersonId(sessionId, personId, options);
+    return analysisCasesRepository.findByPersonId(userId,personId, options);
 }
 
 /**
@@ -281,26 +282,15 @@ export async function getCasesByPerson(
  *
  * 同じ確認を毎回コピペしないために、ここへまとめています。
  */
-async function getOwnedCaseOrThrow(sessionId: string, caseId: string): Promise<StoredAnalysisCase> {
-    if (!sessionId) {
-        throw buildSessionHeaderRequiredError();
-    }
+async function getOwnedCaseOrThrow(userId: string, caseId: string): Promise<StoredAnalysisCase> {
 
-    const analysisCase = await analysisCasesRepository.findById(caseId);
+    const analysisCase = await analysisCasesRepository.findById(userId,caseId);
 
     if (!analysisCase) {
         throw new AppError({
             code: "NOT_FOUND",
             message: "analysis case が見つかりません。",
             status: 404,
-        });
-    }
-
-    if (analysisCase.sessionId !== sessionId) {
-        throw new AppError({
-            code: "FORBIDDEN",
-            message: "この analysis case にはアクセスできません。",
-            status: 403,
         });
     }
 
@@ -461,7 +451,7 @@ function toResultResponse(
         id: savedResult.id,
         analysisCaseId: savedResult.analysisCaseId,
         promptVersion: savedResult.promptVersion,
-        generatedAt: savedResult.updatedAt,
-        ...savedResult.result,
+        generatedAt: savedResult.createdAt,
+        ...savedResult.resultJson,
     };
 }

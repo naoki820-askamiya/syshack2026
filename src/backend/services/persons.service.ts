@@ -13,7 +13,7 @@ import type {
     RelationshipType,
     StoredPerson,
 } from "../types/index.js";
-import { AppError, buildSessionHeaderRequiredError } from "../utils/index.js";
+import { AppError} from "../utils/index.js";
 
 const RELATIONSHIP_TYPES: RelationshipType[] = [
     "boss",
@@ -44,11 +44,7 @@ const GENDER_HINTS: GenderHint[] = ["male", "female", "other", "unknown"];
  * controller には「HTTP の整理」だけを持たせたいので、
  * 値の意味に関するチェックは service 側でしています。
  */
-export async function createPerson(sessionId: string, data: CreatePersonBody) {
-    if (!sessionId) {
-        throw buildSessionHeaderRequiredError();
-    }
-
+export async function createPerson(userId: string, data: CreatePersonBody) {
     const displayName = String(data?.displayName ?? "").trim();
     const relationshipType = data?.relationshipType;
     const ageRange = String(data?.ageRange ?? "").trim();
@@ -90,7 +86,7 @@ export async function createPerson(sessionId: string, data: CreatePersonBody) {
     // repository は実際の保存担当です。
     // service は「どの値を保存するか」を決めて渡します。
     const person = await personsRepository.create({
-        sessionId,
+        userId,
         displayName,
         relationshipType,
         ageRange,
@@ -108,28 +104,17 @@ export async function createPerson(sessionId: string, data: CreatePersonBody) {
  * ここで共通化して再利用しています。
  */
 export async function getOwnedPersonOrThrow(
-    sessionId: string,
-    personId: string,
+    userId : string,
+    personId: string
 ): Promise<StoredPerson> {
-    if (!sessionId) {
-        throw buildSessionHeaderRequiredError();
-    }
 
-    const person = await personsRepository.findById(personId);
+    const person = await personsRepository.findById(userId, personId);
 
     if (!person) {
         throw new AppError({
             code: "NOT_FOUND",
             message: "person が見つかりません。",
             status: 404,
-        });
-    }
-
-    if (person.sessionId !== sessionId) {
-        throw new AppError({
-            code: "FORBIDDEN",
-            message: "この person にはアクセスできません。",
-            status: 403,
         });
     }
 

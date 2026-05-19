@@ -10,8 +10,7 @@
  * の 2 つです。
  */
 import type { StoredAnalysisResult } from "../types/index.js";
-
-const analysisResults = new Map<string, StoredAnalysisResult>();
+import { supabase } from "../lib/supabase.js";
 
 /**
  * 分析結果を保存します。
@@ -21,38 +20,71 @@ const analysisResults = new Map<string, StoredAnalysisResult>();
  *
  * この「あるなら更新、無いなら作成」を upsert と呼びます。
  */
-export async function upsert(
-    input: Omit<StoredAnalysisResult, "id" | "createdAt" | "updatedAt">,
+export async function create(
+    input: Omit<StoredAnalysisResult, "id" | "createdAt">,
 ): Promise<StoredAnalysisResult> {
-    const existing = analysisResults.get(input.analysisCaseId);
-    const now = new Date().toISOString();
+    const { data, error } = await supabase
+        .from("analysis_results")
+        .insert({
+            user_id: input.userId,
+            analysis_case_id: input.analysisCaseId,
+            analyze_run_id: input.analyzeRunId,
+            version: input.version,
+            prompt_version: input.promptVersion,
+            result_schema_version: input.resultSchemaVersion,
+            model: input.model,
+            result_json: input.resultJson,
+        })
+        .select()
+        .single();
 
-    const record: StoredAnalysisResult = existing
-        ? {
-              ...existing,
-              promptVersion: input.promptVersion,
-              result: input.result,
-              updatedAt: now,
-          }
-        : {
-              id: `result_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-              analysisCaseId: input.analysisCaseId,
-              promptVersion: input.promptVersion,
-              result: input.result,
-              createdAt: now,
-              updatedAt: now,
-          };
+    if (error) {
+        throw error;
+    }
 
-    analysisResults.set(input.analysisCaseId, record);
-    return record;
+    return toStoredAnalysisResult(data);
 }
 
 /**
  * caseId にひも付く分析結果を 1 件取り出します。
  * 見つからないときは `null` を返します。
  */
-export async function findByCaseId(
-    caseId: string,
+export async function findLatestByCaseId(
+    userId: string,
+    caseId: string
 ): Promise<StoredAnalysisResult | null> {
-    return analysisResults.get(caseId) ?? null;
+    const { data, error } = await supabase
+        .from("analysis_results")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("analysis_case_id", caseId)
+        .order("version", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+    if (error) {
+        throw error;
+    }
+
+    if (!data) {
+        return null;
+    }
+
+    return toStoredAnalysisResult(data);
+
+}
+
+function toStoredAnalysisResult(row: any): StoredAnalysisResult {
+    return {
+        id: row.id,
+        userId: row.user_id,
+        analysisCaseId: row.analysis_case_id,
+        analyzeRunId: row.analyze_run_id,
+        version: row.version,
+        promptVersion: row.prompt_version,
+        resultSchemaVersion: row.result_schema_version,
+        model: row.model,
+        resultJson: row.result_json,
+        createdAt: row.created_at,
+    };
 }

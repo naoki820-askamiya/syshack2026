@@ -124,6 +124,9 @@ const scoresSchema = z
  */
 export const analyzeOutputSchema = z
     .object({
+        promptVersion: z.string(),
+        resultSchemaVersion: z.string(),
+        model: z.string(),
         textImpression: z.string().trim().min(1),
         contextImpression: z.string().trim().min(1),
         scores: scoresSchema,
@@ -496,6 +499,9 @@ export const sampleAnalyzeInput: AnalyzeInput = {
  * schema を満たす完成形の見本として使えます。
  */
 export const sampleAnalyzeOutput: AnalyzeOutput = {
+    promptVersion: "v1",
+    resultSchemaVersion: "v1",
+    model: "gpt-4.1-mini",
     textImpression:
         "文面は短く事務的ですが、強い拒絶や怒りを示す表現までは見られず、忙しさが影響している可能性があります。",
     contextImpression:

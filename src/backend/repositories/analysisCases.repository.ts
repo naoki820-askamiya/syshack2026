@@ -15,8 +15,9 @@
  * - `id` をキーにして素早く取り出しやすいからです
  */
 import type { PaginationOptions, StoredAnalysisCase } from "../types/index.js";
+import { supabase } from "../lib/supabase.js";
 
-const analysisCases = new Map<string, StoredAnalysisCase>();
+
 
 /**
  * 新しい analysis-case を保存します。
@@ -30,16 +31,51 @@ const analysisCases = new Map<string, StoredAnalysisCase>();
 export async function create(
     input: Omit<StoredAnalysisCase, "id" | "createdAt" | "updatedAt">,
 ): Promise<StoredAnalysisCase> {
-    const now = new Date().toISOString();
-    const created: StoredAnalysisCase = {
-        id: `case_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-        createdAt: now,
-        updatedAt: now,
-        ...input,
-    };
+    const { data, error } = await supabase
+        .from("analysis_cases")
+        .insert({
+            user_id: input.userId,
+            person_id: input.personId,
 
-    analysisCases.set(created.id, created);
-    return created;
+            status: input.status,
+
+            event_facts: input.analysisCase.eventFacts,
+            self_message: input.analysisCase.selfMessage,
+            partner_message: input.analysisCase.partnerMessage,
+
+            recent_conversation_text:
+                input.analysisCase.recentConversationText,
+
+            app_type: input.analysisCase.appType,
+            user_emotion: input.analysisCase.userEmotion,
+            assumed_partner_emotion:
+                input.analysisCase.assumedPartnerEmotion,
+
+            partner_speaking_style:
+                input.analysisCase.partnerSpeakingStyle,
+
+            context_note: input.analysisCase.contextNote,
+            concern_text: input.analysisCase.concernText,
+
+            emoji_used: input.analysisCase.emojiUsed,
+            tone_type: input.analysisCase.toneType,
+            message_length_type:
+                input.analysisCase.messageLengthType,
+
+            person_snapshot: {
+                schemaVersion: "v1",
+                capturedAt: new Date().toISOString(),
+                person: input.person,
+            },
+        })
+        .select()
+        .single();
+
+    if (error) {
+        throw error;
+    }
+
+    return toStoredAnalysisCase(data);
 }
 
 /**
@@ -47,34 +83,49 @@ export async function create(
  * 無いときは `null` を返します。
  */
 export async function findById(
-    caseId: string,
+    userId: string,
+    caseId: string
 ): Promise<StoredAnalysisCase | null> {
-    return analysisCases.get(caseId) ?? null;
+    const { data, error } = await supabase
+        .from("analysis_cases")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("id", caseId)
+        .single();
+
+    if(error){
+        return null;
+    }
+
+    return toStoredAnalysisCase(data);
 }
 
 /**
  * status だけを更新する関数です。
  *
- * `draft` → `analyzing` → `analyzed/error`
+ * `draft` → `analyzing` → `analyzed/failed`
  * のような流れで呼ばれます。
  */
 export async function updateStatus(
+    userId : string,
     caseId: string,
     status: StoredAnalysisCase["status"],
 ): Promise<StoredAnalysisCase | null> {
-    const existing = analysisCases.get(caseId);
-    if (!existing) {
+    const { data, error } = await supabase
+        .from("analysis_cases")
+        .update({
+            status,
+        })
+        .eq("user_id", userId)
+        .eq("id", caseId)
+        .select()
+        .single();
+
+    if (error) {
         return null;
     }
 
-    const updated: StoredAnalysisCase = {
-        ...existing,
-        status,
-        updatedAt: new Date().toISOString(),
-    };
-
-    analysisCases.set(caseId, updated);
-    return updated;
+    return toStoredAnalysisCase(data);
 }
 
 /**
@@ -84,25 +135,74 @@ export async function updateStatus(
  * たくさん増えたときでも、少しずつ読めるようにしています。
  */
 export async function findByPersonId(
-    sessionId: string,
+    userId: string,
     personId: string,
     options: PaginationOptions,
 ) {
-    const list = Array.from(analysisCases.values())
-        .filter(
-            (item) =>
-                item.sessionId === sessionId && item.personId === personId,
-        )
-        .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+    const { data, error } = await supabase
+        .from("analysis_cases")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("person_id", personId)
+        .order("created_at", { ascending: false })
+        .range(
+            options.offset,
+            options.offset + options.limit - 1,
+        );
 
-    const sliced = list.slice(options.offset, options.offset + options.limit);
+    if (error) {
+        throw error;
+    }
+
+    const analysisCases = (data ?? []).map(toStoredAnalysisCase);
 
     return {
-        analysisCases: sliced,
+        analysisCases,
         pagination: {
-            hasMore: list.length > options.offset + options.limit,
+            hasMore: analysisCases.length === options.limit,
             limit: options.limit,
             offset: options.offset,
         },
+    };
+}
+
+function toStoredAnalysisCase(row: any): StoredAnalysisCase {
+    return {
+        id: row.id,
+        userId: row.user_id,
+        personId: row.person_id,
+
+        person: row.person_snapshot?.person,
+
+        analysisCase: {
+            eventFacts: row.event_facts,
+            selfMessage: row.self_message,
+            partnerMessage: row.partner_message,
+
+            recentConversationText:
+                row.recent_conversation_text,
+
+            appType: row.app_type,
+            userEmotion: row.user_emotion,
+
+            assumedPartnerEmotion:
+                row.assumed_partner_emotion,
+
+            partnerSpeakingStyle:
+                row.partner_speaking_style,
+
+            contextNote: row.context_note,
+            concernText: row.concern_text,
+
+            emojiUsed: row.emoji_used,
+            toneType: row.tone_type,
+
+            messageLengthType:
+                row.message_length_type,
+        },
+
+        status: row.status,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
     };
 }

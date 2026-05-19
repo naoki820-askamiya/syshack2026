@@ -211,22 +211,22 @@ export interface CreatePersonBody {
     notes?: string;
 }
 
-export type AnalysisCaseStatus = "draft" | "analyzing" | "analyzed" | "error";
+export type AnalysisCaseStatus = "draft" | "analyzing" | "analyzed" | "failed";
 
 // session repository に保存する完全形です。
 // 今はインメモリ実装なので、サーバー再起動で消えます。
-export interface StoredSession {
-    id: string;
-    expiresAt: string;
-    createdAt: string;
-    updatedAt: string;
-}
+// export interface StoredSession {
+//     id: string;
+//     expiresAt: string;
+//     createdAt: string;
+//     updatedAt: string;
+// }
 
 // repository に保存する Person の完全形です。
 // sessionId や createdAt も含みます。
 export interface StoredPerson extends AnalyzePersonInput {
     id: string;
-    sessionId: string;
+    userId: string;
     createdAt: string;
     updatedAt: string;
 }
@@ -235,7 +235,7 @@ export interface StoredPerson extends AnalyzePersonInput {
 export interface StoredAnalysisCase {
     id: string;
     personId: string;
-    sessionId: string;
+    userId: string;
     status: AnalysisCaseStatus;
     person: AnalyzePersonInput;
     analysisCase: AnalyzeCaseFormInput;
@@ -246,11 +246,15 @@ export interface StoredAnalysisCase {
 // repository に保存する analysis result の完全形です。
 export interface StoredAnalysisResult {
     id: string;
+    userId: string;
     analysisCaseId: string;
+    analyzeRunId: string;
+    version: number;
     promptVersion: string;
-    result: AIAnalysisResult;
+    resultSchemaVersion: string;
+    model: string;
+    resultJson: AIAnalysisResult;
     createdAt: string;
-    updatedAt: string;
 }
 
 // 一覧取得で使うページング用の型です。
