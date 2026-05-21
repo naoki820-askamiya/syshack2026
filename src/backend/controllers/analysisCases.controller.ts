@@ -18,8 +18,13 @@ import * as analysisCasesService from "../services/analysisCases.service.js";
 
 // `requireSession` middleware を通ったあとに、
 // `req.sessionId` を使えるようにするための型です。
-type SessionRequest<TBody = unknown> = Request & {
-    sessionId?: string;
+// type SessionRequest<TBody = unknown> = Request & {
+//     sessionId?: string;
+//     body: TBody;
+// };
+
+type AuthRequest<TBody = unknown> = Request & {
+    userId?: string;
     body: TBody;
 };
 
@@ -34,13 +39,13 @@ type SessionRequest<TBody = unknown> = Request & {
  * - 作成された analysis-case を 201 で返します
  */
 export async function createAnalysisCase(
-    req: SessionRequest<CreateAnalysisCaseBody>,
+    req: AuthRequest<CreateAnalysisCaseBody>,
     res: Response,
     next: NextFunction,
 ) {
     try {
         const result = await analysisCasesService.createAnalysisCase(
-            req.sessionId ?? "",
+            req.userId ?? "",
             req.body,
         );
 
@@ -57,13 +62,13 @@ export async function createAnalysisCase(
  * controller 自体は AI を呼ばず、流れの管理は service に任せます。
  */
 export async function analyzeCase(
-    req: SessionRequest,
+    req: AuthRequest,
     res: Response,
     next: NextFunction,
 ) {
     try {
         const result = await analysisCasesService.analyzeCase(
-            req.sessionId ?? "",
+            req.userId ?? "",
             getSingleParam(req.params.caseId),
         );
 
@@ -79,14 +84,14 @@ export async function analyzeCase(
  * service から返ってきた値をそのまま JSON として返します。
  */
 export async function getResult(
-    req: SessionRequest,
+    req: AuthRequest,
     res: Response,
     next: NextFunction,
 ) {
     try {
         const result = await analysisCasesService.getResult(
-            req.sessionId ?? "",
             getSingleParam(req.params.caseId),
+            req.userId ?? "",
         );
 
         res.json(result);
@@ -102,7 +107,7 @@ export async function getResult(
  * どちらも文字列で来るので、ここで number に変換しています。
  */
 export async function getCasesByPerson(
-    req: SessionRequest,
+    req: AuthRequest,
     res: Response,
     next: NextFunction,
 ) {
@@ -111,7 +116,7 @@ export async function getCasesByPerson(
         const offset = normalizeOffset(req.query.offset);
 
         const result = await analysisCasesService.getCasesByPerson(
-            req.sessionId ?? "",
+            req.userId ?? "",
             getSingleParam(req.params.personId),
             { limit, offset },
         );

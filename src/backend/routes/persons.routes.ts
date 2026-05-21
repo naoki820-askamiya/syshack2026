@@ -11,16 +11,16 @@
 import { Router } from "express";
 import { createPerson } from "../controllers/persons.controller.js";
 import { getCasesByPerson } from "../controllers/analysisCases.controller.js";
-import { requireSession } from "../middlewares/requireSession.js";
+import { requireAuth } from "../middlewares/requireAuth.js";
 
 const router = Router();
 
 // Person を新しく作る URL です。
 // Person は session にひも付くので、X-Session-Id を必須にしています。
-router.post("/", requireSession, createPerson);
+router.post("/", requireAuth, createPerson);
 
 // 特定の Person にひも付く analysis-case 一覧を取る URL です。
 // 一覧取得そのものは analysisCases controller に渡しています。
-router.get("/:personId/analysis-cases", requireSession, getCasesByPerson);
+router.get("/:personId/analysis-cases", requireAuth, getCasesByPerson);
 
 export default router;

@@ -19,6 +19,7 @@ import { z } from "zod";
  * API キーは要件どおり process.env.OPENAI_API_KEY から読みます。
  * 初期化自体はファイル先頭で行い、実際の不足チェックは analyzeMood() 内で明示します。
  */
+
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });

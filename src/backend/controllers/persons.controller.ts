@@ -14,8 +14,12 @@ import type { CreatePersonBody } from "../types/index.js";
 import * as personsService from "../services/persons.service.js";
 
 // middleware で付与された sessionId を安全に扱うための型です。
-type SessionRequest<TBody = unknown> = Request & {
-    sessionId?: string;
+// type SessionRequest<TBody = unknown> = Request & {
+//     sessionId?: string;
+//     body: TBody;
+// };
+type AuthenticatedRequest<TBody = unknown> = Request & {
+    userId?: string;
     body: TBody;
 };
 
@@ -30,13 +34,13 @@ type SessionRequest<TBody = unknown> = Request & {
  * - 作成された person を 201 で返します
  */
 export async function createPerson(
-    req: SessionRequest<CreatePersonBody>,
+    req: AuthenticatedRequest<CreatePersonBody>,
     res: Response,
     next: NextFunction,
 ) {
     try {
         const result = await personsService.createPerson(
-            req.sessionId ?? "",
+            req.userId ?? "",
             req.body,
         );
 

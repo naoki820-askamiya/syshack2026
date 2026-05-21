@@ -62,6 +62,15 @@ export interface AIAnalysisResult {
     reasons: AnalysisReason[];
 }
 
+
+export interface AnalyzeMoodResult {
+    promptVersion: string;
+    resultSchemaVersion: string;
+    model: string;
+
+    result: AIAnalysisResult;
+}
+
 // フロントがそのまま扱いやすいよう、
 // 保存済み result の識別情報も含めた返却型です。
 export interface AnalysisResultResponse extends AIAnalysisResult {
