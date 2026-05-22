@@ -83,15 +83,17 @@ export async function createPerson(userId: string, data: CreatePersonBody) {
         });
     }
 
+    const normalizedAgeRange = normalizeOptionalText(ageRange);
+    const normalizedNotes = normalizeOptionalText(notes);
     // repository は実際の保存担当です。
     // service は「どの値を保存するか」を決めて渡します。
     const person = await personsRepository.create({
         userId,
         displayName,
         relationshipType,
-        ageRange,
+        ageRange: normalizedAgeRange,
         genderHint,
-        notes,
+        notes: normalizedNotes,
     });
 
     return { person };
@@ -119,4 +121,14 @@ export async function getOwnedPersonOrThrow(
     }
 
     return person;
+}
+
+function normalizeOptionalText(value?: string | null): string | null {
+    if (!value) {
+        return null;
+    }
+
+    const trimmed = value.trim();
+
+    return trimmed ? trimmed : null;
 }

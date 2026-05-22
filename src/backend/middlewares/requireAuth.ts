@@ -11,7 +11,7 @@ export async function requireAuth(
 ): Promise<void> {
 
     // 開発用の仮ユーザー
-    req.userId = "11111111-1111-1111-1111-111111111111";
+    req.userId = "f0afb32d-5fd5-4673-98fa-398a26bc22ab";
 
     next();
 }

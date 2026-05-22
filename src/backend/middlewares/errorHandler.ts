@@ -25,6 +25,8 @@ export const errorHandler: ErrorRequestHandler = (
     res: Response,
     _next: NextFunction,
 ): unknown => {
+    console.error(error);
+
     // まず、どんな種類の error でも扱いやすい共通 shape にそろえます。
     const normalized = normalizeError(error);
     const body = toErrorResponse(normalized);

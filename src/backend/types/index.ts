@@ -171,9 +171,9 @@ export type AnalysisMessageLengthType =
 export interface AnalyzePersonInput {
     displayName: string;
     relationshipType: RelationshipType;
-    ageRange: string;
+    ageRange: string | null;
     genderHint: GenderHint;
-    notes: string;
+    notes: string | null;
 }
 
 // analysis-case 作成時に受け取る本文の型です。
@@ -215,9 +215,9 @@ export interface CreateAnalysisCaseBody {
 export interface CreatePersonBody {
     displayName: string;
     relationshipType: RelationshipType;
-    ageRange?: string;
+    ageRange?: string | null;
     genderHint?: GenderHint;
-    notes?: string;
+    notes?: string | null;
 }
 
 export type AnalysisCaseStatus = "draft" | "analyzing" | "analyzed" | "failed";
