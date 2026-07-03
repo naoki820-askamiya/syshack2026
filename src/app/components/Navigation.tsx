@@ -1,9 +1,10 @@
 import { useState, useEffect, useSyncExternalStore } from 'react';
-import { Link, useLocation } from 'react-router';
-import { MessageCircle, History, ChevronRight, ChevronDown, House } from 'lucide-react';
-import { getConsultations } from '../utils/storage';
+import { Link, useLocation, useNavigate } from 'react-router';
+import { MessageCircle, History, ChevronRight, ChevronDown, House, LogIn, LogOut, UserPlus } from 'lucide-react';
+import { clearCachedConsultations, getConsultations } from '../utils/storage';
 import { getRelationStyle } from '../utils/relationStyles';
 import { ConsultationData } from '../types';
+import { useAuth } from '../auth/AuthContext';
 import {
   getExpandedPerson,
   setExpandedPerson,
@@ -23,6 +24,8 @@ function getRecentPersons(consultations: ConsultationData[]) {
 
 export function Navigation() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   const [persons, setPersons] = useState<ConsultationData[]>([]);
 
   // シングルトンストアから展開状態を読む（ページ遷移後も保持）
@@ -32,8 +35,14 @@ export function Navigation() {
   );
 
   useEffect(() => {
-    setPersons(getRecentPersons(getConsultations()));
-  }, [location.pathname]);
+    setPersons(user ? getRecentPersons(getConsultations()) : []);
+  }, [location.pathname, user]);
+
+  const handleSignOut = async () => {
+    await signOut();
+    clearCachedConsultations();
+    navigate('/');
+  };
 
   // ※ パス変更時のリセットは行わない（展開状態を保持するため）
 
@@ -41,11 +50,20 @@ export function Navigation() {
     { path: '/new', icon: MessageCircle, label: '新しい相談を作成' },
     { path: '/history', icon: History, label: '履歴' },
   ];
+  const guestSideNavItems = [
+    { path: '/login', icon: LogIn, label: 'ログイン' },
+    { path: '/register', icon: UserPlus, label: '新規登録' },
+  ];
 
   const buttomNavItems = [
     { path: '/', icon: House, label: 'ホーム' },
     { path: '/new', icon: MessageCircle, label: '新しい相談を作成' },
     { path: '/history', icon: History, label: '履歴' },
+  ];
+  const guestBottomNavItems = [
+    { path: '/', icon: House, label: 'ホーム' },
+    { path: '/login', icon: LogIn, label: 'ログイン' },
+    { path: '/register', icon: UserPlus, label: '新規登録' },
   ];
 
   return (
@@ -60,9 +78,27 @@ export function Navigation() {
           </Link>
         </div>
 
+        <div className="border-b border-[#D9E1EA] p-4">
+          {user ? (
+            <div className="space-y-3">
+              <p className="truncate text-sm font-medium text-[#1F2A37]">{user.email}</p>
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className="flex w-full items-center gap-2 rounded-lg border border-[#D9E1EA] px-3 py-2 text-sm font-medium text-[#5B6573] transition-colors hover:bg-[#F1F4F8]"
+              >
+                <LogOut className="h-4 w-4" />
+                ログアウト
+              </button>
+            </div>
+          ) : (
+            <p className="text-sm text-[#5B6573]">ログインすると相談履歴を保存できます。</p>
+          )}
+        </div>
+
         {/* メニュー + 人物リスト */}
         <div className="flex-1 overflow-y-auto p-4 space-y-1">
-          {sideNavItems.map((item) => {
+          {(user ? sideNavItems : guestSideNavItems).map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
             return (
@@ -82,7 +118,7 @@ export function Navigation() {
           })}
 
           {/* ── 相談した人物リスト ── */}
-          {persons.length > 0 && (
+          {user && persons.length > 0 && (
             <div className="pt-2">
               <p className="px-4 py-1.5 text-[11px] font-semibold text-[#8A94A6] uppercase tracking-wider">
                 最近の相談対象
@@ -151,7 +187,7 @@ export function Navigation() {
       {/* スマホ版: ボトムナビゲーション */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[#D9E1EA] p-4 z-50">
         <div className="max-w-2xl mx-auto flex justify-around">
-          {buttomNavItems.map((item) => {
+          {(user ? buttomNavItems : guestBottomNavItems).map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
             return (

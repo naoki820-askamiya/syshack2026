@@ -44,10 +44,13 @@ export interface ConsultationData {
 
 export interface EmotionScores {
   angry: number;
+  cold: number;
   busy: number;
-  justCold: number;
-  positive: number;
+  pressure: number;
   distance: number;
+  happy: number;
+  joy: number;
+  relief: number;
 }
 
 export interface ReplyExample {

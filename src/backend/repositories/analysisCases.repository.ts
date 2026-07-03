@@ -84,14 +84,14 @@ export async function updateStatus(
  * たくさん増えたときでも、少しずつ読めるようにしています。
  */
 export async function findByPersonId(
-    sessionId: string,
+    userId: string,
     personId: string,
     options: PaginationOptions,
 ) {
     const list = Array.from(analysisCases.values())
         .filter(
             (item) =>
-                item.sessionId === sessionId && item.personId === personId,
+                item.userId === userId && item.personId === personId,
         )
         .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
 

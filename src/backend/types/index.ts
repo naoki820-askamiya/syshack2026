@@ -82,7 +82,7 @@ export interface AnalyzeResponse {
 export interface AnalysisCaseInput {
     id?: string;
     personId?: string;
-    sessionId?: string;
+    userId?: string;
     status?: string;
     eventFacts: string;
     selfMessage?: string;
@@ -122,7 +122,8 @@ export interface ErrorResponseBody {
 // 本物の Express 型に強く依存しすぎないよう、必要な項目だけ定義しています。
 export interface RequestLike {
     headers?: Record<string, string | string[] | undefined>;
-    sessionId?: string;
+    userId?: string;
+    userEmail?: string | null;
 }
 
 // middleware で使う最小限の response 互換型です。
@@ -213,20 +214,11 @@ export interface CreatePersonBody {
 
 export type AnalysisCaseStatus = "draft" | "analyzing" | "analyzed" | "error";
 
-// session repository に保存する完全形です。
-// 今はインメモリ実装なので、サーバー再起動で消えます。
-export interface StoredSession {
-    id: string;
-    expiresAt: string;
-    createdAt: string;
-    updatedAt: string;
-}
-
 // repository に保存する Person の完全形です。
-// sessionId や createdAt も含みます。
+// Supabase Auth の userId や createdAt も含みます。
 export interface StoredPerson extends AnalyzePersonInput {
     id: string;
-    sessionId: string;
+    userId: string;
     createdAt: string;
     updatedAt: string;
 }
@@ -235,7 +227,7 @@ export interface StoredPerson extends AnalyzePersonInput {
 export interface StoredAnalysisCase {
     id: string;
     personId: string;
-    sessionId: string;
+    userId: string;
     status: AnalysisCaseStatus;
     person: AnalyzePersonInput;
     analysisCase: AnalyzeCaseFormInput;
@@ -246,6 +238,7 @@ export interface StoredAnalysisCase {
 // repository に保存する analysis result の完全形です。
 export interface StoredAnalysisResult {
     id: string;
+    userId: string;
     analysisCaseId: string;
     promptVersion: string;
     result: AIAnalysisResult;

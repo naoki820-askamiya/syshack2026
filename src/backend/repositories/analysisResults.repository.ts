@@ -36,6 +36,7 @@ export async function upsert(
           }
         : {
               id: `result_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+              userId: input.userId,
               analysisCaseId: input.analysisCaseId,
               promptVersion: input.promptVersion,
               result: input.result,
@@ -52,7 +53,14 @@ export async function upsert(
  * 見つからないときは `null` を返します。
  */
 export async function findByCaseId(
+    userId: string,
     caseId: string,
 ): Promise<StoredAnalysisResult | null> {
-    return analysisResults.get(caseId) ?? null;
+    const result = analysisResults.get(caseId) ?? null;
+
+    if (!result || result.userId !== userId) {
+        return null;
+    }
+
+    return result;
 }

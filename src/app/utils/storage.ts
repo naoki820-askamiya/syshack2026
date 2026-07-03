@@ -1,21 +1,16 @@
 import { ConsultationData, AnalysisResult } from '../types';
 
-const STORAGE_KEYS = {
-  CONSULTATIONS: 'kanjo-navi-consultations',
-  ANALYSES: 'kanjo-navi-analyses',
-};
+const consultations: ConsultationData[] = [];
+const analyses: AnalysisResult[] = [];
 
-// 相談データの保存
+// 画面遷移中の表示用キャッシュです。相談本文やAI結果はブラウザへ永続保存しません。
 export const saveConsultation = (data: ConsultationData): void => {
-  const consultations = getConsultations();
   consultations.push(data);
-  localStorage.setItem(STORAGE_KEYS.CONSULTATIONS, JSON.stringify(consultations));
 };
 
 // 全相談データの取得
 export const getConsultations = (): ConsultationData[] => {
-  const data = localStorage.getItem(STORAGE_KEYS.CONSULTATIONS);
-  return data ? JSON.parse(data) : [];
+  return [...consultations];
 };
 
 // 特定の相談データ取得
@@ -26,7 +21,6 @@ export const getConsultation = (id: string): ConsultationData | undefined => {
 
 // 分析結果の保存
 export const saveAnalysis = (consultationId: string, data: AnalysisResult): void => {
-  const analyses = getAnalyses();
   const newAnalysis = { ...data, consultationId };
   const existingIndex = analyses.findIndex(a => a.consultationId === consultationId);
   if (existingIndex > -1) {
@@ -34,13 +28,16 @@ export const saveAnalysis = (consultationId: string, data: AnalysisResult): void
   } else {
     analyses.push(newAnalysis);
   }
-  localStorage.setItem(STORAGE_KEYS.ANALYSES, JSON.stringify(analyses));
 };
 
 // 全分析結果の取得
 export const getAnalyses = (): AnalysisResult[] => {
-  const data = localStorage.getItem(STORAGE_KEYS.ANALYSES);
-  return data ? JSON.parse(data) : [];
+  return [...analyses];
+};
+
+export const clearCachedConsultations = (): void => {
+  consultations.length = 0;
+  analyses.length = 0;
 };
 
 // 特定の分析結果取得

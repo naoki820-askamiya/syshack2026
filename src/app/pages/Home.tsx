@@ -5,8 +5,10 @@ import { getRegisteredPersons, getConsultations } from '../utils/storage';
 import { Navigation } from '../components/Navigation';
 import { getRelationStyle, getReactionStyle } from '../utils/relationStyles';
 import { getRandomSubtitle } from '../utils/randomSubtitle';
+import { useAuth } from '../auth/AuthContext';
 
 export function Home() {
+  const { user } = useAuth();
   const persons = getRegisteredPersons();
   const recentConsultations = getConsultations().slice(-5).reverse();
 
@@ -26,13 +28,17 @@ export function Home() {
           </div>
 
           {/* メインアクション */}
-          <Link to="/new" className="block mb-6">
+          <Link to={user ? '/new' : '/login?returnTo=%2Fnew'} className="block mb-6">
             <button className="w-full bg-[#0F4C81] text-white rounded-2xl p-5 lg:p-7 shadow-sm hover:bg-[#0C3E69] transition-colors hover:scale-[1.01] active:scale-[0.99]">
               <div className="flex items-center justify-center gap-3">
                 <PlusCircle className="w-7 h-7 lg:w-9 lg:h-9" />
-                <span className="text-xl lg:text-2xl font-semibold">新しい相談を作成</span>
+                <span className="text-xl lg:text-2xl font-semibold">
+                  {user ? '新しい相談を作成' : 'ログインして相談を保存'}
+                </span>
               </div>
-              <p className="text-[#E8F1F8] text-sm mt-1">Find their invisible emotion.</p>
+              <p className="text-[#E8F1F8] text-sm mt-1">
+                {user ? 'Find their invisible emotion.' : 'ログイン後、この画面に戻ります。'}
+              </p>
             </button>
           </Link>
 

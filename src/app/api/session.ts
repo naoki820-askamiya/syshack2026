@@ -1,7 +1,9 @@
-
 import { saveAnalysis } from '../utils/storage';
+import { supabase } from '../auth/supabase';
 
-const serverUrl = import.meta.env.VITE_SERVER_URL;
+const serverUrl = import.meta.env.VITE_SERVER_URL ?? (
+  import.meta.env.DEV ? 'http://127.0.0.1:3000' : undefined
+);
 
 function requireServerUrl(): string {
   if (!serverUrl) {
@@ -12,38 +14,24 @@ function requireServerUrl(): string {
 }
 
 /**
- * API共通ラッパー：ヘッダーの付与と，401エラー時のセッション自動再生成を行います
+ * API共通ラッパー：Supabase Auth の access token を Authorization に付けます。
  */
-async function fetchWithSession(endpoint: string, options: RequestInit = {}): Promise<Response> {
+async function fetchWithAuth(endpoint: string, options: RequestInit = {}): Promise<Response> {
   const baseUrl = requireServerUrl();
-  let sessionId = localStorage.getItem("sessionId");
+  const { data } = await supabase.auth.getSession();
+  const accessToken = data.session?.access_token;
 
-  // セッションがない場合は新規作成
-  if (!sessionId) {
-    await createSession();
-    sessionId = localStorage.getItem("sessionId");
+  if (!accessToken) {
+    throw new Error('ログインが必要です。');
   }
 
   const headers = new Headers(options.headers || {});
-  if (sessionId) {
-    headers.set('X-Session-Id', sessionId);
-  }
+  headers.set('Authorization', `Bearer ${accessToken}`);
   if (!(options.body instanceof FormData) && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
 
-  let res = await fetch(`${baseUrl}${endpoint}`, { ...options, headers });
-
-  // 401エラー時はセッションを作り直して1度だけリトライする
-  if (res.status === 401) {
-    console.warn("セッションが切れました。再作成します。");
-    await createSession();
-    const newSessionId = localStorage.getItem("sessionId");
-    if (newSessionId) {
-      headers.set('X-Session-Id', newSessionId);
-      res = await fetch(`${baseUrl}${endpoint}`, { ...options, headers });
-    }
-  }
+  const res = await fetch(`${baseUrl}${endpoint}`, { ...options, headers });
 
   // 共通エラーハンドリング
   if (!res.ok) {
@@ -54,22 +42,22 @@ async function fetchWithSession(endpoint: string, options: RequestInit = {}): Pr
   return res;
 }
 
-export async function createSession(): Promise<{ sessionId: string, expiresAt: string }> {
+export async function getMe(): Promise<{ user: { id: string; email: string | null } | null }> {
   const baseUrl = requireServerUrl();
-  const res = await fetch(`${baseUrl}/api/sessions`, { method: 'POST' });
-  if (!res.ok) {
-    const errorText = await res.text().catch(() => "");
-    throw new Error(`セッションの作成に失敗しました: ${res.status}${errorText ? ` ${errorText}` : ""}`);
-  }
-  
-  const data = await res.json();
-  if (import.meta.env.DEV) {
-    console.log('セッションID:', data.sessionId);
-    console.log('有効期限:', data.expiresAt);
+  const { data } = await supabase.auth.getSession();
+  const headers = new Headers();
+
+  if (data.session?.access_token) {
+    headers.set('Authorization', `Bearer ${data.session.access_token}`);
   }
 
-  localStorage.setItem("sessionId", data.sessionId);
-  return data;
+  const res = await fetch(`${baseUrl}/api/me`, { headers });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => null);
+    throw new Error(errorData?.error?.message || `APIエラー: ${res.status}`);
+  }
+
+  return res.json();
 }
 
 export async function createPerson(params: {
@@ -103,7 +91,7 @@ export async function createPerson(params: {
     genderHint: genderHintsToApi[params.genderHint || '回答しない'] || 'unknown',
   };
 
-  const res = await fetchWithSession('/api/persons', {
+  const res = await fetchWithAuth('/api/persons', {
     method: 'POST',
     body: JSON.stringify(apiParams),
   });
@@ -119,7 +107,7 @@ export async function createAnalysisCase(params: {
   // その他任意項目
   [key: string]: any;
 }): Promise<any> {
-  const res = await fetchWithSession('/api/analysis-cases', {
+  const res = await fetchWithAuth('/api/analysis-cases', {
     method: 'POST',
     body: JSON.stringify(params),
   });
@@ -128,7 +116,7 @@ export async function createAnalysisCase(params: {
 }
 
 export async function analyze(caseId: string): Promise<any> {
-  const res = await fetchWithSession(`/api/analysis-cases/${caseId}/analyze`, {
+  const res = await fetchWithAuth(`/api/analysis-cases/${caseId}/analyze`, {
     method: 'POST',
   });
   const analysisResult = await res.json();
@@ -138,7 +126,7 @@ export async function analyze(caseId: string): Promise<any> {
 }
 
 export async function getResult(caseId: string): Promise<any> {
-  const res = await fetchWithSession(`/api/analysis-cases/${caseId}/results`, {
+  const res = await fetchWithAuth(`/api/analysis-cases/${caseId}/results`, {
     method: 'GET',
   });
   console.log('getResult response:', res); // debug
@@ -148,7 +136,7 @@ export async function getResult(caseId: string): Promise<any> {
 export async function getCasesByPerson(personId: string, options?: { limit?: number; offset?: number }): Promise<any> {
   const query = options ? new URLSearchParams(options as Record<string, string>).toString() : '';
   const endpoint = `/api/persons/${personId}/analysis-cases${query ? `?${query}` : ''}`;
-  const res = await fetchWithSession(endpoint, {
+  const res = await fetchWithAuth(endpoint, {
     method: 'GET',
   });
   console.log('getCasesByPerson response:', res); // debug

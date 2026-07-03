@@ -13,7 +13,7 @@ import type {
     RelationshipType,
     StoredPerson,
 } from "../types/index.js";
-import { AppError, buildSessionHeaderRequiredError } from "../utils/index.js";
+import { AppError } from "../utils/index.js";
 
 const RELATIONSHIP_TYPES: RelationshipType[] = [
     "boss",
@@ -34,7 +34,7 @@ const GENDER_HINTS: GenderHint[] = ["male", "female", "other", "unknown"];
  * Person 作成の service です。
  *
  * 受け取るもの:
- * - sessionId
+ * - userId
  * - Person 作成用の body
  *
  * 返すもの:
@@ -44,9 +44,9 @@ const GENDER_HINTS: GenderHint[] = ["male", "female", "other", "unknown"];
  * controller には「HTTP の整理」だけを持たせたいので、
  * 値の意味に関するチェックは service 側でしています。
  */
-export async function createPerson(sessionId: string, data: CreatePersonBody) {
-    if (!sessionId) {
-        throw buildSessionHeaderRequiredError();
+export async function createPerson(userId: string, data: CreatePersonBody) {
+    if (!userId) {
+        throw buildAuthRequiredError();
     }
 
     const displayName = String(data?.displayName ?? "").trim();
@@ -90,7 +90,7 @@ export async function createPerson(sessionId: string, data: CreatePersonBody) {
     // repository は実際の保存担当です。
     // service は「どの値を保存するか」を決めて渡します。
     const person = await personsRepository.create({
-        sessionId,
+        userId,
         displayName,
         relationshipType,
         ageRange,
@@ -108,30 +108,38 @@ export async function createPerson(sessionId: string, data: CreatePersonBody) {
  * ここで共通化して再利用しています。
  */
 export async function getOwnedPersonOrThrow(
-    sessionId: string,
+    userId: string,
     personId: string,
 ): Promise<StoredPerson> {
-    if (!sessionId) {
-        throw buildSessionHeaderRequiredError();
+    if (!userId) {
+        throw buildAuthRequiredError();
     }
 
     const person = await personsRepository.findById(personId);
 
     if (!person) {
         throw new AppError({
-            code: "NOT_FOUND",
+            code: "RESOURCE_NOT_FOUND",
             message: "person が見つかりません。",
             status: 404,
         });
     }
 
-    if (person.sessionId !== sessionId) {
+    if (person.userId !== userId) {
         throw new AppError({
-            code: "FORBIDDEN",
-            message: "この person にはアクセスできません。",
-            status: 403,
+            code: "RESOURCE_NOT_FOUND",
+            message: "person が見つかりません。",
+            status: 404,
         });
     }
 
     return person;
+}
+
+function buildAuthRequiredError(): AppError {
+    return new AppError({
+        code: "AUTH_REQUIRED",
+        message: "ログインが必要です。",
+        status: 401,
+    });
 }

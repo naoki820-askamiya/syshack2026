@@ -12,11 +12,12 @@ const CONFIDENCE_MAP = {
 };
 
 export function Analysis() {
-  const { id } = useParams<{ id: string }>();
+  const { id, caseId } = useParams<{ id?: string; caseId?: string }>();
   const navigate = useNavigate();
+  const resolvedId = id ?? caseId;
 
-  const consultation = id ? getConsultation(id) : undefined;
-  const analysis = id ? getAnalysis(id) : undefined;
+  const consultation = resolvedId ? getConsultation(resolvedId) : undefined;
+  const analysis = resolvedId ? getAnalysis(resolvedId) : undefined;
 
   if (!consultation || !analysis) {
     return (
