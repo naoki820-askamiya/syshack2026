@@ -1,28 +1,54 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { ArrowLeft, UserPlus } from 'lucide-react';
+import { useAuth } from '../auth/AuthContext';
 
 export function Register() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { signUp } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
     confirmPassword: '',
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [noticeMessage, setNoticeMessage] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const returnTo = searchParams.get('returnTo') || '/new';
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage('');
+    setNoticeMessage('');
     
     if (formData.password !== formData.confirmPassword) {
-      alert('パスワードが一致しません');
+      setErrorMessage('パスワードが一致しません。');
       return;
     }
     
-    // 新規登録処理のモック（実際の認証は未実装）
-    console.log('Register attempt:', formData);
-    // 登録成功後はホームに戻る
-    navigate('/');
+    setIsSubmitting(true);
+
+    try {
+      const result = await signUp(
+        formData.email.trim(),
+        formData.password,
+        formData.name.trim(),
+      );
+
+      if (result.needsEmailConfirmation) {
+        setNoticeMessage('確認メールを送信しました。メール内のリンクを開いてからログインしてください。');
+        return;
+      }
+
+      navigate(returnTo, { replace: true });
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : '新規登録に失敗しました。');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -48,6 +74,17 @@ export function Register() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4 lg:space-y-5">
+            {errorMessage && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {errorMessage}
+              </div>
+            )}
+            {noticeMessage && (
+              <div className="rounded-lg border border-[#B9DDBB] bg-[#EAF6EF] px-4 py-3 text-sm text-[#1F7A4D]">
+                {noticeMessage}
+              </div>
+            )}
+
             {/* 名前 */}
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-[#5B6573] mb-2">
@@ -67,7 +104,7 @@ export function Register() {
             {/* メールアドレス */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-[#5B6573] mb-2">
-                メールアド���ス
+                メールアドレス
               </label>
               <input
                 id="email"
@@ -116,9 +153,10 @@ export function Register() {
             {/* 登録ボタン */}
             <button
               type="submit"
-              className="w-full bg-[#0F4C81] text-white py-3 lg:py-4 rounded-lg font-semibold shadow-sm hover:bg-[#0C3E69] transition-colors mt-6 lg:text-lg"
+              disabled={isSubmitting}
+              className="w-full bg-[#0F4C81] text-white py-3 lg:py-4 rounded-lg font-semibold shadow-sm hover:bg-[#0C3E69] transition-colors mt-6 lg:text-lg disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              登録する
+              {isSubmitting ? '登録中...' : '登録する'}
             </button>
           </form>
 
@@ -128,7 +166,7 @@ export function Register() {
               すでにアカウントをお持ちの方は
               <button
                 type="button"
-                onClick={() => navigate('/login')}
+                onClick={() => navigate(`/login?returnTo=${encodeURIComponent(returnTo)}`)}
                 className="text-[#0F4C81] hover:text-[#0C3E69] font-medium ml-1"
               >
                 ログイン
@@ -137,10 +175,6 @@ export function Register() {
           </div>
         </div>
 
-        {/* 注意書き */}
-        <p className="text-center text-xs text-[#5B6573] mt-6">
-          ※ このアプリはプロトタイプです。実際の認証機能は未実装です。
-        </p>
       </div>
     </div>
   );

@@ -14,19 +14,19 @@ import {
     createAnalysisCase,
     getResult,
 } from "../controllers/analysisCases.controller.js";
-import { requireSession } from "../middlewares/requireSession.js";
+import { requireAuth } from "../middlewares/requireAuth.js";
 
 const router = Router();
 
 // analysis-case を新しく作る URL です。
-// session が必要なので、先に requireSession を通します。
-router.post("/", requireSession, createAnalysisCase);
+// ログインが必要なので、先に requireAuth を通します。
+router.post("/", requireAuth, createAnalysisCase);
 
 // 指定した caseId に対して AI 分析を実行する URL です。
 // ここでは URL だけ決めて、何をするかは controller / service に任せます。
-router.post("/:caseId/analyze", requireSession, analyzeCase);
+router.post("/:caseId/analyze", requireAuth, analyzeCase);
 
 // すでに保存済みの分析結果を取り出す URL です。
-router.get("/:caseId/results", requireSession, getResult);
+router.get("/:caseId/results", requireAuth, getResult);
 
 export default router;

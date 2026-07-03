@@ -32,7 +32,6 @@ import type {
 import {
     ANALYZE_TIMEOUT_MS,
     AppError,
-    buildSessionHeaderRequiredError,
     normalizeError,
     withTimeout,
 } from "../utils/index.js";
@@ -72,7 +71,7 @@ const MESSAGE_LENGTH_TYPE_ALIASES: Record<string, AnalysisMessageLengthType> = {
  * analysis-case を新しく作る service です。
  *
  * 受け取るもの:
- * - sessionId
+ * - userId
  * - 画面から送られてきた analysis-case 作成用データ
  *
  * 返すもの:
@@ -89,11 +88,11 @@ const MESSAGE_LENGTH_TYPE_ALIASES: Record<string, AnalysisMessageLengthType> = {
  * 後で analyze するときに AI へ渡せるようにするためです。
  */
 export async function createAnalysisCase(
-    sessionId: string,
+    userId: string,
     data: CreateAnalysisCaseBody,
 ) {
-    if (!sessionId) {
-        throw buildSessionHeaderRequiredError();
+    if (!userId) {
+        throw buildAuthRequiredError();
     }
 
     const personId = String(data?.personId ?? "").trim();
@@ -121,7 +120,7 @@ export async function createAnalysisCase(
         });
     }
 
-    const person = await getOwnedPersonOrThrow(sessionId, personId);
+    const person = await getOwnedPersonOrThrow(userId, personId);
     const normalizedCaseInput = sanitizeAnalysisCaseInput({
         ...data,
         personId,
@@ -131,7 +130,7 @@ export async function createAnalysisCase(
     });
 
     const analysisCase = await analysisCasesRepository.create({
-        sessionId,
+        userId,
         personId,
         person: {
             displayName: person.displayName,
@@ -151,7 +150,7 @@ export async function createAnalysisCase(
  * AI 分析を実行する service です。
  *
  * 受け取るもの:
- * - sessionId
+ * - userId
  * - 分析対象の caseId
  *
  * 返すもの:
@@ -173,8 +172,8 @@ export async function createAnalysisCase(
  * timeout を入れている理由:
  * - OpenAI 呼び出しが長く止まったときに、サーバーが待ち続けないようにするためです
  */
-export async function analyzeCase(sessionId: string, caseId: string) {
-    const analysisCase = await getOwnedCaseOrThrow(sessionId, caseId);
+export async function analyzeCase(userId: string, caseId: string) {
+    const analysisCase = await getOwnedCaseOrThrow(userId, caseId);
 
     if (analysisCase.status === "analyzing") {
         throw new AppError({
@@ -210,6 +209,7 @@ export async function analyzeCase(sessionId: string, caseId: string) {
 
         // AI の生レスポンス全体ではなく、検証済みの結果だけを保存します。
         const savedResult = await analysisResultsRepository.upsert({
+            userId,
             analysisCaseId: caseId,
             promptVersion: "v1",
             result: aiResult,
@@ -241,8 +241,8 @@ export async function analyzeCase(sessionId: string, caseId: string) {
  * まだ analyzed されていない場合は、
  * `result: null` で現在の status だけ返します。
  */
-export async function getResult(sessionId: string, caseId: string) {
-    const analysisCase = await getOwnedCaseOrThrow(sessionId, caseId);
+export async function getResult(userId: string, caseId: string) {
+    const analysisCase = await getOwnedCaseOrThrow(userId, caseId);
 
     if (analysisCase.status !== "analyzed") {
         return {
@@ -251,7 +251,7 @@ export async function getResult(sessionId: string, caseId: string) {
         };
     }
 
-    const savedResult = await analysisResultsRepository.findByCaseId(caseId);
+    const savedResult = await analysisResultsRepository.findByCaseId(userId, caseId);
 
     return {
         status: "analyzed",
@@ -266,13 +266,13 @@ export async function getResult(sessionId: string, caseId: string) {
  * 他の session の Person 一覧を見えてしまわないようにするためです。
  */
 export async function getCasesByPerson(
-    sessionId: string,
+    userId: string,
     personId: string,
     options: PaginationOptions,
 ) {
-    await getOwnedPersonOrThrow(sessionId, personId);
+    await getOwnedPersonOrThrow(userId, personId);
 
-    return analysisCasesRepository.findByPersonId(sessionId, personId, options);
+    return analysisCasesRepository.findByPersonId(userId, personId, options);
 }
 
 /**
@@ -281,30 +281,38 @@ export async function getCasesByPerson(
  *
  * 同じ確認を毎回コピペしないために、ここへまとめています。
  */
-async function getOwnedCaseOrThrow(sessionId: string, caseId: string): Promise<StoredAnalysisCase> {
-    if (!sessionId) {
-        throw buildSessionHeaderRequiredError();
+async function getOwnedCaseOrThrow(userId: string, caseId: string): Promise<StoredAnalysisCase> {
+    if (!userId) {
+        throw buildAuthRequiredError();
     }
 
     const analysisCase = await analysisCasesRepository.findById(caseId);
 
     if (!analysisCase) {
         throw new AppError({
-            code: "NOT_FOUND",
+            code: "RESOURCE_NOT_FOUND",
             message: "analysis case が見つかりません。",
             status: 404,
         });
     }
 
-    if (analysisCase.sessionId !== sessionId) {
+    if (analysisCase.userId !== userId) {
         throw new AppError({
-            code: "FORBIDDEN",
-            message: "この analysis case にはアクセスできません。",
-            status: 403,
+            code: "RESOURCE_NOT_FOUND",
+            message: "analysis case が見つかりません。",
+            status: 404,
         });
     }
 
     return analysisCase;
+}
+
+function buildAuthRequiredError(): AppError {
+    return new AppError({
+        code: "AUTH_REQUIRED",
+        message: "ログインが必要です。",
+        status: 401,
+    });
 }
 
 /**

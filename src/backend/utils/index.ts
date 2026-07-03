@@ -19,7 +19,6 @@ import type {
 // Analyze API の共通 timeout 値です。
 // 複数箇所に数字を散らさず、仕様変更時もここだけ直せるようにしています。
 export const ANALYZE_TIMEOUT_MS = 15000;
-export const SESSION_HEADER_NAME = "X-Session-Id";
 
 // アプリ内で共通利用するエラークラスです。
 // code / message / status を必ず持たせることで、最終的な API 返却形式をそろえやすくしています。
@@ -136,22 +135,6 @@ export async function withTimeout<T>(
             clearTimeout(timer);
         }
     }
-}
-
-export function buildSessionHeaderRequiredError(): AppError {
-    return new AppError({
-        code: "SESSION_INVALID",
-        message: `${SESSION_HEADER_NAME} ヘッダーが必要です。`,
-        status: 401,
-    });
-}
-
-export function buildSessionInvalidError(): AppError {
-    return new AppError({
-        code: "SESSION_INVALID",
-        message: `${SESSION_HEADER_NAME} が無効または期限切れです。`,
-        status: 401,
-    });
 }
 
 function buildAiTimeoutError(cause?: unknown): AppError {

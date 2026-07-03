@@ -1,20 +1,34 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { ArrowLeft, LogIn } from 'lucide-react';
+import { useAuth } from '../auth/AuthContext';
 
 export function Login() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { signIn } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const returnTo = searchParams.get('returnTo') || '/';
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // ログイン処理のモック（実際の認証は未実装）
-    console.log('Login attempt:', formData);
-    // ログイン成功後はホームに戻る
-    navigate('/');
+    setErrorMessage('');
+    setIsSubmitting(true);
+
+    try {
+      await signIn(formData.email.trim(), formData.password);
+      navigate(returnTo, { replace: true });
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'ログインに失敗しました。');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -40,6 +54,12 @@ export function Login() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4 lg:space-y-5">
+            {errorMessage && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {errorMessage}
+              </div>
+            )}
+
             {/* メールアドレス */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-[#5B6573] mb-2">
@@ -85,9 +105,10 @@ export function Login() {
             {/* ログインボタン */}
             <button
               type="submit"
-              className="w-full bg-[#0F4C81] text-white py-3 lg:py-4 rounded-lg font-semibold shadow-sm hover:bg-[#0C3E69] transition-colors lg:text-lg"
+              disabled={isSubmitting}
+              className="w-full bg-[#0F4C81] text-white py-3 lg:py-4 rounded-lg font-semibold shadow-sm hover:bg-[#0C3E69] transition-colors lg:text-lg disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              ログイン
+              {isSubmitting ? 'ログイン中...' : 'ログイン'}
             </button>
           </form>
 
@@ -98,7 +119,7 @@ export function Login() {
             </p>
             <button
               type="button"
-              onClick={() => navigate('/register')}
+              onClick={() => navigate(`/register?returnTo=${encodeURIComponent(returnTo)}`)}
               className="w-full bg-white text-[#0F4C81] py-3 lg:py-4 rounded-lg font-medium border-2 border-[#D9E1EA] hover:bg-[#F1F4F8] transition-colors lg:text-lg"
             >
               新規登録
@@ -106,10 +127,6 @@ export function Login() {
           </div>
         </div>
 
-        {/* 注意書き */}
-        <p className="text-center text-xs text-[#5B6573] mt-6">
-          ※ このアプリはプロトタイプです。実際の認証機能は未実装です。
-        </p>
       </div>
     </div>
   );

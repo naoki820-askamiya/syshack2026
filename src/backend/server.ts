@@ -23,11 +23,20 @@ type OptionalRouterModule = {
     default?: Router;
 };
 
-const allowedOrigins = [
+// まず通常の `.env` を読みます。
+// そのあと `.env.local` を上書きで読むことで、
+// ローカル環境だけの設定を優先できるようにしています。
+loadDotenv({ path: ".env" });
+loadDotenv({ path: ".env.local", override: true });
+
+const defaultAllowedOrigins = [
     "http://localhost:5173",
+    "http://127.0.0.1:5173",
     "https://kigen404.vercel.app",
     "https://syshack2026.vercel.app",
 ];
+
+const allowedOrigins = readAllowedOrigins();
 
 const corsOptions: CorsOptions = {
     origin(origin, callback) {
@@ -42,12 +51,6 @@ const corsOptions: CorsOptions = {
     },
     credentials: true,
 };
-
-// まず通常の `.env` を読みます。
-// そのあと `.env.local` を上書きで読むことで、
-// ローカル環境だけの設定を優先できるようにしています。
-loadDotenv({ path: ".env" });
-loadDotenv({ path: ".env.local", override: true });
 
 /**
  * Express アプリ本体を作る関数です。
@@ -81,8 +84,8 @@ export async function createServerApp() {
     // その先の細かい分岐は各 route ファイルに任せています。
     await mountOptionalRouter(
         app,
-        "/api/sessions",
-        () => import("./routes/sessions.routes.js"),
+        "/api/me",
+        () => import("./routes/me.routes.js"),
     );
     await mountOptionalRouter(
         app,
@@ -141,6 +144,21 @@ async function mountOptionalRouter(
     if (routeModule.default) {
         app.use(path, routeModule.default);
     }
+}
+
+function readAllowedOrigins(): string[] {
+    const envOrigins = readEnv("ALLOWED_ORIGINS") ?? readEnv("FRONTEND_ORIGIN");
+
+    if (!envOrigins) {
+        return defaultAllowedOrigins;
+    }
+
+    const origins = envOrigins
+        .split(",")
+        .map((origin) => origin.trim())
+        .filter(Boolean);
+
+    return origins.length > 0 ? origins : defaultAllowedOrigins;
 }
 
 // 実際の起動は `src/server.ts` から行います。
