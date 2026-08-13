@@ -56,7 +56,12 @@ export const ModelName = {
   AnalysisResult: 'AnalysisResult',
   AnalysisFeedback: 'AnalysisFeedback',
   PersonProfile: 'PersonProfile',
-  UserPatternSummary: 'UserPatternSummary'
+  UserPatternSummary: 'UserPatternSummary',
+  UserPrivacySetting: 'UserPrivacySetting',
+  UserConsentRecord: 'UserConsentRecord',
+  GuestTrialAttempt: 'GuestTrialAttempt',
+  ApiUsageEvent: 'ApiUsageEvent',
+  RateLimitPolicy: 'RateLimitPolicy'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -80,12 +85,10 @@ export const PersonScalarFieldEnum = {
   userId: 'userId',
   displayName: 'displayName',
   relationshipType: 'relationshipType',
-  ageRange: 'ageRange',
-  genderHint: 'genderHint',
   notes: 'notes',
+  archivedAt: 'archivedAt',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  archivedAt: 'archivedAt'
+  updatedAt: 'updatedAt'
 } as const
 
 export type PersonScalarFieldEnum = (typeof PersonScalarFieldEnum)[keyof typeof PersonScalarFieldEnum]
@@ -96,19 +99,13 @@ export const AnalysisCaseScalarFieldEnum = {
   userId: 'userId',
   personId: 'personId',
   status: 'status',
+  userAgeRange: 'userAgeRange',
+  userGender: 'userGender',
+  perceivedPartnerReaction: 'perceivedPartnerReaction',
+  elapsedTimeType: 'elapsedTimeType',
   eventFacts: 'eventFacts',
-  selfMessage: 'selfMessage',
-  partnerMessage: 'partnerMessage',
-  recentConversationText: 'recentConversationText',
-  appType: 'appType',
-  userEmotion: 'userEmotion',
-  assumedPartnerEmotion: 'assumedPartnerEmotion',
-  partnerSpeakingStyle: 'partnerSpeakingStyle',
-  contextNote: 'contextNote',
-  concernText: 'concernText',
-  emojiUsed: 'emojiUsed',
-  toneType: 'toneType',
-  messageLengthType: 'messageLengthType',
+  userResponseType: 'userResponseType',
+  userResponseText: 'userResponseText',
   personSnapshot: 'personSnapshot',
   analyzeRunId: 'analyzeRunId',
   analyzeStartedAt: 'analyzeStartedAt',
@@ -133,6 +130,11 @@ export const AnalysisResultScalarFieldEnum = {
   resultSchemaVersion: 'resultSchemaVersion',
   model: 'model',
   resultJson: 'resultJson',
+  personProfileId: 'personProfileId',
+  userPatternSummaryId: 'userPatternSummaryId',
+  usedCaseIds: 'usedCaseIds',
+  usedFeedbackIds: 'usedFeedbackIds',
+  contextJson: 'contextJson',
   createdAt: 'createdAt'
 } as const
 
@@ -144,10 +146,12 @@ export const AnalysisFeedbackScalarFieldEnum = {
   userId: 'userId',
   analysisCaseId: 'analysisCaseId',
   analysisResultId: 'analysisResultId',
-  wasHelpful: 'wasHelpful',
-  outcomeType: 'outcomeType',
-  actualOutcomeNote: 'actualOutcomeNote',
-  userCorrection: 'userCorrection',
+  actualOutcome: 'actualOutcome',
+  helpfulnessScore: 'helpfulnessScore',
+  overreadScore: 'overreadScore',
+  usedRecommendedAction: 'usedRecommendedAction',
+  outcomeNote: 'outcomeNote',
+  allowPersonalizationUse: 'allowPersonalizationUse',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -162,7 +166,12 @@ export const PersonProfileScalarFieldEnum = {
   profileSchemaVersion: 'profileSchemaVersion',
   profileJson: 'profileJson',
   sourceCaseCount: 'sourceCaseCount',
-  lastGeneratedAt: 'lastGeneratedAt',
+  sourceFeedbackCount: 'sourceFeedbackCount',
+  sourceLatestCaseId: 'sourceLatestCaseId',
+  needsRefresh: 'needsRefresh',
+  staleSince: 'staleSince',
+  generatedByModel: 'generatedByModel',
+  generatedAt: 'generatedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -176,12 +185,93 @@ export const UserPatternSummaryScalarFieldEnum = {
   summarySchemaVersion: 'summarySchemaVersion',
   summaryJson: 'summaryJson',
   sourceCaseCount: 'sourceCaseCount',
-  lastGeneratedAt: 'lastGeneratedAt',
+  sourceFeedbackCount: 'sourceFeedbackCount',
+  generatedByModel: 'generatedByModel',
+  generatedAt: 'generatedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
 export type UserPatternSummaryScalarFieldEnum = (typeof UserPatternSummaryScalarFieldEnum)[keyof typeof UserPatternSummaryScalarFieldEnum]
+
+
+export const UserPrivacySettingScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  personalizationEnabled: 'personalizationEnabled',
+  usePersonProfile: 'usePersonProfile',
+  useUserPatternSummary: 'useUserPatternSummary',
+  useFeedbackForContext: 'useFeedbackForContext',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type UserPrivacySettingScalarFieldEnum = (typeof UserPrivacySettingScalarFieldEnum)[keyof typeof UserPrivacySettingScalarFieldEnum]
+
+
+export const UserConsentRecordScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  termsVersion: 'termsVersion',
+  privacyPolicyVersion: 'privacyPolicyVersion',
+  consentedAt: 'consentedAt',
+  ipAddressHash: 'ipAddressHash',
+  userAgentHash: 'userAgentHash'
+} as const
+
+export type UserConsentRecordScalarFieldEnum = (typeof UserConsentRecordScalarFieldEnum)[keyof typeof UserConsentRecordScalarFieldEnum]
+
+
+export const GuestTrialAttemptScalarFieldEnum = {
+  id: 'id',
+  trialTokenHash: 'trialTokenHash',
+  ipHash: 'ipHash',
+  userAgentHash: 'userAgentHash',
+  deviceHintHash: 'deviceHintHash',
+  status: 'status',
+  consumedAt: 'consumedAt',
+  blockedReason: 'blockedReason',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type GuestTrialAttemptScalarFieldEnum = (typeof GuestTrialAttemptScalarFieldEnum)[keyof typeof GuestTrialAttemptScalarFieldEnum]
+
+
+export const ApiUsageEventScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  guestTrialAttemptId: 'guestTrialAttemptId',
+  routeKey: 'routeKey',
+  ipHash: 'ipHash',
+  userAgentHash: 'userAgentHash',
+  costUnits: 'costUnits',
+  status: 'status',
+  createdAt: 'createdAt'
+} as const
+
+export type ApiUsageEventScalarFieldEnum = (typeof ApiUsageEventScalarFieldEnum)[keyof typeof ApiUsageEventScalarFieldEnum]
+
+
+export const RateLimitPolicyScalarFieldEnum = {
+  id: 'id',
+  policyKey: 'policyKey',
+  subjectType: 'subjectType',
+  routeKey: 'routeKey',
+  windowType: 'windowType',
+  windowSeconds: 'windowSeconds',
+  resetTimezone: 'resetTimezone',
+  maxRequests: 'maxRequests',
+  maxCostUnits: 'maxCostUnits',
+  planType: 'planType',
+  isEnabled: 'isEnabled',
+  priority: 'priority',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type RateLimitPolicyScalarFieldEnum = (typeof RateLimitPolicyScalarFieldEnum)[keyof typeof RateLimitPolicyScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -197,6 +287,14 @@ export const JsonNullValueInput = {
 } as const
 
 export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
+
+
+export const NullableJsonNullValueInput = {
+  DbNull: DbNull,
+  JsonNull: JsonNull
+} as const
+
+export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
 
 
 export const QueryMode = {

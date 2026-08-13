@@ -20,8 +20,20 @@ export type AnalysisFeedbackModel = runtime.Types.Result.DefaultSelection<Prisma
 
 export type AggregateAnalysisFeedback = {
   _count: AnalysisFeedbackCountAggregateOutputType | null
+  _avg: AnalysisFeedbackAvgAggregateOutputType | null
+  _sum: AnalysisFeedbackSumAggregateOutputType | null
   _min: AnalysisFeedbackMinAggregateOutputType | null
   _max: AnalysisFeedbackMaxAggregateOutputType | null
+}
+
+export type AnalysisFeedbackAvgAggregateOutputType = {
+  helpfulnessScore: number | null
+  overreadScore: number | null
+}
+
+export type AnalysisFeedbackSumAggregateOutputType = {
+  helpfulnessScore: number | null
+  overreadScore: number | null
 }
 
 export type AnalysisFeedbackMinAggregateOutputType = {
@@ -29,10 +41,12 @@ export type AnalysisFeedbackMinAggregateOutputType = {
   userId: string | null
   analysisCaseId: string | null
   analysisResultId: string | null
-  wasHelpful: boolean | null
-  outcomeType: string | null
-  actualOutcomeNote: string | null
-  userCorrection: string | null
+  actualOutcome: string | null
+  helpfulnessScore: number | null
+  overreadScore: number | null
+  usedRecommendedAction: boolean | null
+  outcomeNote: string | null
+  allowPersonalizationUse: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -42,10 +56,12 @@ export type AnalysisFeedbackMaxAggregateOutputType = {
   userId: string | null
   analysisCaseId: string | null
   analysisResultId: string | null
-  wasHelpful: boolean | null
-  outcomeType: string | null
-  actualOutcomeNote: string | null
-  userCorrection: string | null
+  actualOutcome: string | null
+  helpfulnessScore: number | null
+  overreadScore: number | null
+  usedRecommendedAction: boolean | null
+  outcomeNote: string | null
+  allowPersonalizationUse: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -55,25 +71,39 @@ export type AnalysisFeedbackCountAggregateOutputType = {
   userId: number
   analysisCaseId: number
   analysisResultId: number
-  wasHelpful: number
-  outcomeType: number
-  actualOutcomeNote: number
-  userCorrection: number
+  actualOutcome: number
+  helpfulnessScore: number
+  overreadScore: number
+  usedRecommendedAction: number
+  outcomeNote: number
+  allowPersonalizationUse: number
   createdAt: number
   updatedAt: number
   _all: number
 }
 
 
+export type AnalysisFeedbackAvgAggregateInputType = {
+  helpfulnessScore?: true
+  overreadScore?: true
+}
+
+export type AnalysisFeedbackSumAggregateInputType = {
+  helpfulnessScore?: true
+  overreadScore?: true
+}
+
 export type AnalysisFeedbackMinAggregateInputType = {
   id?: true
   userId?: true
   analysisCaseId?: true
   analysisResultId?: true
-  wasHelpful?: true
-  outcomeType?: true
-  actualOutcomeNote?: true
-  userCorrection?: true
+  actualOutcome?: true
+  helpfulnessScore?: true
+  overreadScore?: true
+  usedRecommendedAction?: true
+  outcomeNote?: true
+  allowPersonalizationUse?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -83,10 +113,12 @@ export type AnalysisFeedbackMaxAggregateInputType = {
   userId?: true
   analysisCaseId?: true
   analysisResultId?: true
-  wasHelpful?: true
-  outcomeType?: true
-  actualOutcomeNote?: true
-  userCorrection?: true
+  actualOutcome?: true
+  helpfulnessScore?: true
+  overreadScore?: true
+  usedRecommendedAction?: true
+  outcomeNote?: true
+  allowPersonalizationUse?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -96,10 +128,12 @@ export type AnalysisFeedbackCountAggregateInputType = {
   userId?: true
   analysisCaseId?: true
   analysisResultId?: true
-  wasHelpful?: true
-  outcomeType?: true
-  actualOutcomeNote?: true
-  userCorrection?: true
+  actualOutcome?: true
+  helpfulnessScore?: true
+  overreadScore?: true
+  usedRecommendedAction?: true
+  outcomeNote?: true
+  allowPersonalizationUse?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -143,6 +177,18 @@ export type AnalysisFeedbackAggregateArgs<ExtArgs extends runtime.Types.Extensio
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
+   * Select which fields to average
+  **/
+  _avg?: AnalysisFeedbackAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: AnalysisFeedbackSumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
    * Select which fields to find the minimum value
   **/
   _min?: AnalysisFeedbackMinAggregateInputType
@@ -173,6 +219,8 @@ export type AnalysisFeedbackGroupByArgs<ExtArgs extends runtime.Types.Extensions
   take?: number
   skip?: number
   _count?: AnalysisFeedbackCountAggregateInputType | true
+  _avg?: AnalysisFeedbackAvgAggregateInputType
+  _sum?: AnalysisFeedbackSumAggregateInputType
   _min?: AnalysisFeedbackMinAggregateInputType
   _max?: AnalysisFeedbackMaxAggregateInputType
 }
@@ -182,13 +230,17 @@ export type AnalysisFeedbackGroupByOutputType = {
   userId: string
   analysisCaseId: string
   analysisResultId: string
-  wasHelpful: boolean | null
-  outcomeType: string | null
-  actualOutcomeNote: string | null
-  userCorrection: string | null
+  actualOutcome: string | null
+  helpfulnessScore: number | null
+  overreadScore: number | null
+  usedRecommendedAction: boolean | null
+  outcomeNote: string | null
+  allowPersonalizationUse: boolean
   createdAt: Date
   updatedAt: Date
   _count: AnalysisFeedbackCountAggregateOutputType | null
+  _avg: AnalysisFeedbackAvgAggregateOutputType | null
+  _sum: AnalysisFeedbackSumAggregateOutputType | null
   _min: AnalysisFeedbackMinAggregateOutputType | null
   _max: AnalysisFeedbackMaxAggregateOutputType | null
 }
@@ -216,10 +268,12 @@ export type AnalysisFeedbackWhereInput = {
   userId?: Prisma.UuidFilter<"AnalysisFeedback"> | string
   analysisCaseId?: Prisma.UuidFilter<"AnalysisFeedback"> | string
   analysisResultId?: Prisma.UuidFilter<"AnalysisFeedback"> | string
-  wasHelpful?: Prisma.BoolNullableFilter<"AnalysisFeedback"> | boolean | null
-  outcomeType?: Prisma.StringNullableFilter<"AnalysisFeedback"> | string | null
-  actualOutcomeNote?: Prisma.StringNullableFilter<"AnalysisFeedback"> | string | null
-  userCorrection?: Prisma.StringNullableFilter<"AnalysisFeedback"> | string | null
+  actualOutcome?: Prisma.StringNullableFilter<"AnalysisFeedback"> | string | null
+  helpfulnessScore?: Prisma.IntNullableFilter<"AnalysisFeedback"> | number | null
+  overreadScore?: Prisma.IntNullableFilter<"AnalysisFeedback"> | number | null
+  usedRecommendedAction?: Prisma.BoolNullableFilter<"AnalysisFeedback"> | boolean | null
+  outcomeNote?: Prisma.StringNullableFilter<"AnalysisFeedback"> | string | null
+  allowPersonalizationUse?: Prisma.BoolFilter<"AnalysisFeedback"> | boolean
   createdAt?: Prisma.DateTimeFilter<"AnalysisFeedback"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"AnalysisFeedback"> | Date | string
   analysisCase?: Prisma.XOR<Prisma.AnalysisCaseScalarRelationFilter, Prisma.AnalysisCaseWhereInput>
@@ -231,10 +285,12 @@ export type AnalysisFeedbackOrderByWithRelationInput = {
   userId?: Prisma.SortOrder
   analysisCaseId?: Prisma.SortOrder
   analysisResultId?: Prisma.SortOrder
-  wasHelpful?: Prisma.SortOrderInput | Prisma.SortOrder
-  outcomeType?: Prisma.SortOrderInput | Prisma.SortOrder
-  actualOutcomeNote?: Prisma.SortOrderInput | Prisma.SortOrder
-  userCorrection?: Prisma.SortOrderInput | Prisma.SortOrder
+  actualOutcome?: Prisma.SortOrderInput | Prisma.SortOrder
+  helpfulnessScore?: Prisma.SortOrderInput | Prisma.SortOrder
+  overreadScore?: Prisma.SortOrderInput | Prisma.SortOrder
+  usedRecommendedAction?: Prisma.SortOrderInput | Prisma.SortOrder
+  outcomeNote?: Prisma.SortOrderInput | Prisma.SortOrder
+  allowPersonalizationUse?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   analysisCase?: Prisma.AnalysisCaseOrderByWithRelationInput
@@ -250,10 +306,12 @@ export type AnalysisFeedbackWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.AnalysisFeedbackWhereInput | Prisma.AnalysisFeedbackWhereInput[]
   userId?: Prisma.UuidFilter<"AnalysisFeedback"> | string
   analysisCaseId?: Prisma.UuidFilter<"AnalysisFeedback"> | string
-  wasHelpful?: Prisma.BoolNullableFilter<"AnalysisFeedback"> | boolean | null
-  outcomeType?: Prisma.StringNullableFilter<"AnalysisFeedback"> | string | null
-  actualOutcomeNote?: Prisma.StringNullableFilter<"AnalysisFeedback"> | string | null
-  userCorrection?: Prisma.StringNullableFilter<"AnalysisFeedback"> | string | null
+  actualOutcome?: Prisma.StringNullableFilter<"AnalysisFeedback"> | string | null
+  helpfulnessScore?: Prisma.IntNullableFilter<"AnalysisFeedback"> | number | null
+  overreadScore?: Prisma.IntNullableFilter<"AnalysisFeedback"> | number | null
+  usedRecommendedAction?: Prisma.BoolNullableFilter<"AnalysisFeedback"> | boolean | null
+  outcomeNote?: Prisma.StringNullableFilter<"AnalysisFeedback"> | string | null
+  allowPersonalizationUse?: Prisma.BoolFilter<"AnalysisFeedback"> | boolean
   createdAt?: Prisma.DateTimeFilter<"AnalysisFeedback"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"AnalysisFeedback"> | Date | string
   analysisCase?: Prisma.XOR<Prisma.AnalysisCaseScalarRelationFilter, Prisma.AnalysisCaseWhereInput>
@@ -265,15 +323,19 @@ export type AnalysisFeedbackOrderByWithAggregationInput = {
   userId?: Prisma.SortOrder
   analysisCaseId?: Prisma.SortOrder
   analysisResultId?: Prisma.SortOrder
-  wasHelpful?: Prisma.SortOrderInput | Prisma.SortOrder
-  outcomeType?: Prisma.SortOrderInput | Prisma.SortOrder
-  actualOutcomeNote?: Prisma.SortOrderInput | Prisma.SortOrder
-  userCorrection?: Prisma.SortOrderInput | Prisma.SortOrder
+  actualOutcome?: Prisma.SortOrderInput | Prisma.SortOrder
+  helpfulnessScore?: Prisma.SortOrderInput | Prisma.SortOrder
+  overreadScore?: Prisma.SortOrderInput | Prisma.SortOrder
+  usedRecommendedAction?: Prisma.SortOrderInput | Prisma.SortOrder
+  outcomeNote?: Prisma.SortOrderInput | Prisma.SortOrder
+  allowPersonalizationUse?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.AnalysisFeedbackCountOrderByAggregateInput
+  _avg?: Prisma.AnalysisFeedbackAvgOrderByAggregateInput
   _max?: Prisma.AnalysisFeedbackMaxOrderByAggregateInput
   _min?: Prisma.AnalysisFeedbackMinOrderByAggregateInput
+  _sum?: Prisma.AnalysisFeedbackSumOrderByAggregateInput
 }
 
 export type AnalysisFeedbackScalarWhereWithAggregatesInput = {
@@ -284,20 +346,24 @@ export type AnalysisFeedbackScalarWhereWithAggregatesInput = {
   userId?: Prisma.UuidWithAggregatesFilter<"AnalysisFeedback"> | string
   analysisCaseId?: Prisma.UuidWithAggregatesFilter<"AnalysisFeedback"> | string
   analysisResultId?: Prisma.UuidWithAggregatesFilter<"AnalysisFeedback"> | string
-  wasHelpful?: Prisma.BoolNullableWithAggregatesFilter<"AnalysisFeedback"> | boolean | null
-  outcomeType?: Prisma.StringNullableWithAggregatesFilter<"AnalysisFeedback"> | string | null
-  actualOutcomeNote?: Prisma.StringNullableWithAggregatesFilter<"AnalysisFeedback"> | string | null
-  userCorrection?: Prisma.StringNullableWithAggregatesFilter<"AnalysisFeedback"> | string | null
+  actualOutcome?: Prisma.StringNullableWithAggregatesFilter<"AnalysisFeedback"> | string | null
+  helpfulnessScore?: Prisma.IntNullableWithAggregatesFilter<"AnalysisFeedback"> | number | null
+  overreadScore?: Prisma.IntNullableWithAggregatesFilter<"AnalysisFeedback"> | number | null
+  usedRecommendedAction?: Prisma.BoolNullableWithAggregatesFilter<"AnalysisFeedback"> | boolean | null
+  outcomeNote?: Prisma.StringNullableWithAggregatesFilter<"AnalysisFeedback"> | string | null
+  allowPersonalizationUse?: Prisma.BoolWithAggregatesFilter<"AnalysisFeedback"> | boolean
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"AnalysisFeedback"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"AnalysisFeedback"> | Date | string
 }
 
 export type AnalysisFeedbackCreateInput = {
   id?: string
-  wasHelpful?: boolean | null
-  outcomeType?: string | null
-  actualOutcomeNote?: string | null
-  userCorrection?: string | null
+  actualOutcome?: string | null
+  helpfulnessScore?: number | null
+  overreadScore?: number | null
+  usedRecommendedAction?: boolean | null
+  outcomeNote?: string | null
+  allowPersonalizationUse?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   analysisCase: Prisma.AnalysisCaseCreateNestedOneWithoutFeedbacksInput
@@ -309,20 +375,24 @@ export type AnalysisFeedbackUncheckedCreateInput = {
   userId: string
   analysisCaseId: string
   analysisResultId: string
-  wasHelpful?: boolean | null
-  outcomeType?: string | null
-  actualOutcomeNote?: string | null
-  userCorrection?: string | null
+  actualOutcome?: string | null
+  helpfulnessScore?: number | null
+  overreadScore?: number | null
+  usedRecommendedAction?: boolean | null
+  outcomeNote?: string | null
+  allowPersonalizationUse?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
 }
 
 export type AnalysisFeedbackUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  wasHelpful?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  outcomeType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  actualOutcomeNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  userCorrection?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  actualOutcome?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  helpfulnessScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  overreadScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  usedRecommendedAction?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  outcomeNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  allowPersonalizationUse?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   analysisCase?: Prisma.AnalysisCaseUpdateOneRequiredWithoutFeedbacksNestedInput
@@ -334,10 +404,12 @@ export type AnalysisFeedbackUncheckedUpdateInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   analysisCaseId?: Prisma.StringFieldUpdateOperationsInput | string
   analysisResultId?: Prisma.StringFieldUpdateOperationsInput | string
-  wasHelpful?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  outcomeType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  actualOutcomeNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  userCorrection?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  actualOutcome?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  helpfulnessScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  overreadScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  usedRecommendedAction?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  outcomeNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  allowPersonalizationUse?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -347,20 +419,24 @@ export type AnalysisFeedbackCreateManyInput = {
   userId: string
   analysisCaseId: string
   analysisResultId: string
-  wasHelpful?: boolean | null
-  outcomeType?: string | null
-  actualOutcomeNote?: string | null
-  userCorrection?: string | null
+  actualOutcome?: string | null
+  helpfulnessScore?: number | null
+  overreadScore?: number | null
+  usedRecommendedAction?: boolean | null
+  outcomeNote?: string | null
+  allowPersonalizationUse?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
 }
 
 export type AnalysisFeedbackUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  wasHelpful?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  outcomeType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  actualOutcomeNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  userCorrection?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  actualOutcome?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  helpfulnessScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  overreadScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  usedRecommendedAction?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  outcomeNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  allowPersonalizationUse?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -370,10 +446,12 @@ export type AnalysisFeedbackUncheckedUpdateManyInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   analysisCaseId?: Prisma.StringFieldUpdateOperationsInput | string
   analysisResultId?: Prisma.StringFieldUpdateOperationsInput | string
-  wasHelpful?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  outcomeType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  actualOutcomeNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  userCorrection?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  actualOutcome?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  helpfulnessScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  overreadScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  usedRecommendedAction?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  outcomeNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  allowPersonalizationUse?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -403,12 +481,19 @@ export type AnalysisFeedbackCountOrderByAggregateInput = {
   userId?: Prisma.SortOrder
   analysisCaseId?: Prisma.SortOrder
   analysisResultId?: Prisma.SortOrder
-  wasHelpful?: Prisma.SortOrder
-  outcomeType?: Prisma.SortOrder
-  actualOutcomeNote?: Prisma.SortOrder
-  userCorrection?: Prisma.SortOrder
+  actualOutcome?: Prisma.SortOrder
+  helpfulnessScore?: Prisma.SortOrder
+  overreadScore?: Prisma.SortOrder
+  usedRecommendedAction?: Prisma.SortOrder
+  outcomeNote?: Prisma.SortOrder
+  allowPersonalizationUse?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+}
+
+export type AnalysisFeedbackAvgOrderByAggregateInput = {
+  helpfulnessScore?: Prisma.SortOrder
+  overreadScore?: Prisma.SortOrder
 }
 
 export type AnalysisFeedbackMaxOrderByAggregateInput = {
@@ -416,10 +501,12 @@ export type AnalysisFeedbackMaxOrderByAggregateInput = {
   userId?: Prisma.SortOrder
   analysisCaseId?: Prisma.SortOrder
   analysisResultId?: Prisma.SortOrder
-  wasHelpful?: Prisma.SortOrder
-  outcomeType?: Prisma.SortOrder
-  actualOutcomeNote?: Prisma.SortOrder
-  userCorrection?: Prisma.SortOrder
+  actualOutcome?: Prisma.SortOrder
+  helpfulnessScore?: Prisma.SortOrder
+  overreadScore?: Prisma.SortOrder
+  usedRecommendedAction?: Prisma.SortOrder
+  outcomeNote?: Prisma.SortOrder
+  allowPersonalizationUse?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -429,12 +516,19 @@ export type AnalysisFeedbackMinOrderByAggregateInput = {
   userId?: Prisma.SortOrder
   analysisCaseId?: Prisma.SortOrder
   analysisResultId?: Prisma.SortOrder
-  wasHelpful?: Prisma.SortOrder
-  outcomeType?: Prisma.SortOrder
-  actualOutcomeNote?: Prisma.SortOrder
-  userCorrection?: Prisma.SortOrder
+  actualOutcome?: Prisma.SortOrder
+  helpfulnessScore?: Prisma.SortOrder
+  overreadScore?: Prisma.SortOrder
+  usedRecommendedAction?: Prisma.SortOrder
+  outcomeNote?: Prisma.SortOrder
+  allowPersonalizationUse?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+}
+
+export type AnalysisFeedbackSumOrderByAggregateInput = {
+  helpfulnessScore?: Prisma.SortOrder
+  overreadScore?: Prisma.SortOrder
 }
 
 export type AnalysisFeedbackCreateNestedManyWithoutAnalysisCaseInput = {
@@ -511,12 +605,30 @@ export type AnalysisFeedbackUncheckedUpdateOneWithoutAnalysisResultNestedInput =
   update?: Prisma.XOR<Prisma.XOR<Prisma.AnalysisFeedbackUpdateToOneWithWhereWithoutAnalysisResultInput, Prisma.AnalysisFeedbackUpdateWithoutAnalysisResultInput>, Prisma.AnalysisFeedbackUncheckedUpdateWithoutAnalysisResultInput>
 }
 
+export type NullableIntFieldUpdateOperationsInput = {
+  set?: number | null
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
+}
+
+export type NullableBoolFieldUpdateOperationsInput = {
+  set?: boolean | null
+}
+
+export type BoolFieldUpdateOperationsInput = {
+  set?: boolean
+}
+
 export type AnalysisFeedbackCreateWithoutAnalysisCaseInput = {
   id?: string
-  wasHelpful?: boolean | null
-  outcomeType?: string | null
-  actualOutcomeNote?: string | null
-  userCorrection?: string | null
+  actualOutcome?: string | null
+  helpfulnessScore?: number | null
+  overreadScore?: number | null
+  usedRecommendedAction?: boolean | null
+  outcomeNote?: string | null
+  allowPersonalizationUse?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   analysisResult: Prisma.AnalysisResultCreateNestedOneWithoutFeedbackInput
@@ -525,10 +637,12 @@ export type AnalysisFeedbackCreateWithoutAnalysisCaseInput = {
 export type AnalysisFeedbackUncheckedCreateWithoutAnalysisCaseInput = {
   id?: string
   analysisResultId: string
-  wasHelpful?: boolean | null
-  outcomeType?: string | null
-  actualOutcomeNote?: string | null
-  userCorrection?: string | null
+  actualOutcome?: string | null
+  helpfulnessScore?: number | null
+  overreadScore?: number | null
+  usedRecommendedAction?: boolean | null
+  outcomeNote?: string | null
+  allowPersonalizationUse?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -567,20 +681,24 @@ export type AnalysisFeedbackScalarWhereInput = {
   userId?: Prisma.UuidFilter<"AnalysisFeedback"> | string
   analysisCaseId?: Prisma.UuidFilter<"AnalysisFeedback"> | string
   analysisResultId?: Prisma.UuidFilter<"AnalysisFeedback"> | string
-  wasHelpful?: Prisma.BoolNullableFilter<"AnalysisFeedback"> | boolean | null
-  outcomeType?: Prisma.StringNullableFilter<"AnalysisFeedback"> | string | null
-  actualOutcomeNote?: Prisma.StringNullableFilter<"AnalysisFeedback"> | string | null
-  userCorrection?: Prisma.StringNullableFilter<"AnalysisFeedback"> | string | null
+  actualOutcome?: Prisma.StringNullableFilter<"AnalysisFeedback"> | string | null
+  helpfulnessScore?: Prisma.IntNullableFilter<"AnalysisFeedback"> | number | null
+  overreadScore?: Prisma.IntNullableFilter<"AnalysisFeedback"> | number | null
+  usedRecommendedAction?: Prisma.BoolNullableFilter<"AnalysisFeedback"> | boolean | null
+  outcomeNote?: Prisma.StringNullableFilter<"AnalysisFeedback"> | string | null
+  allowPersonalizationUse?: Prisma.BoolFilter<"AnalysisFeedback"> | boolean
   createdAt?: Prisma.DateTimeFilter<"AnalysisFeedback"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"AnalysisFeedback"> | Date | string
 }
 
 export type AnalysisFeedbackCreateWithoutAnalysisResultInput = {
   id?: string
-  wasHelpful?: boolean | null
-  outcomeType?: string | null
-  actualOutcomeNote?: string | null
-  userCorrection?: string | null
+  actualOutcome?: string | null
+  helpfulnessScore?: number | null
+  overreadScore?: number | null
+  usedRecommendedAction?: boolean | null
+  outcomeNote?: string | null
+  allowPersonalizationUse?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   analysisCase: Prisma.AnalysisCaseCreateNestedOneWithoutFeedbacksInput
@@ -589,10 +707,12 @@ export type AnalysisFeedbackCreateWithoutAnalysisResultInput = {
 export type AnalysisFeedbackUncheckedCreateWithoutAnalysisResultInput = {
   id?: string
   analysisCaseId: string
-  wasHelpful?: boolean | null
-  outcomeType?: string | null
-  actualOutcomeNote?: string | null
-  userCorrection?: string | null
+  actualOutcome?: string | null
+  helpfulnessScore?: number | null
+  overreadScore?: number | null
+  usedRecommendedAction?: boolean | null
+  outcomeNote?: string | null
+  allowPersonalizationUse?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -615,10 +735,12 @@ export type AnalysisFeedbackUpdateToOneWithWhereWithoutAnalysisResultInput = {
 
 export type AnalysisFeedbackUpdateWithoutAnalysisResultInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  wasHelpful?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  outcomeType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  actualOutcomeNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  userCorrection?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  actualOutcome?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  helpfulnessScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  overreadScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  usedRecommendedAction?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  outcomeNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  allowPersonalizationUse?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   analysisCase?: Prisma.AnalysisCaseUpdateOneRequiredWithoutFeedbacksNestedInput
@@ -627,10 +749,12 @@ export type AnalysisFeedbackUpdateWithoutAnalysisResultInput = {
 export type AnalysisFeedbackUncheckedUpdateWithoutAnalysisResultInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   analysisCaseId?: Prisma.StringFieldUpdateOperationsInput | string
-  wasHelpful?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  outcomeType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  actualOutcomeNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  userCorrection?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  actualOutcome?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  helpfulnessScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  overreadScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  usedRecommendedAction?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  outcomeNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  allowPersonalizationUse?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -638,20 +762,24 @@ export type AnalysisFeedbackUncheckedUpdateWithoutAnalysisResultInput = {
 export type AnalysisFeedbackCreateManyAnalysisCaseInput = {
   id?: string
   analysisResultId: string
-  wasHelpful?: boolean | null
-  outcomeType?: string | null
-  actualOutcomeNote?: string | null
-  userCorrection?: string | null
+  actualOutcome?: string | null
+  helpfulnessScore?: number | null
+  overreadScore?: number | null
+  usedRecommendedAction?: boolean | null
+  outcomeNote?: string | null
+  allowPersonalizationUse?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
 }
 
 export type AnalysisFeedbackUpdateWithoutAnalysisCaseInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  wasHelpful?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  outcomeType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  actualOutcomeNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  userCorrection?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  actualOutcome?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  helpfulnessScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  overreadScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  usedRecommendedAction?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  outcomeNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  allowPersonalizationUse?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   analysisResult?: Prisma.AnalysisResultUpdateOneRequiredWithoutFeedbackNestedInput
@@ -660,10 +788,12 @@ export type AnalysisFeedbackUpdateWithoutAnalysisCaseInput = {
 export type AnalysisFeedbackUncheckedUpdateWithoutAnalysisCaseInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   analysisResultId?: Prisma.StringFieldUpdateOperationsInput | string
-  wasHelpful?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  outcomeType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  actualOutcomeNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  userCorrection?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  actualOutcome?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  helpfulnessScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  overreadScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  usedRecommendedAction?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  outcomeNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  allowPersonalizationUse?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -671,10 +801,12 @@ export type AnalysisFeedbackUncheckedUpdateWithoutAnalysisCaseInput = {
 export type AnalysisFeedbackUncheckedUpdateManyWithoutAnalysisCaseInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   analysisResultId?: Prisma.StringFieldUpdateOperationsInput | string
-  wasHelpful?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  outcomeType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  actualOutcomeNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  userCorrection?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  actualOutcome?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  helpfulnessScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  overreadScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  usedRecommendedAction?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  outcomeNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  allowPersonalizationUse?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -686,10 +818,12 @@ export type AnalysisFeedbackSelect<ExtArgs extends runtime.Types.Extensions.Inte
   userId?: boolean
   analysisCaseId?: boolean
   analysisResultId?: boolean
-  wasHelpful?: boolean
-  outcomeType?: boolean
-  actualOutcomeNote?: boolean
-  userCorrection?: boolean
+  actualOutcome?: boolean
+  helpfulnessScore?: boolean
+  overreadScore?: boolean
+  usedRecommendedAction?: boolean
+  outcomeNote?: boolean
+  allowPersonalizationUse?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   analysisCase?: boolean | Prisma.AnalysisCaseDefaultArgs<ExtArgs>
@@ -701,10 +835,12 @@ export type AnalysisFeedbackSelectCreateManyAndReturn<ExtArgs extends runtime.Ty
   userId?: boolean
   analysisCaseId?: boolean
   analysisResultId?: boolean
-  wasHelpful?: boolean
-  outcomeType?: boolean
-  actualOutcomeNote?: boolean
-  userCorrection?: boolean
+  actualOutcome?: boolean
+  helpfulnessScore?: boolean
+  overreadScore?: boolean
+  usedRecommendedAction?: boolean
+  outcomeNote?: boolean
+  allowPersonalizationUse?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   analysisCase?: boolean | Prisma.AnalysisCaseDefaultArgs<ExtArgs>
@@ -716,10 +852,12 @@ export type AnalysisFeedbackSelectUpdateManyAndReturn<ExtArgs extends runtime.Ty
   userId?: boolean
   analysisCaseId?: boolean
   analysisResultId?: boolean
-  wasHelpful?: boolean
-  outcomeType?: boolean
-  actualOutcomeNote?: boolean
-  userCorrection?: boolean
+  actualOutcome?: boolean
+  helpfulnessScore?: boolean
+  overreadScore?: boolean
+  usedRecommendedAction?: boolean
+  outcomeNote?: boolean
+  allowPersonalizationUse?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   analysisCase?: boolean | Prisma.AnalysisCaseDefaultArgs<ExtArgs>
@@ -731,15 +869,17 @@ export type AnalysisFeedbackSelectScalar = {
   userId?: boolean
   analysisCaseId?: boolean
   analysisResultId?: boolean
-  wasHelpful?: boolean
-  outcomeType?: boolean
-  actualOutcomeNote?: boolean
-  userCorrection?: boolean
+  actualOutcome?: boolean
+  helpfulnessScore?: boolean
+  overreadScore?: boolean
+  usedRecommendedAction?: boolean
+  outcomeNote?: boolean
+  allowPersonalizationUse?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type AnalysisFeedbackOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "analysisCaseId" | "analysisResultId" | "wasHelpful" | "outcomeType" | "actualOutcomeNote" | "userCorrection" | "createdAt" | "updatedAt", ExtArgs["result"]["analysisFeedback"]>
+export type AnalysisFeedbackOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "analysisCaseId" | "analysisResultId" | "actualOutcome" | "helpfulnessScore" | "overreadScore" | "usedRecommendedAction" | "outcomeNote" | "allowPersonalizationUse" | "createdAt" | "updatedAt", ExtArgs["result"]["analysisFeedback"]>
 export type AnalysisFeedbackInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   analysisCase?: boolean | Prisma.AnalysisCaseDefaultArgs<ExtArgs>
   analysisResult?: boolean | Prisma.AnalysisResultDefaultArgs<ExtArgs>
@@ -764,10 +904,12 @@ export type $AnalysisFeedbackPayload<ExtArgs extends runtime.Types.Extensions.In
     userId: string
     analysisCaseId: string
     analysisResultId: string
-    wasHelpful: boolean | null
-    outcomeType: string | null
-    actualOutcomeNote: string | null
-    userCorrection: string | null
+    actualOutcome: string | null
+    helpfulnessScore: number | null
+    overreadScore: number | null
+    usedRecommendedAction: boolean | null
+    outcomeNote: string | null
+    allowPersonalizationUse: boolean
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["analysisFeedback"]>
@@ -1199,10 +1341,12 @@ export interface AnalysisFeedbackFieldRefs {
   readonly userId: Prisma.FieldRef<"AnalysisFeedback", 'String'>
   readonly analysisCaseId: Prisma.FieldRef<"AnalysisFeedback", 'String'>
   readonly analysisResultId: Prisma.FieldRef<"AnalysisFeedback", 'String'>
-  readonly wasHelpful: Prisma.FieldRef<"AnalysisFeedback", 'Boolean'>
-  readonly outcomeType: Prisma.FieldRef<"AnalysisFeedback", 'String'>
-  readonly actualOutcomeNote: Prisma.FieldRef<"AnalysisFeedback", 'String'>
-  readonly userCorrection: Prisma.FieldRef<"AnalysisFeedback", 'String'>
+  readonly actualOutcome: Prisma.FieldRef<"AnalysisFeedback", 'String'>
+  readonly helpfulnessScore: Prisma.FieldRef<"AnalysisFeedback", 'Int'>
+  readonly overreadScore: Prisma.FieldRef<"AnalysisFeedback", 'Int'>
+  readonly usedRecommendedAction: Prisma.FieldRef<"AnalysisFeedback", 'Boolean'>
+  readonly outcomeNote: Prisma.FieldRef<"AnalysisFeedback", 'String'>
+  readonly allowPersonalizationUse: Prisma.FieldRef<"AnalysisFeedback", 'Boolean'>
   readonly createdAt: Prisma.FieldRef<"AnalysisFeedback", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"AnalysisFeedback", 'DateTime'>
 }

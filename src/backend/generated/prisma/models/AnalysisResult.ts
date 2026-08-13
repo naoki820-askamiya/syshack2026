@@ -43,6 +43,8 @@ export type AnalysisResultMinAggregateOutputType = {
   promptVersion: string | null
   resultSchemaVersion: string | null
   model: string | null
+  personProfileId: string | null
+  userPatternSummaryId: string | null
   createdAt: Date | null
 }
 
@@ -55,6 +57,8 @@ export type AnalysisResultMaxAggregateOutputType = {
   promptVersion: string | null
   resultSchemaVersion: string | null
   model: string | null
+  personProfileId: string | null
+  userPatternSummaryId: string | null
   createdAt: Date | null
 }
 
@@ -68,6 +72,11 @@ export type AnalysisResultCountAggregateOutputType = {
   resultSchemaVersion: number
   model: number
   resultJson: number
+  personProfileId: number
+  userPatternSummaryId: number
+  usedCaseIds: number
+  usedFeedbackIds: number
+  contextJson: number
   createdAt: number
   _all: number
 }
@@ -90,6 +99,8 @@ export type AnalysisResultMinAggregateInputType = {
   promptVersion?: true
   resultSchemaVersion?: true
   model?: true
+  personProfileId?: true
+  userPatternSummaryId?: true
   createdAt?: true
 }
 
@@ -102,6 +113,8 @@ export type AnalysisResultMaxAggregateInputType = {
   promptVersion?: true
   resultSchemaVersion?: true
   model?: true
+  personProfileId?: true
+  userPatternSummaryId?: true
   createdAt?: true
 }
 
@@ -115,6 +128,11 @@ export type AnalysisResultCountAggregateInputType = {
   resultSchemaVersion?: true
   model?: true
   resultJson?: true
+  personProfileId?: true
+  userPatternSummaryId?: true
+  usedCaseIds?: true
+  usedFeedbackIds?: true
+  contextJson?: true
   createdAt?: true
   _all?: true
 }
@@ -215,6 +233,11 @@ export type AnalysisResultGroupByOutputType = {
   resultSchemaVersion: string
   model: string
   resultJson: runtime.JsonValue
+  personProfileId: string | null
+  userPatternSummaryId: string | null
+  usedCaseIds: string[]
+  usedFeedbackIds: string[]
+  contextJson: runtime.JsonValue | null
   createdAt: Date
   _count: AnalysisResultCountAggregateOutputType | null
   _avg: AnalysisResultAvgAggregateOutputType | null
@@ -251,6 +274,11 @@ export type AnalysisResultWhereInput = {
   resultSchemaVersion?: Prisma.StringFilter<"AnalysisResult"> | string
   model?: Prisma.StringFilter<"AnalysisResult"> | string
   resultJson?: Prisma.JsonFilter<"AnalysisResult">
+  personProfileId?: Prisma.UuidNullableFilter<"AnalysisResult"> | string | null
+  userPatternSummaryId?: Prisma.UuidNullableFilter<"AnalysisResult"> | string | null
+  usedCaseIds?: Prisma.StringNullableListFilter<"AnalysisResult">
+  usedFeedbackIds?: Prisma.StringNullableListFilter<"AnalysisResult">
+  contextJson?: Prisma.JsonNullableFilter<"AnalysisResult">
   createdAt?: Prisma.DateTimeFilter<"AnalysisResult"> | Date | string
   analysisCase?: Prisma.XOR<Prisma.AnalysisCaseScalarRelationFilter, Prisma.AnalysisCaseWhereInput>
   feedback?: Prisma.XOR<Prisma.AnalysisFeedbackNullableScalarRelationFilter, Prisma.AnalysisFeedbackWhereInput> | null
@@ -266,6 +294,11 @@ export type AnalysisResultOrderByWithRelationInput = {
   resultSchemaVersion?: Prisma.SortOrder
   model?: Prisma.SortOrder
   resultJson?: Prisma.SortOrder
+  personProfileId?: Prisma.SortOrderInput | Prisma.SortOrder
+  userPatternSummaryId?: Prisma.SortOrderInput | Prisma.SortOrder
+  usedCaseIds?: Prisma.SortOrder
+  usedFeedbackIds?: Prisma.SortOrder
+  contextJson?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   analysisCase?: Prisma.AnalysisCaseOrderByWithRelationInput
   feedback?: Prisma.AnalysisFeedbackOrderByWithRelationInput
@@ -287,6 +320,11 @@ export type AnalysisResultWhereUniqueInput = Prisma.AtLeast<{
   resultSchemaVersion?: Prisma.StringFilter<"AnalysisResult"> | string
   model?: Prisma.StringFilter<"AnalysisResult"> | string
   resultJson?: Prisma.JsonFilter<"AnalysisResult">
+  personProfileId?: Prisma.UuidNullableFilter<"AnalysisResult"> | string | null
+  userPatternSummaryId?: Prisma.UuidNullableFilter<"AnalysisResult"> | string | null
+  usedCaseIds?: Prisma.StringNullableListFilter<"AnalysisResult">
+  usedFeedbackIds?: Prisma.StringNullableListFilter<"AnalysisResult">
+  contextJson?: Prisma.JsonNullableFilter<"AnalysisResult">
   createdAt?: Prisma.DateTimeFilter<"AnalysisResult"> | Date | string
   analysisCase?: Prisma.XOR<Prisma.AnalysisCaseScalarRelationFilter, Prisma.AnalysisCaseWhereInput>
   feedback?: Prisma.XOR<Prisma.AnalysisFeedbackNullableScalarRelationFilter, Prisma.AnalysisFeedbackWhereInput> | null
@@ -302,6 +340,11 @@ export type AnalysisResultOrderByWithAggregationInput = {
   resultSchemaVersion?: Prisma.SortOrder
   model?: Prisma.SortOrder
   resultJson?: Prisma.SortOrder
+  personProfileId?: Prisma.SortOrderInput | Prisma.SortOrder
+  userPatternSummaryId?: Prisma.SortOrderInput | Prisma.SortOrder
+  usedCaseIds?: Prisma.SortOrder
+  usedFeedbackIds?: Prisma.SortOrder
+  contextJson?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   _count?: Prisma.AnalysisResultCountOrderByAggregateInput
   _avg?: Prisma.AnalysisResultAvgOrderByAggregateInput
@@ -323,6 +366,11 @@ export type AnalysisResultScalarWhereWithAggregatesInput = {
   resultSchemaVersion?: Prisma.StringWithAggregatesFilter<"AnalysisResult"> | string
   model?: Prisma.StringWithAggregatesFilter<"AnalysisResult"> | string
   resultJson?: Prisma.JsonWithAggregatesFilter<"AnalysisResult">
+  personProfileId?: Prisma.UuidNullableWithAggregatesFilter<"AnalysisResult"> | string | null
+  userPatternSummaryId?: Prisma.UuidNullableWithAggregatesFilter<"AnalysisResult"> | string | null
+  usedCaseIds?: Prisma.StringNullableListFilter<"AnalysisResult">
+  usedFeedbackIds?: Prisma.StringNullableListFilter<"AnalysisResult">
+  contextJson?: Prisma.JsonNullableWithAggregatesFilter<"AnalysisResult">
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"AnalysisResult"> | Date | string
 }
 
@@ -334,6 +382,11 @@ export type AnalysisResultCreateInput = {
   resultSchemaVersion: string
   model: string
   resultJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  personProfileId?: string | null
+  userPatternSummaryId?: string | null
+  usedCaseIds?: Prisma.AnalysisResultCreateusedCaseIdsInput | string[]
+  usedFeedbackIds?: Prisma.AnalysisResultCreateusedFeedbackIdsInput | string[]
+  contextJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   analysisCase: Prisma.AnalysisCaseCreateNestedOneWithoutResultsInput
   feedback?: Prisma.AnalysisFeedbackCreateNestedOneWithoutAnalysisResultInput
@@ -349,6 +402,11 @@ export type AnalysisResultUncheckedCreateInput = {
   resultSchemaVersion: string
   model: string
   resultJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  personProfileId?: string | null
+  userPatternSummaryId?: string | null
+  usedCaseIds?: Prisma.AnalysisResultCreateusedCaseIdsInput | string[]
+  usedFeedbackIds?: Prisma.AnalysisResultCreateusedFeedbackIdsInput | string[]
+  contextJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   feedback?: Prisma.AnalysisFeedbackUncheckedCreateNestedOneWithoutAnalysisResultInput
 }
@@ -361,6 +419,11 @@ export type AnalysisResultUpdateInput = {
   resultSchemaVersion?: Prisma.StringFieldUpdateOperationsInput | string
   model?: Prisma.StringFieldUpdateOperationsInput | string
   resultJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  personProfileId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  userPatternSummaryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  usedCaseIds?: Prisma.AnalysisResultUpdateusedCaseIdsInput | string[]
+  usedFeedbackIds?: Prisma.AnalysisResultUpdateusedFeedbackIdsInput | string[]
+  contextJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   analysisCase?: Prisma.AnalysisCaseUpdateOneRequiredWithoutResultsNestedInput
   feedback?: Prisma.AnalysisFeedbackUpdateOneWithoutAnalysisResultNestedInput
@@ -376,6 +439,11 @@ export type AnalysisResultUncheckedUpdateInput = {
   resultSchemaVersion?: Prisma.StringFieldUpdateOperationsInput | string
   model?: Prisma.StringFieldUpdateOperationsInput | string
   resultJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  personProfileId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  userPatternSummaryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  usedCaseIds?: Prisma.AnalysisResultUpdateusedCaseIdsInput | string[]
+  usedFeedbackIds?: Prisma.AnalysisResultUpdateusedFeedbackIdsInput | string[]
+  contextJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   feedback?: Prisma.AnalysisFeedbackUncheckedUpdateOneWithoutAnalysisResultNestedInput
 }
@@ -390,6 +458,11 @@ export type AnalysisResultCreateManyInput = {
   resultSchemaVersion: string
   model: string
   resultJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  personProfileId?: string | null
+  userPatternSummaryId?: string | null
+  usedCaseIds?: Prisma.AnalysisResultCreateusedCaseIdsInput | string[]
+  usedFeedbackIds?: Prisma.AnalysisResultCreateusedFeedbackIdsInput | string[]
+  contextJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
 }
 
@@ -401,6 +474,11 @@ export type AnalysisResultUpdateManyMutationInput = {
   resultSchemaVersion?: Prisma.StringFieldUpdateOperationsInput | string
   model?: Prisma.StringFieldUpdateOperationsInput | string
   resultJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  personProfileId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  userPatternSummaryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  usedCaseIds?: Prisma.AnalysisResultUpdateusedCaseIdsInput | string[]
+  usedFeedbackIds?: Prisma.AnalysisResultUpdateusedFeedbackIdsInput | string[]
+  contextJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -414,6 +492,11 @@ export type AnalysisResultUncheckedUpdateManyInput = {
   resultSchemaVersion?: Prisma.StringFieldUpdateOperationsInput | string
   model?: Prisma.StringFieldUpdateOperationsInput | string
   resultJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  personProfileId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  userPatternSummaryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  usedCaseIds?: Prisma.AnalysisResultUpdateusedCaseIdsInput | string[]
+  usedFeedbackIds?: Prisma.AnalysisResultUpdateusedFeedbackIdsInput | string[]
+  contextJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -425,6 +508,14 @@ export type AnalysisResultListRelationFilter = {
 
 export type AnalysisResultOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
+}
+
+export type StringNullableListFilter<$PrismaModel = never> = {
+  equals?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel> | null
+  has?: string | Prisma.StringFieldRefInput<$PrismaModel> | null
+  hasEvery?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel>
+  hasSome?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel>
+  isEmpty?: boolean
 }
 
 export type AnalysisResultUserIdIdCompoundUniqueInput = {
@@ -452,6 +543,11 @@ export type AnalysisResultCountOrderByAggregateInput = {
   resultSchemaVersion?: Prisma.SortOrder
   model?: Prisma.SortOrder
   resultJson?: Prisma.SortOrder
+  personProfileId?: Prisma.SortOrder
+  userPatternSummaryId?: Prisma.SortOrder
+  usedCaseIds?: Prisma.SortOrder
+  usedFeedbackIds?: Prisma.SortOrder
+  contextJson?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -468,6 +564,8 @@ export type AnalysisResultMaxOrderByAggregateInput = {
   promptVersion?: Prisma.SortOrder
   resultSchemaVersion?: Prisma.SortOrder
   model?: Prisma.SortOrder
+  personProfileId?: Prisma.SortOrder
+  userPatternSummaryId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -480,6 +578,8 @@ export type AnalysisResultMinOrderByAggregateInput = {
   promptVersion?: Prisma.SortOrder
   resultSchemaVersion?: Prisma.SortOrder
   model?: Prisma.SortOrder
+  personProfileId?: Prisma.SortOrder
+  userPatternSummaryId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -534,6 +634,24 @@ export type AnalysisResultUncheckedUpdateManyWithoutAnalysisCaseNestedInput = {
   deleteMany?: Prisma.AnalysisResultScalarWhereInput | Prisma.AnalysisResultScalarWhereInput[]
 }
 
+export type AnalysisResultCreateusedCaseIdsInput = {
+  set: string[]
+}
+
+export type AnalysisResultCreateusedFeedbackIdsInput = {
+  set: string[]
+}
+
+export type AnalysisResultUpdateusedCaseIdsInput = {
+  set?: string[]
+  push?: string | string[]
+}
+
+export type AnalysisResultUpdateusedFeedbackIdsInput = {
+  set?: string[]
+  push?: string | string[]
+}
+
 export type AnalysisResultCreateNestedOneWithoutFeedbackInput = {
   create?: Prisma.XOR<Prisma.AnalysisResultCreateWithoutFeedbackInput, Prisma.AnalysisResultUncheckedCreateWithoutFeedbackInput>
   connectOrCreate?: Prisma.AnalysisResultCreateOrConnectWithoutFeedbackInput
@@ -556,6 +674,11 @@ export type AnalysisResultCreateWithoutAnalysisCaseInput = {
   resultSchemaVersion: string
   model: string
   resultJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  personProfileId?: string | null
+  userPatternSummaryId?: string | null
+  usedCaseIds?: Prisma.AnalysisResultCreateusedCaseIdsInput | string[]
+  usedFeedbackIds?: Prisma.AnalysisResultCreateusedFeedbackIdsInput | string[]
+  contextJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   feedback?: Prisma.AnalysisFeedbackCreateNestedOneWithoutAnalysisResultInput
 }
@@ -568,6 +691,11 @@ export type AnalysisResultUncheckedCreateWithoutAnalysisCaseInput = {
   resultSchemaVersion: string
   model: string
   resultJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  personProfileId?: string | null
+  userPatternSummaryId?: string | null
+  usedCaseIds?: Prisma.AnalysisResultCreateusedCaseIdsInput | string[]
+  usedFeedbackIds?: Prisma.AnalysisResultCreateusedFeedbackIdsInput | string[]
+  contextJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   feedback?: Prisma.AnalysisFeedbackUncheckedCreateNestedOneWithoutAnalysisResultInput
 }
@@ -611,6 +739,11 @@ export type AnalysisResultScalarWhereInput = {
   resultSchemaVersion?: Prisma.StringFilter<"AnalysisResult"> | string
   model?: Prisma.StringFilter<"AnalysisResult"> | string
   resultJson?: Prisma.JsonFilter<"AnalysisResult">
+  personProfileId?: Prisma.UuidNullableFilter<"AnalysisResult"> | string | null
+  userPatternSummaryId?: Prisma.UuidNullableFilter<"AnalysisResult"> | string | null
+  usedCaseIds?: Prisma.StringNullableListFilter<"AnalysisResult">
+  usedFeedbackIds?: Prisma.StringNullableListFilter<"AnalysisResult">
+  contextJson?: Prisma.JsonNullableFilter<"AnalysisResult">
   createdAt?: Prisma.DateTimeFilter<"AnalysisResult"> | Date | string
 }
 
@@ -622,6 +755,11 @@ export type AnalysisResultCreateWithoutFeedbackInput = {
   resultSchemaVersion: string
   model: string
   resultJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  personProfileId?: string | null
+  userPatternSummaryId?: string | null
+  usedCaseIds?: Prisma.AnalysisResultCreateusedCaseIdsInput | string[]
+  usedFeedbackIds?: Prisma.AnalysisResultCreateusedFeedbackIdsInput | string[]
+  contextJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   analysisCase: Prisma.AnalysisCaseCreateNestedOneWithoutResultsInput
 }
@@ -636,6 +774,11 @@ export type AnalysisResultUncheckedCreateWithoutFeedbackInput = {
   resultSchemaVersion: string
   model: string
   resultJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  personProfileId?: string | null
+  userPatternSummaryId?: string | null
+  usedCaseIds?: Prisma.AnalysisResultCreateusedCaseIdsInput | string[]
+  usedFeedbackIds?: Prisma.AnalysisResultCreateusedFeedbackIdsInput | string[]
+  contextJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
 }
 
@@ -663,6 +806,11 @@ export type AnalysisResultUpdateWithoutFeedbackInput = {
   resultSchemaVersion?: Prisma.StringFieldUpdateOperationsInput | string
   model?: Prisma.StringFieldUpdateOperationsInput | string
   resultJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  personProfileId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  userPatternSummaryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  usedCaseIds?: Prisma.AnalysisResultUpdateusedCaseIdsInput | string[]
+  usedFeedbackIds?: Prisma.AnalysisResultUpdateusedFeedbackIdsInput | string[]
+  contextJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   analysisCase?: Prisma.AnalysisCaseUpdateOneRequiredWithoutResultsNestedInput
 }
@@ -677,6 +825,11 @@ export type AnalysisResultUncheckedUpdateWithoutFeedbackInput = {
   resultSchemaVersion?: Prisma.StringFieldUpdateOperationsInput | string
   model?: Prisma.StringFieldUpdateOperationsInput | string
   resultJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  personProfileId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  userPatternSummaryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  usedCaseIds?: Prisma.AnalysisResultUpdateusedCaseIdsInput | string[]
+  usedFeedbackIds?: Prisma.AnalysisResultUpdateusedFeedbackIdsInput | string[]
+  contextJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -688,6 +841,11 @@ export type AnalysisResultCreateManyAnalysisCaseInput = {
   resultSchemaVersion: string
   model: string
   resultJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  personProfileId?: string | null
+  userPatternSummaryId?: string | null
+  usedCaseIds?: Prisma.AnalysisResultCreateusedCaseIdsInput | string[]
+  usedFeedbackIds?: Prisma.AnalysisResultCreateusedFeedbackIdsInput | string[]
+  contextJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
 }
 
@@ -699,6 +857,11 @@ export type AnalysisResultUpdateWithoutAnalysisCaseInput = {
   resultSchemaVersion?: Prisma.StringFieldUpdateOperationsInput | string
   model?: Prisma.StringFieldUpdateOperationsInput | string
   resultJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  personProfileId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  userPatternSummaryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  usedCaseIds?: Prisma.AnalysisResultUpdateusedCaseIdsInput | string[]
+  usedFeedbackIds?: Prisma.AnalysisResultUpdateusedFeedbackIdsInput | string[]
+  contextJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   feedback?: Prisma.AnalysisFeedbackUpdateOneWithoutAnalysisResultNestedInput
 }
@@ -711,6 +874,11 @@ export type AnalysisResultUncheckedUpdateWithoutAnalysisCaseInput = {
   resultSchemaVersion?: Prisma.StringFieldUpdateOperationsInput | string
   model?: Prisma.StringFieldUpdateOperationsInput | string
   resultJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  personProfileId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  userPatternSummaryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  usedCaseIds?: Prisma.AnalysisResultUpdateusedCaseIdsInput | string[]
+  usedFeedbackIds?: Prisma.AnalysisResultUpdateusedFeedbackIdsInput | string[]
+  contextJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   feedback?: Prisma.AnalysisFeedbackUncheckedUpdateOneWithoutAnalysisResultNestedInput
 }
@@ -723,6 +891,11 @@ export type AnalysisResultUncheckedUpdateManyWithoutAnalysisCaseInput = {
   resultSchemaVersion?: Prisma.StringFieldUpdateOperationsInput | string
   model?: Prisma.StringFieldUpdateOperationsInput | string
   resultJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  personProfileId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  userPatternSummaryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  usedCaseIds?: Prisma.AnalysisResultUpdateusedCaseIdsInput | string[]
+  usedFeedbackIds?: Prisma.AnalysisResultUpdateusedFeedbackIdsInput | string[]
+  contextJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -738,6 +911,11 @@ export type AnalysisResultSelect<ExtArgs extends runtime.Types.Extensions.Intern
   resultSchemaVersion?: boolean
   model?: boolean
   resultJson?: boolean
+  personProfileId?: boolean
+  userPatternSummaryId?: boolean
+  usedCaseIds?: boolean
+  usedFeedbackIds?: boolean
+  contextJson?: boolean
   createdAt?: boolean
   analysisCase?: boolean | Prisma.AnalysisCaseDefaultArgs<ExtArgs>
   feedback?: boolean | Prisma.AnalysisResult$feedbackArgs<ExtArgs>
@@ -753,6 +931,11 @@ export type AnalysisResultSelectCreateManyAndReturn<ExtArgs extends runtime.Type
   resultSchemaVersion?: boolean
   model?: boolean
   resultJson?: boolean
+  personProfileId?: boolean
+  userPatternSummaryId?: boolean
+  usedCaseIds?: boolean
+  usedFeedbackIds?: boolean
+  contextJson?: boolean
   createdAt?: boolean
   analysisCase?: boolean | Prisma.AnalysisCaseDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["analysisResult"]>
@@ -767,6 +950,11 @@ export type AnalysisResultSelectUpdateManyAndReturn<ExtArgs extends runtime.Type
   resultSchemaVersion?: boolean
   model?: boolean
   resultJson?: boolean
+  personProfileId?: boolean
+  userPatternSummaryId?: boolean
+  usedCaseIds?: boolean
+  usedFeedbackIds?: boolean
+  contextJson?: boolean
   createdAt?: boolean
   analysisCase?: boolean | Prisma.AnalysisCaseDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["analysisResult"]>
@@ -781,10 +969,15 @@ export type AnalysisResultSelectScalar = {
   resultSchemaVersion?: boolean
   model?: boolean
   resultJson?: boolean
+  personProfileId?: boolean
+  userPatternSummaryId?: boolean
+  usedCaseIds?: boolean
+  usedFeedbackIds?: boolean
+  contextJson?: boolean
   createdAt?: boolean
 }
 
-export type AnalysisResultOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "analysisCaseId" | "analyzeRunId" | "version" | "promptVersion" | "resultSchemaVersion" | "model" | "resultJson" | "createdAt", ExtArgs["result"]["analysisResult"]>
+export type AnalysisResultOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "analysisCaseId" | "analyzeRunId" | "version" | "promptVersion" | "resultSchemaVersion" | "model" | "resultJson" | "personProfileId" | "userPatternSummaryId" | "usedCaseIds" | "usedFeedbackIds" | "contextJson" | "createdAt", ExtArgs["result"]["analysisResult"]>
 export type AnalysisResultInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   analysisCase?: boolean | Prisma.AnalysisCaseDefaultArgs<ExtArgs>
   feedback?: boolean | Prisma.AnalysisResult$feedbackArgs<ExtArgs>
@@ -812,6 +1005,11 @@ export type $AnalysisResultPayload<ExtArgs extends runtime.Types.Extensions.Inte
     resultSchemaVersion: string
     model: string
     resultJson: runtime.JsonValue
+    personProfileId: string | null
+    userPatternSummaryId: string | null
+    usedCaseIds: string[]
+    usedFeedbackIds: string[]
+    contextJson: runtime.JsonValue | null
     createdAt: Date
   }, ExtArgs["result"]["analysisResult"]>
   composites: {}
@@ -1247,6 +1445,11 @@ export interface AnalysisResultFieldRefs {
   readonly resultSchemaVersion: Prisma.FieldRef<"AnalysisResult", 'String'>
   readonly model: Prisma.FieldRef<"AnalysisResult", 'String'>
   readonly resultJson: Prisma.FieldRef<"AnalysisResult", 'Json'>
+  readonly personProfileId: Prisma.FieldRef<"AnalysisResult", 'String'>
+  readonly userPatternSummaryId: Prisma.FieldRef<"AnalysisResult", 'String'>
+  readonly usedCaseIds: Prisma.FieldRef<"AnalysisResult", 'String[]'>
+  readonly usedFeedbackIds: Prisma.FieldRef<"AnalysisResult", 'String[]'>
+  readonly contextJson: Prisma.FieldRef<"AnalysisResult", 'Json'>
   readonly createdAt: Prisma.FieldRef<"AnalysisResult", 'DateTime'>
 }
     

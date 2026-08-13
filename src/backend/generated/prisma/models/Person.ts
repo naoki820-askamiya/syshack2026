@@ -29,12 +29,10 @@ export type PersonMinAggregateOutputType = {
   userId: string | null
   displayName: string | null
   relationshipType: $Enums.RelationshipType | null
-  ageRange: string | null
-  genderHint: $Enums.GenderHint | null
   notes: string | null
+  archivedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
-  archivedAt: Date | null
 }
 
 export type PersonMaxAggregateOutputType = {
@@ -42,12 +40,10 @@ export type PersonMaxAggregateOutputType = {
   userId: string | null
   displayName: string | null
   relationshipType: $Enums.RelationshipType | null
-  ageRange: string | null
-  genderHint: $Enums.GenderHint | null
   notes: string | null
+  archivedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
-  archivedAt: Date | null
 }
 
 export type PersonCountAggregateOutputType = {
@@ -55,12 +51,10 @@ export type PersonCountAggregateOutputType = {
   userId: number
   displayName: number
   relationshipType: number
-  ageRange: number
-  genderHint: number
   notes: number
+  archivedAt: number
   createdAt: number
   updatedAt: number
-  archivedAt: number
   _all: number
 }
 
@@ -70,12 +64,10 @@ export type PersonMinAggregateInputType = {
   userId?: true
   displayName?: true
   relationshipType?: true
-  ageRange?: true
-  genderHint?: true
   notes?: true
+  archivedAt?: true
   createdAt?: true
   updatedAt?: true
-  archivedAt?: true
 }
 
 export type PersonMaxAggregateInputType = {
@@ -83,12 +75,10 @@ export type PersonMaxAggregateInputType = {
   userId?: true
   displayName?: true
   relationshipType?: true
-  ageRange?: true
-  genderHint?: true
   notes?: true
+  archivedAt?: true
   createdAt?: true
   updatedAt?: true
-  archivedAt?: true
 }
 
 export type PersonCountAggregateInputType = {
@@ -96,12 +86,10 @@ export type PersonCountAggregateInputType = {
   userId?: true
   displayName?: true
   relationshipType?: true
-  ageRange?: true
-  genderHint?: true
   notes?: true
+  archivedAt?: true
   createdAt?: true
   updatedAt?: true
-  archivedAt?: true
   _all?: true
 }
 
@@ -182,12 +170,10 @@ export type PersonGroupByOutputType = {
   userId: string
   displayName: string
   relationshipType: $Enums.RelationshipType
-  ageRange: string | null
-  genderHint: $Enums.GenderHint | null
   notes: string | null
+  archivedAt: Date | null
   createdAt: Date
   updatedAt: Date
-  archivedAt: Date | null
   _count: PersonCountAggregateOutputType | null
   _min: PersonMinAggregateOutputType | null
   _max: PersonMaxAggregateOutputType | null
@@ -216,12 +202,10 @@ export type PersonWhereInput = {
   userId?: Prisma.UuidFilter<"Person"> | string
   displayName?: Prisma.StringFilter<"Person"> | string
   relationshipType?: Prisma.EnumRelationshipTypeFilter<"Person"> | $Enums.RelationshipType
-  ageRange?: Prisma.StringNullableFilter<"Person"> | string | null
-  genderHint?: Prisma.EnumGenderHintNullableFilter<"Person"> | $Enums.GenderHint | null
   notes?: Prisma.StringNullableFilter<"Person"> | string | null
+  archivedAt?: Prisma.DateTimeNullableFilter<"Person"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Person"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Person"> | Date | string
-  archivedAt?: Prisma.DateTimeNullableFilter<"Person"> | Date | string | null
   analysisCases?: Prisma.AnalysisCaseListRelationFilter
   profile?: Prisma.XOR<Prisma.PersonProfileNullableScalarRelationFilter, Prisma.PersonProfileWhereInput> | null
 }
@@ -231,12 +215,10 @@ export type PersonOrderByWithRelationInput = {
   userId?: Prisma.SortOrder
   displayName?: Prisma.SortOrder
   relationshipType?: Prisma.SortOrder
-  ageRange?: Prisma.SortOrderInput | Prisma.SortOrder
-  genderHint?: Prisma.SortOrderInput | Prisma.SortOrder
   notes?: Prisma.SortOrderInput | Prisma.SortOrder
+  archivedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
-  archivedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   analysisCases?: Prisma.AnalysisCaseOrderByRelationAggregateInput
   profile?: Prisma.PersonProfileOrderByWithRelationInput
 }
@@ -250,12 +232,10 @@ export type PersonWhereUniqueInput = Prisma.AtLeast<{
   userId?: Prisma.UuidFilter<"Person"> | string
   displayName?: Prisma.StringFilter<"Person"> | string
   relationshipType?: Prisma.EnumRelationshipTypeFilter<"Person"> | $Enums.RelationshipType
-  ageRange?: Prisma.StringNullableFilter<"Person"> | string | null
-  genderHint?: Prisma.EnumGenderHintNullableFilter<"Person"> | $Enums.GenderHint | null
   notes?: Prisma.StringNullableFilter<"Person"> | string | null
+  archivedAt?: Prisma.DateTimeNullableFilter<"Person"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Person"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Person"> | Date | string
-  archivedAt?: Prisma.DateTimeNullableFilter<"Person"> | Date | string | null
   analysisCases?: Prisma.AnalysisCaseListRelationFilter
   profile?: Prisma.XOR<Prisma.PersonProfileNullableScalarRelationFilter, Prisma.PersonProfileWhereInput> | null
 }, "id" | "userId_id">
@@ -265,12 +245,10 @@ export type PersonOrderByWithAggregationInput = {
   userId?: Prisma.SortOrder
   displayName?: Prisma.SortOrder
   relationshipType?: Prisma.SortOrder
-  ageRange?: Prisma.SortOrderInput | Prisma.SortOrder
-  genderHint?: Prisma.SortOrderInput | Prisma.SortOrder
   notes?: Prisma.SortOrderInput | Prisma.SortOrder
+  archivedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
-  archivedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.PersonCountOrderByAggregateInput
   _max?: Prisma.PersonMaxOrderByAggregateInput
   _min?: Prisma.PersonMinOrderByAggregateInput
@@ -284,12 +262,10 @@ export type PersonScalarWhereWithAggregatesInput = {
   userId?: Prisma.UuidWithAggregatesFilter<"Person"> | string
   displayName?: Prisma.StringWithAggregatesFilter<"Person"> | string
   relationshipType?: Prisma.EnumRelationshipTypeWithAggregatesFilter<"Person"> | $Enums.RelationshipType
-  ageRange?: Prisma.StringNullableWithAggregatesFilter<"Person"> | string | null
-  genderHint?: Prisma.EnumGenderHintNullableWithAggregatesFilter<"Person"> | $Enums.GenderHint | null
   notes?: Prisma.StringNullableWithAggregatesFilter<"Person"> | string | null
+  archivedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Person"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Person"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Person"> | Date | string
-  archivedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Person"> | Date | string | null
 }
 
 export type PersonCreateInput = {
@@ -297,12 +273,10 @@ export type PersonCreateInput = {
   userId: string
   displayName: string
   relationshipType: $Enums.RelationshipType
-  ageRange?: string | null
-  genderHint?: $Enums.GenderHint | null
   notes?: string | null
+  archivedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  archivedAt?: Date | string | null
   analysisCases?: Prisma.AnalysisCaseCreateNestedManyWithoutPersonInput
   profile?: Prisma.PersonProfileCreateNestedOneWithoutPersonInput
 }
@@ -312,12 +286,10 @@ export type PersonUncheckedCreateInput = {
   userId: string
   displayName: string
   relationshipType: $Enums.RelationshipType
-  ageRange?: string | null
-  genderHint?: $Enums.GenderHint | null
   notes?: string | null
+  archivedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  archivedAt?: Date | string | null
   analysisCases?: Prisma.AnalysisCaseUncheckedCreateNestedManyWithoutPersonInput
   profile?: Prisma.PersonProfileUncheckedCreateNestedOneWithoutPersonInput
 }
@@ -327,12 +299,10 @@ export type PersonUpdateInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   displayName?: Prisma.StringFieldUpdateOperationsInput | string
   relationshipType?: Prisma.EnumRelationshipTypeFieldUpdateOperationsInput | $Enums.RelationshipType
-  ageRange?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  genderHint?: Prisma.NullableEnumGenderHintFieldUpdateOperationsInput | $Enums.GenderHint | null
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   analysisCases?: Prisma.AnalysisCaseUpdateManyWithoutPersonNestedInput
   profile?: Prisma.PersonProfileUpdateOneWithoutPersonNestedInput
 }
@@ -342,12 +312,10 @@ export type PersonUncheckedUpdateInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   displayName?: Prisma.StringFieldUpdateOperationsInput | string
   relationshipType?: Prisma.EnumRelationshipTypeFieldUpdateOperationsInput | $Enums.RelationshipType
-  ageRange?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  genderHint?: Prisma.NullableEnumGenderHintFieldUpdateOperationsInput | $Enums.GenderHint | null
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   analysisCases?: Prisma.AnalysisCaseUncheckedUpdateManyWithoutPersonNestedInput
   profile?: Prisma.PersonProfileUncheckedUpdateOneWithoutPersonNestedInput
 }
@@ -357,12 +325,10 @@ export type PersonCreateManyInput = {
   userId: string
   displayName: string
   relationshipType: $Enums.RelationshipType
-  ageRange?: string | null
-  genderHint?: $Enums.GenderHint | null
   notes?: string | null
+  archivedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  archivedAt?: Date | string | null
 }
 
 export type PersonUpdateManyMutationInput = {
@@ -370,12 +336,10 @@ export type PersonUpdateManyMutationInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   displayName?: Prisma.StringFieldUpdateOperationsInput | string
   relationshipType?: Prisma.EnumRelationshipTypeFieldUpdateOperationsInput | $Enums.RelationshipType
-  ageRange?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  genderHint?: Prisma.NullableEnumGenderHintFieldUpdateOperationsInput | $Enums.GenderHint | null
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type PersonUncheckedUpdateManyInput = {
@@ -383,12 +347,10 @@ export type PersonUncheckedUpdateManyInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   displayName?: Prisma.StringFieldUpdateOperationsInput | string
   relationshipType?: Prisma.EnumRelationshipTypeFieldUpdateOperationsInput | $Enums.RelationshipType
-  ageRange?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  genderHint?: Prisma.NullableEnumGenderHintFieldUpdateOperationsInput | $Enums.GenderHint | null
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type PersonUserIdIdCompoundUniqueInput = {
@@ -401,12 +363,10 @@ export type PersonCountOrderByAggregateInput = {
   userId?: Prisma.SortOrder
   displayName?: Prisma.SortOrder
   relationshipType?: Prisma.SortOrder
-  ageRange?: Prisma.SortOrder
-  genderHint?: Prisma.SortOrder
   notes?: Prisma.SortOrder
+  archivedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
-  archivedAt?: Prisma.SortOrder
 }
 
 export type PersonMaxOrderByAggregateInput = {
@@ -414,12 +374,10 @@ export type PersonMaxOrderByAggregateInput = {
   userId?: Prisma.SortOrder
   displayName?: Prisma.SortOrder
   relationshipType?: Prisma.SortOrder
-  ageRange?: Prisma.SortOrder
-  genderHint?: Prisma.SortOrder
   notes?: Prisma.SortOrder
+  archivedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
-  archivedAt?: Prisma.SortOrder
 }
 
 export type PersonMinOrderByAggregateInput = {
@@ -427,12 +385,10 @@ export type PersonMinOrderByAggregateInput = {
   userId?: Prisma.SortOrder
   displayName?: Prisma.SortOrder
   relationshipType?: Prisma.SortOrder
-  ageRange?: Prisma.SortOrder
-  genderHint?: Prisma.SortOrder
   notes?: Prisma.SortOrder
+  archivedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
-  archivedAt?: Prisma.SortOrder
 }
 
 export type PersonScalarRelationFilter = {
@@ -452,16 +408,12 @@ export type NullableStringFieldUpdateOperationsInput = {
   set?: string | null
 }
 
-export type NullableEnumGenderHintFieldUpdateOperationsInput = {
-  set?: $Enums.GenderHint | null
+export type NullableDateTimeFieldUpdateOperationsInput = {
+  set?: Date | string | null
 }
 
 export type DateTimeFieldUpdateOperationsInput = {
   set?: Date | string
-}
-
-export type NullableDateTimeFieldUpdateOperationsInput = {
-  set?: Date | string | null
 }
 
 export type PersonCreateNestedOneWithoutAnalysisCasesInput = {
@@ -497,12 +449,10 @@ export type PersonCreateWithoutAnalysisCasesInput = {
   userId: string
   displayName: string
   relationshipType: $Enums.RelationshipType
-  ageRange?: string | null
-  genderHint?: $Enums.GenderHint | null
   notes?: string | null
+  archivedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  archivedAt?: Date | string | null
   profile?: Prisma.PersonProfileCreateNestedOneWithoutPersonInput
 }
 
@@ -511,12 +461,10 @@ export type PersonUncheckedCreateWithoutAnalysisCasesInput = {
   userId: string
   displayName: string
   relationshipType: $Enums.RelationshipType
-  ageRange?: string | null
-  genderHint?: $Enums.GenderHint | null
   notes?: string | null
+  archivedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  archivedAt?: Date | string | null
   profile?: Prisma.PersonProfileUncheckedCreateNestedOneWithoutPersonInput
 }
 
@@ -541,12 +489,10 @@ export type PersonUpdateWithoutAnalysisCasesInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   displayName?: Prisma.StringFieldUpdateOperationsInput | string
   relationshipType?: Prisma.EnumRelationshipTypeFieldUpdateOperationsInput | $Enums.RelationshipType
-  ageRange?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  genderHint?: Prisma.NullableEnumGenderHintFieldUpdateOperationsInput | $Enums.GenderHint | null
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   profile?: Prisma.PersonProfileUpdateOneWithoutPersonNestedInput
 }
 
@@ -555,12 +501,10 @@ export type PersonUncheckedUpdateWithoutAnalysisCasesInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   displayName?: Prisma.StringFieldUpdateOperationsInput | string
   relationshipType?: Prisma.EnumRelationshipTypeFieldUpdateOperationsInput | $Enums.RelationshipType
-  ageRange?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  genderHint?: Prisma.NullableEnumGenderHintFieldUpdateOperationsInput | $Enums.GenderHint | null
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   profile?: Prisma.PersonProfileUncheckedUpdateOneWithoutPersonNestedInput
 }
 
@@ -569,12 +513,10 @@ export type PersonCreateWithoutProfileInput = {
   userId: string
   displayName: string
   relationshipType: $Enums.RelationshipType
-  ageRange?: string | null
-  genderHint?: $Enums.GenderHint | null
   notes?: string | null
+  archivedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  archivedAt?: Date | string | null
   analysisCases?: Prisma.AnalysisCaseCreateNestedManyWithoutPersonInput
 }
 
@@ -583,12 +525,10 @@ export type PersonUncheckedCreateWithoutProfileInput = {
   userId: string
   displayName: string
   relationshipType: $Enums.RelationshipType
-  ageRange?: string | null
-  genderHint?: $Enums.GenderHint | null
   notes?: string | null
+  archivedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  archivedAt?: Date | string | null
   analysisCases?: Prisma.AnalysisCaseUncheckedCreateNestedManyWithoutPersonInput
 }
 
@@ -613,12 +553,10 @@ export type PersonUpdateWithoutProfileInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   displayName?: Prisma.StringFieldUpdateOperationsInput | string
   relationshipType?: Prisma.EnumRelationshipTypeFieldUpdateOperationsInput | $Enums.RelationshipType
-  ageRange?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  genderHint?: Prisma.NullableEnumGenderHintFieldUpdateOperationsInput | $Enums.GenderHint | null
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   analysisCases?: Prisma.AnalysisCaseUpdateManyWithoutPersonNestedInput
 }
 
@@ -627,12 +565,10 @@ export type PersonUncheckedUpdateWithoutProfileInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   displayName?: Prisma.StringFieldUpdateOperationsInput | string
   relationshipType?: Prisma.EnumRelationshipTypeFieldUpdateOperationsInput | $Enums.RelationshipType
-  ageRange?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  genderHint?: Prisma.NullableEnumGenderHintFieldUpdateOperationsInput | $Enums.GenderHint | null
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   analysisCases?: Prisma.AnalysisCaseUncheckedUpdateManyWithoutPersonNestedInput
 }
 
@@ -672,12 +608,10 @@ export type PersonSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   userId?: boolean
   displayName?: boolean
   relationshipType?: boolean
-  ageRange?: boolean
-  genderHint?: boolean
   notes?: boolean
+  archivedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
-  archivedAt?: boolean
   analysisCases?: boolean | Prisma.Person$analysisCasesArgs<ExtArgs>
   profile?: boolean | Prisma.Person$profileArgs<ExtArgs>
   _count?: boolean | Prisma.PersonCountOutputTypeDefaultArgs<ExtArgs>
@@ -688,12 +622,10 @@ export type PersonSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extens
   userId?: boolean
   displayName?: boolean
   relationshipType?: boolean
-  ageRange?: boolean
-  genderHint?: boolean
   notes?: boolean
+  archivedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
-  archivedAt?: boolean
 }, ExtArgs["result"]["person"]>
 
 export type PersonSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -701,12 +633,10 @@ export type PersonSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extens
   userId?: boolean
   displayName?: boolean
   relationshipType?: boolean
-  ageRange?: boolean
-  genderHint?: boolean
   notes?: boolean
+  archivedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
-  archivedAt?: boolean
 }, ExtArgs["result"]["person"]>
 
 export type PersonSelectScalar = {
@@ -714,15 +644,13 @@ export type PersonSelectScalar = {
   userId?: boolean
   displayName?: boolean
   relationshipType?: boolean
-  ageRange?: boolean
-  genderHint?: boolean
   notes?: boolean
+  archivedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
-  archivedAt?: boolean
 }
 
-export type PersonOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "displayName" | "relationshipType" | "ageRange" | "genderHint" | "notes" | "createdAt" | "updatedAt" | "archivedAt", ExtArgs["result"]["person"]>
+export type PersonOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "displayName" | "relationshipType" | "notes" | "archivedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["person"]>
 export type PersonInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   analysisCases?: boolean | Prisma.Person$analysisCasesArgs<ExtArgs>
   profile?: boolean | Prisma.Person$profileArgs<ExtArgs>
@@ -742,12 +670,10 @@ export type $PersonPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
     userId: string
     displayName: string
     relationshipType: $Enums.RelationshipType
-    ageRange: string | null
-    genderHint: $Enums.GenderHint | null
     notes: string | null
+    archivedAt: Date | null
     createdAt: Date
     updatedAt: Date
-    archivedAt: Date | null
   }, ExtArgs["result"]["person"]>
   composites: {}
 }
@@ -1177,12 +1103,10 @@ export interface PersonFieldRefs {
   readonly userId: Prisma.FieldRef<"Person", 'String'>
   readonly displayName: Prisma.FieldRef<"Person", 'String'>
   readonly relationshipType: Prisma.FieldRef<"Person", 'RelationshipType'>
-  readonly ageRange: Prisma.FieldRef<"Person", 'String'>
-  readonly genderHint: Prisma.FieldRef<"Person", 'GenderHint'>
   readonly notes: Prisma.FieldRef<"Person", 'String'>
+  readonly archivedAt: Prisma.FieldRef<"Person", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"Person", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Person", 'DateTime'>
-  readonly archivedAt: Prisma.FieldRef<"Person", 'DateTime'>
 }
     
 

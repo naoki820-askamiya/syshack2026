@@ -39,19 +39,13 @@ export type AnalysisCaseMinAggregateOutputType = {
   userId: string | null
   personId: string | null
   status: $Enums.AnalysisCaseStatus | null
+  userAgeRange: string | null
+  userGender: string | null
+  perceivedPartnerReaction: string | null
+  elapsedTimeType: string | null
   eventFacts: string | null
-  selfMessage: string | null
-  partnerMessage: string | null
-  recentConversationText: string | null
-  appType: string | null
-  userEmotion: string | null
-  assumedPartnerEmotion: string | null
-  partnerSpeakingStyle: string | null
-  contextNote: string | null
-  concernText: string | null
-  emojiUsed: boolean | null
-  toneType: $Enums.ToneType | null
-  messageLengthType: $Enums.MessageLengthType | null
+  userResponseType: string | null
+  userResponseText: string | null
   analyzeRunId: string | null
   analyzeStartedAt: Date | null
   analyzeAttemptCount: number | null
@@ -67,19 +61,13 @@ export type AnalysisCaseMaxAggregateOutputType = {
   userId: string | null
   personId: string | null
   status: $Enums.AnalysisCaseStatus | null
+  userAgeRange: string | null
+  userGender: string | null
+  perceivedPartnerReaction: string | null
+  elapsedTimeType: string | null
   eventFacts: string | null
-  selfMessage: string | null
-  partnerMessage: string | null
-  recentConversationText: string | null
-  appType: string | null
-  userEmotion: string | null
-  assumedPartnerEmotion: string | null
-  partnerSpeakingStyle: string | null
-  contextNote: string | null
-  concernText: string | null
-  emojiUsed: boolean | null
-  toneType: $Enums.ToneType | null
-  messageLengthType: $Enums.MessageLengthType | null
+  userResponseType: string | null
+  userResponseText: string | null
   analyzeRunId: string | null
   analyzeStartedAt: Date | null
   analyzeAttemptCount: number | null
@@ -95,19 +83,13 @@ export type AnalysisCaseCountAggregateOutputType = {
   userId: number
   personId: number
   status: number
+  userAgeRange: number
+  userGender: number
+  perceivedPartnerReaction: number
+  elapsedTimeType: number
   eventFacts: number
-  selfMessage: number
-  partnerMessage: number
-  recentConversationText: number
-  appType: number
-  userEmotion: number
-  assumedPartnerEmotion: number
-  partnerSpeakingStyle: number
-  contextNote: number
-  concernText: number
-  emojiUsed: number
-  toneType: number
-  messageLengthType: number
+  userResponseType: number
+  userResponseText: number
   personSnapshot: number
   analyzeRunId: number
   analyzeStartedAt: number
@@ -134,19 +116,13 @@ export type AnalysisCaseMinAggregateInputType = {
   userId?: true
   personId?: true
   status?: true
+  userAgeRange?: true
+  userGender?: true
+  perceivedPartnerReaction?: true
+  elapsedTimeType?: true
   eventFacts?: true
-  selfMessage?: true
-  partnerMessage?: true
-  recentConversationText?: true
-  appType?: true
-  userEmotion?: true
-  assumedPartnerEmotion?: true
-  partnerSpeakingStyle?: true
-  contextNote?: true
-  concernText?: true
-  emojiUsed?: true
-  toneType?: true
-  messageLengthType?: true
+  userResponseType?: true
+  userResponseText?: true
   analyzeRunId?: true
   analyzeStartedAt?: true
   analyzeAttemptCount?: true
@@ -162,19 +138,13 @@ export type AnalysisCaseMaxAggregateInputType = {
   userId?: true
   personId?: true
   status?: true
+  userAgeRange?: true
+  userGender?: true
+  perceivedPartnerReaction?: true
+  elapsedTimeType?: true
   eventFacts?: true
-  selfMessage?: true
-  partnerMessage?: true
-  recentConversationText?: true
-  appType?: true
-  userEmotion?: true
-  assumedPartnerEmotion?: true
-  partnerSpeakingStyle?: true
-  contextNote?: true
-  concernText?: true
-  emojiUsed?: true
-  toneType?: true
-  messageLengthType?: true
+  userResponseType?: true
+  userResponseText?: true
   analyzeRunId?: true
   analyzeStartedAt?: true
   analyzeAttemptCount?: true
@@ -190,19 +160,13 @@ export type AnalysisCaseCountAggregateInputType = {
   userId?: true
   personId?: true
   status?: true
+  userAgeRange?: true
+  userGender?: true
+  perceivedPartnerReaction?: true
+  elapsedTimeType?: true
   eventFacts?: true
-  selfMessage?: true
-  partnerMessage?: true
-  recentConversationText?: true
-  appType?: true
-  userEmotion?: true
-  assumedPartnerEmotion?: true
-  partnerSpeakingStyle?: true
-  contextNote?: true
-  concernText?: true
-  emojiUsed?: true
-  toneType?: true
-  messageLengthType?: true
+  userResponseType?: true
+  userResponseText?: true
   personSnapshot?: true
   analyzeRunId?: true
   analyzeStartedAt?: true
@@ -306,19 +270,13 @@ export type AnalysisCaseGroupByOutputType = {
   userId: string
   personId: string
   status: $Enums.AnalysisCaseStatus
+  userAgeRange: string
+  userGender: string
+  perceivedPartnerReaction: string
+  elapsedTimeType: string
   eventFacts: string
-  selfMessage: string
-  partnerMessage: string
-  recentConversationText: string | null
-  appType: string | null
-  userEmotion: string | null
-  assumedPartnerEmotion: string | null
-  partnerSpeakingStyle: string | null
-  contextNote: string | null
-  concernText: string | null
-  emojiUsed: boolean | null
-  toneType: $Enums.ToneType | null
-  messageLengthType: $Enums.MessageLengthType | null
+  userResponseType: string
+  userResponseText: string | null
   personSnapshot: runtime.JsonValue
   analyzeRunId: string | null
   analyzeStartedAt: Date | null
@@ -358,19 +316,13 @@ export type AnalysisCaseWhereInput = {
   userId?: Prisma.UuidFilter<"AnalysisCase"> | string
   personId?: Prisma.UuidFilter<"AnalysisCase"> | string
   status?: Prisma.EnumAnalysisCaseStatusFilter<"AnalysisCase"> | $Enums.AnalysisCaseStatus
+  userAgeRange?: Prisma.StringFilter<"AnalysisCase"> | string
+  userGender?: Prisma.StringFilter<"AnalysisCase"> | string
+  perceivedPartnerReaction?: Prisma.StringFilter<"AnalysisCase"> | string
+  elapsedTimeType?: Prisma.StringFilter<"AnalysisCase"> | string
   eventFacts?: Prisma.StringFilter<"AnalysisCase"> | string
-  selfMessage?: Prisma.StringFilter<"AnalysisCase"> | string
-  partnerMessage?: Prisma.StringFilter<"AnalysisCase"> | string
-  recentConversationText?: Prisma.StringNullableFilter<"AnalysisCase"> | string | null
-  appType?: Prisma.StringNullableFilter<"AnalysisCase"> | string | null
-  userEmotion?: Prisma.StringNullableFilter<"AnalysisCase"> | string | null
-  assumedPartnerEmotion?: Prisma.StringNullableFilter<"AnalysisCase"> | string | null
-  partnerSpeakingStyle?: Prisma.StringNullableFilter<"AnalysisCase"> | string | null
-  contextNote?: Prisma.StringNullableFilter<"AnalysisCase"> | string | null
-  concernText?: Prisma.StringNullableFilter<"AnalysisCase"> | string | null
-  emojiUsed?: Prisma.BoolNullableFilter<"AnalysisCase"> | boolean | null
-  toneType?: Prisma.EnumToneTypeNullableFilter<"AnalysisCase"> | $Enums.ToneType | null
-  messageLengthType?: Prisma.EnumMessageLengthTypeNullableFilter<"AnalysisCase"> | $Enums.MessageLengthType | null
+  userResponseType?: Prisma.StringFilter<"AnalysisCase"> | string
+  userResponseText?: Prisma.StringNullableFilter<"AnalysisCase"> | string | null
   personSnapshot?: Prisma.JsonFilter<"AnalysisCase">
   analyzeRunId?: Prisma.UuidNullableFilter<"AnalysisCase"> | string | null
   analyzeStartedAt?: Prisma.DateTimeNullableFilter<"AnalysisCase"> | Date | string | null
@@ -390,19 +342,13 @@ export type AnalysisCaseOrderByWithRelationInput = {
   userId?: Prisma.SortOrder
   personId?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  userAgeRange?: Prisma.SortOrder
+  userGender?: Prisma.SortOrder
+  perceivedPartnerReaction?: Prisma.SortOrder
+  elapsedTimeType?: Prisma.SortOrder
   eventFacts?: Prisma.SortOrder
-  selfMessage?: Prisma.SortOrder
-  partnerMessage?: Prisma.SortOrder
-  recentConversationText?: Prisma.SortOrderInput | Prisma.SortOrder
-  appType?: Prisma.SortOrderInput | Prisma.SortOrder
-  userEmotion?: Prisma.SortOrderInput | Prisma.SortOrder
-  assumedPartnerEmotion?: Prisma.SortOrderInput | Prisma.SortOrder
-  partnerSpeakingStyle?: Prisma.SortOrderInput | Prisma.SortOrder
-  contextNote?: Prisma.SortOrderInput | Prisma.SortOrder
-  concernText?: Prisma.SortOrderInput | Prisma.SortOrder
-  emojiUsed?: Prisma.SortOrderInput | Prisma.SortOrder
-  toneType?: Prisma.SortOrderInput | Prisma.SortOrder
-  messageLengthType?: Prisma.SortOrderInput | Prisma.SortOrder
+  userResponseType?: Prisma.SortOrder
+  userResponseText?: Prisma.SortOrderInput | Prisma.SortOrder
   personSnapshot?: Prisma.SortOrder
   analyzeRunId?: Prisma.SortOrderInput | Prisma.SortOrder
   analyzeStartedAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -426,19 +372,13 @@ export type AnalysisCaseWhereUniqueInput = Prisma.AtLeast<{
   userId?: Prisma.UuidFilter<"AnalysisCase"> | string
   personId?: Prisma.UuidFilter<"AnalysisCase"> | string
   status?: Prisma.EnumAnalysisCaseStatusFilter<"AnalysisCase"> | $Enums.AnalysisCaseStatus
+  userAgeRange?: Prisma.StringFilter<"AnalysisCase"> | string
+  userGender?: Prisma.StringFilter<"AnalysisCase"> | string
+  perceivedPartnerReaction?: Prisma.StringFilter<"AnalysisCase"> | string
+  elapsedTimeType?: Prisma.StringFilter<"AnalysisCase"> | string
   eventFacts?: Prisma.StringFilter<"AnalysisCase"> | string
-  selfMessage?: Prisma.StringFilter<"AnalysisCase"> | string
-  partnerMessage?: Prisma.StringFilter<"AnalysisCase"> | string
-  recentConversationText?: Prisma.StringNullableFilter<"AnalysisCase"> | string | null
-  appType?: Prisma.StringNullableFilter<"AnalysisCase"> | string | null
-  userEmotion?: Prisma.StringNullableFilter<"AnalysisCase"> | string | null
-  assumedPartnerEmotion?: Prisma.StringNullableFilter<"AnalysisCase"> | string | null
-  partnerSpeakingStyle?: Prisma.StringNullableFilter<"AnalysisCase"> | string | null
-  contextNote?: Prisma.StringNullableFilter<"AnalysisCase"> | string | null
-  concernText?: Prisma.StringNullableFilter<"AnalysisCase"> | string | null
-  emojiUsed?: Prisma.BoolNullableFilter<"AnalysisCase"> | boolean | null
-  toneType?: Prisma.EnumToneTypeNullableFilter<"AnalysisCase"> | $Enums.ToneType | null
-  messageLengthType?: Prisma.EnumMessageLengthTypeNullableFilter<"AnalysisCase"> | $Enums.MessageLengthType | null
+  userResponseType?: Prisma.StringFilter<"AnalysisCase"> | string
+  userResponseText?: Prisma.StringNullableFilter<"AnalysisCase"> | string | null
   personSnapshot?: Prisma.JsonFilter<"AnalysisCase">
   analyzeRunId?: Prisma.UuidNullableFilter<"AnalysisCase"> | string | null
   analyzeStartedAt?: Prisma.DateTimeNullableFilter<"AnalysisCase"> | Date | string | null
@@ -458,19 +398,13 @@ export type AnalysisCaseOrderByWithAggregationInput = {
   userId?: Prisma.SortOrder
   personId?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  userAgeRange?: Prisma.SortOrder
+  userGender?: Prisma.SortOrder
+  perceivedPartnerReaction?: Prisma.SortOrder
+  elapsedTimeType?: Prisma.SortOrder
   eventFacts?: Prisma.SortOrder
-  selfMessage?: Prisma.SortOrder
-  partnerMessage?: Prisma.SortOrder
-  recentConversationText?: Prisma.SortOrderInput | Prisma.SortOrder
-  appType?: Prisma.SortOrderInput | Prisma.SortOrder
-  userEmotion?: Prisma.SortOrderInput | Prisma.SortOrder
-  assumedPartnerEmotion?: Prisma.SortOrderInput | Prisma.SortOrder
-  partnerSpeakingStyle?: Prisma.SortOrderInput | Prisma.SortOrder
-  contextNote?: Prisma.SortOrderInput | Prisma.SortOrder
-  concernText?: Prisma.SortOrderInput | Prisma.SortOrder
-  emojiUsed?: Prisma.SortOrderInput | Prisma.SortOrder
-  toneType?: Prisma.SortOrderInput | Prisma.SortOrder
-  messageLengthType?: Prisma.SortOrderInput | Prisma.SortOrder
+  userResponseType?: Prisma.SortOrder
+  userResponseText?: Prisma.SortOrderInput | Prisma.SortOrder
   personSnapshot?: Prisma.SortOrder
   analyzeRunId?: Prisma.SortOrderInput | Prisma.SortOrder
   analyzeStartedAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -495,19 +429,13 @@ export type AnalysisCaseScalarWhereWithAggregatesInput = {
   userId?: Prisma.UuidWithAggregatesFilter<"AnalysisCase"> | string
   personId?: Prisma.UuidWithAggregatesFilter<"AnalysisCase"> | string
   status?: Prisma.EnumAnalysisCaseStatusWithAggregatesFilter<"AnalysisCase"> | $Enums.AnalysisCaseStatus
+  userAgeRange?: Prisma.StringWithAggregatesFilter<"AnalysisCase"> | string
+  userGender?: Prisma.StringWithAggregatesFilter<"AnalysisCase"> | string
+  perceivedPartnerReaction?: Prisma.StringWithAggregatesFilter<"AnalysisCase"> | string
+  elapsedTimeType?: Prisma.StringWithAggregatesFilter<"AnalysisCase"> | string
   eventFacts?: Prisma.StringWithAggregatesFilter<"AnalysisCase"> | string
-  selfMessage?: Prisma.StringWithAggregatesFilter<"AnalysisCase"> | string
-  partnerMessage?: Prisma.StringWithAggregatesFilter<"AnalysisCase"> | string
-  recentConversationText?: Prisma.StringNullableWithAggregatesFilter<"AnalysisCase"> | string | null
-  appType?: Prisma.StringNullableWithAggregatesFilter<"AnalysisCase"> | string | null
-  userEmotion?: Prisma.StringNullableWithAggregatesFilter<"AnalysisCase"> | string | null
-  assumedPartnerEmotion?: Prisma.StringNullableWithAggregatesFilter<"AnalysisCase"> | string | null
-  partnerSpeakingStyle?: Prisma.StringNullableWithAggregatesFilter<"AnalysisCase"> | string | null
-  contextNote?: Prisma.StringNullableWithAggregatesFilter<"AnalysisCase"> | string | null
-  concernText?: Prisma.StringNullableWithAggregatesFilter<"AnalysisCase"> | string | null
-  emojiUsed?: Prisma.BoolNullableWithAggregatesFilter<"AnalysisCase"> | boolean | null
-  toneType?: Prisma.EnumToneTypeNullableWithAggregatesFilter<"AnalysisCase"> | $Enums.ToneType | null
-  messageLengthType?: Prisma.EnumMessageLengthTypeNullableWithAggregatesFilter<"AnalysisCase"> | $Enums.MessageLengthType | null
+  userResponseType?: Prisma.StringWithAggregatesFilter<"AnalysisCase"> | string
+  userResponseText?: Prisma.StringNullableWithAggregatesFilter<"AnalysisCase"> | string | null
   personSnapshot?: Prisma.JsonWithAggregatesFilter<"AnalysisCase">
   analyzeRunId?: Prisma.UuidNullableWithAggregatesFilter<"AnalysisCase"> | string | null
   analyzeStartedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"AnalysisCase"> | Date | string | null
@@ -522,19 +450,13 @@ export type AnalysisCaseScalarWhereWithAggregatesInput = {
 export type AnalysisCaseCreateInput = {
   id?: string
   status?: $Enums.AnalysisCaseStatus
+  userAgeRange: string
+  userGender: string
+  perceivedPartnerReaction: string
+  elapsedTimeType: string
   eventFacts: string
-  selfMessage: string
-  partnerMessage: string
-  recentConversationText?: string | null
-  appType?: string | null
-  userEmotion?: string | null
-  assumedPartnerEmotion?: string | null
-  partnerSpeakingStyle?: string | null
-  contextNote?: string | null
-  concernText?: string | null
-  emojiUsed?: boolean | null
-  toneType?: $Enums.ToneType | null
-  messageLengthType?: $Enums.MessageLengthType | null
+  userResponseType: string
+  userResponseText?: string | null
   personSnapshot: Prisma.JsonNullValueInput | runtime.InputJsonValue
   analyzeRunId?: string | null
   analyzeStartedAt?: Date | string | null
@@ -554,19 +476,13 @@ export type AnalysisCaseUncheckedCreateInput = {
   userId: string
   personId: string
   status?: $Enums.AnalysisCaseStatus
+  userAgeRange: string
+  userGender: string
+  perceivedPartnerReaction: string
+  elapsedTimeType: string
   eventFacts: string
-  selfMessage: string
-  partnerMessage: string
-  recentConversationText?: string | null
-  appType?: string | null
-  userEmotion?: string | null
-  assumedPartnerEmotion?: string | null
-  partnerSpeakingStyle?: string | null
-  contextNote?: string | null
-  concernText?: string | null
-  emojiUsed?: boolean | null
-  toneType?: $Enums.ToneType | null
-  messageLengthType?: $Enums.MessageLengthType | null
+  userResponseType: string
+  userResponseText?: string | null
   personSnapshot: Prisma.JsonNullValueInput | runtime.InputJsonValue
   analyzeRunId?: string | null
   analyzeStartedAt?: Date | string | null
@@ -583,19 +499,13 @@ export type AnalysisCaseUncheckedCreateInput = {
 export type AnalysisCaseUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumAnalysisCaseStatusFieldUpdateOperationsInput | $Enums.AnalysisCaseStatus
+  userAgeRange?: Prisma.StringFieldUpdateOperationsInput | string
+  userGender?: Prisma.StringFieldUpdateOperationsInput | string
+  perceivedPartnerReaction?: Prisma.StringFieldUpdateOperationsInput | string
+  elapsedTimeType?: Prisma.StringFieldUpdateOperationsInput | string
   eventFacts?: Prisma.StringFieldUpdateOperationsInput | string
-  selfMessage?: Prisma.StringFieldUpdateOperationsInput | string
-  partnerMessage?: Prisma.StringFieldUpdateOperationsInput | string
-  recentConversationText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  appType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  userEmotion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  assumedPartnerEmotion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  partnerSpeakingStyle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  contextNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  concernText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  emojiUsed?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  toneType?: Prisma.NullableEnumToneTypeFieldUpdateOperationsInput | $Enums.ToneType | null
-  messageLengthType?: Prisma.NullableEnumMessageLengthTypeFieldUpdateOperationsInput | $Enums.MessageLengthType | null
+  userResponseType?: Prisma.StringFieldUpdateOperationsInput | string
+  userResponseText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   personSnapshot?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   analyzeRunId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   analyzeStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -615,19 +525,13 @@ export type AnalysisCaseUncheckedUpdateInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   personId?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumAnalysisCaseStatusFieldUpdateOperationsInput | $Enums.AnalysisCaseStatus
+  userAgeRange?: Prisma.StringFieldUpdateOperationsInput | string
+  userGender?: Prisma.StringFieldUpdateOperationsInput | string
+  perceivedPartnerReaction?: Prisma.StringFieldUpdateOperationsInput | string
+  elapsedTimeType?: Prisma.StringFieldUpdateOperationsInput | string
   eventFacts?: Prisma.StringFieldUpdateOperationsInput | string
-  selfMessage?: Prisma.StringFieldUpdateOperationsInput | string
-  partnerMessage?: Prisma.StringFieldUpdateOperationsInput | string
-  recentConversationText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  appType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  userEmotion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  assumedPartnerEmotion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  partnerSpeakingStyle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  contextNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  concernText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  emojiUsed?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  toneType?: Prisma.NullableEnumToneTypeFieldUpdateOperationsInput | $Enums.ToneType | null
-  messageLengthType?: Prisma.NullableEnumMessageLengthTypeFieldUpdateOperationsInput | $Enums.MessageLengthType | null
+  userResponseType?: Prisma.StringFieldUpdateOperationsInput | string
+  userResponseText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   personSnapshot?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   analyzeRunId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   analyzeStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -646,19 +550,13 @@ export type AnalysisCaseCreateManyInput = {
   userId: string
   personId: string
   status?: $Enums.AnalysisCaseStatus
+  userAgeRange: string
+  userGender: string
+  perceivedPartnerReaction: string
+  elapsedTimeType: string
   eventFacts: string
-  selfMessage: string
-  partnerMessage: string
-  recentConversationText?: string | null
-  appType?: string | null
-  userEmotion?: string | null
-  assumedPartnerEmotion?: string | null
-  partnerSpeakingStyle?: string | null
-  contextNote?: string | null
-  concernText?: string | null
-  emojiUsed?: boolean | null
-  toneType?: $Enums.ToneType | null
-  messageLengthType?: $Enums.MessageLengthType | null
+  userResponseType: string
+  userResponseText?: string | null
   personSnapshot: Prisma.JsonNullValueInput | runtime.InputJsonValue
   analyzeRunId?: string | null
   analyzeStartedAt?: Date | string | null
@@ -673,19 +571,13 @@ export type AnalysisCaseCreateManyInput = {
 export type AnalysisCaseUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumAnalysisCaseStatusFieldUpdateOperationsInput | $Enums.AnalysisCaseStatus
+  userAgeRange?: Prisma.StringFieldUpdateOperationsInput | string
+  userGender?: Prisma.StringFieldUpdateOperationsInput | string
+  perceivedPartnerReaction?: Prisma.StringFieldUpdateOperationsInput | string
+  elapsedTimeType?: Prisma.StringFieldUpdateOperationsInput | string
   eventFacts?: Prisma.StringFieldUpdateOperationsInput | string
-  selfMessage?: Prisma.StringFieldUpdateOperationsInput | string
-  partnerMessage?: Prisma.StringFieldUpdateOperationsInput | string
-  recentConversationText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  appType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  userEmotion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  assumedPartnerEmotion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  partnerSpeakingStyle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  contextNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  concernText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  emojiUsed?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  toneType?: Prisma.NullableEnumToneTypeFieldUpdateOperationsInput | $Enums.ToneType | null
-  messageLengthType?: Prisma.NullableEnumMessageLengthTypeFieldUpdateOperationsInput | $Enums.MessageLengthType | null
+  userResponseType?: Prisma.StringFieldUpdateOperationsInput | string
+  userResponseText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   personSnapshot?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   analyzeRunId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   analyzeStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -702,19 +594,13 @@ export type AnalysisCaseUncheckedUpdateManyInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   personId?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumAnalysisCaseStatusFieldUpdateOperationsInput | $Enums.AnalysisCaseStatus
+  userAgeRange?: Prisma.StringFieldUpdateOperationsInput | string
+  userGender?: Prisma.StringFieldUpdateOperationsInput | string
+  perceivedPartnerReaction?: Prisma.StringFieldUpdateOperationsInput | string
+  elapsedTimeType?: Prisma.StringFieldUpdateOperationsInput | string
   eventFacts?: Prisma.StringFieldUpdateOperationsInput | string
-  selfMessage?: Prisma.StringFieldUpdateOperationsInput | string
-  partnerMessage?: Prisma.StringFieldUpdateOperationsInput | string
-  recentConversationText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  appType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  userEmotion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  assumedPartnerEmotion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  partnerSpeakingStyle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  contextNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  concernText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  emojiUsed?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  toneType?: Prisma.NullableEnumToneTypeFieldUpdateOperationsInput | $Enums.ToneType | null
-  messageLengthType?: Prisma.NullableEnumMessageLengthTypeFieldUpdateOperationsInput | $Enums.MessageLengthType | null
+  userResponseType?: Prisma.StringFieldUpdateOperationsInput | string
+  userResponseText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   personSnapshot?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   analyzeRunId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   analyzeStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -746,19 +632,13 @@ export type AnalysisCaseCountOrderByAggregateInput = {
   userId?: Prisma.SortOrder
   personId?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  userAgeRange?: Prisma.SortOrder
+  userGender?: Prisma.SortOrder
+  perceivedPartnerReaction?: Prisma.SortOrder
+  elapsedTimeType?: Prisma.SortOrder
   eventFacts?: Prisma.SortOrder
-  selfMessage?: Prisma.SortOrder
-  partnerMessage?: Prisma.SortOrder
-  recentConversationText?: Prisma.SortOrder
-  appType?: Prisma.SortOrder
-  userEmotion?: Prisma.SortOrder
-  assumedPartnerEmotion?: Prisma.SortOrder
-  partnerSpeakingStyle?: Prisma.SortOrder
-  contextNote?: Prisma.SortOrder
-  concernText?: Prisma.SortOrder
-  emojiUsed?: Prisma.SortOrder
-  toneType?: Prisma.SortOrder
-  messageLengthType?: Prisma.SortOrder
+  userResponseType?: Prisma.SortOrder
+  userResponseText?: Prisma.SortOrder
   personSnapshot?: Prisma.SortOrder
   analyzeRunId?: Prisma.SortOrder
   analyzeStartedAt?: Prisma.SortOrder
@@ -779,19 +659,13 @@ export type AnalysisCaseMaxOrderByAggregateInput = {
   userId?: Prisma.SortOrder
   personId?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  userAgeRange?: Prisma.SortOrder
+  userGender?: Prisma.SortOrder
+  perceivedPartnerReaction?: Prisma.SortOrder
+  elapsedTimeType?: Prisma.SortOrder
   eventFacts?: Prisma.SortOrder
-  selfMessage?: Prisma.SortOrder
-  partnerMessage?: Prisma.SortOrder
-  recentConversationText?: Prisma.SortOrder
-  appType?: Prisma.SortOrder
-  userEmotion?: Prisma.SortOrder
-  assumedPartnerEmotion?: Prisma.SortOrder
-  partnerSpeakingStyle?: Prisma.SortOrder
-  contextNote?: Prisma.SortOrder
-  concernText?: Prisma.SortOrder
-  emojiUsed?: Prisma.SortOrder
-  toneType?: Prisma.SortOrder
-  messageLengthType?: Prisma.SortOrder
+  userResponseType?: Prisma.SortOrder
+  userResponseText?: Prisma.SortOrder
   analyzeRunId?: Prisma.SortOrder
   analyzeStartedAt?: Prisma.SortOrder
   analyzeAttemptCount?: Prisma.SortOrder
@@ -807,19 +681,13 @@ export type AnalysisCaseMinOrderByAggregateInput = {
   userId?: Prisma.SortOrder
   personId?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  userAgeRange?: Prisma.SortOrder
+  userGender?: Prisma.SortOrder
+  perceivedPartnerReaction?: Prisma.SortOrder
+  elapsedTimeType?: Prisma.SortOrder
   eventFacts?: Prisma.SortOrder
-  selfMessage?: Prisma.SortOrder
-  partnerMessage?: Prisma.SortOrder
-  recentConversationText?: Prisma.SortOrder
-  appType?: Prisma.SortOrder
-  userEmotion?: Prisma.SortOrder
-  assumedPartnerEmotion?: Prisma.SortOrder
-  partnerSpeakingStyle?: Prisma.SortOrder
-  contextNote?: Prisma.SortOrder
-  concernText?: Prisma.SortOrder
-  emojiUsed?: Prisma.SortOrder
-  toneType?: Prisma.SortOrder
-  messageLengthType?: Prisma.SortOrder
+  userResponseType?: Prisma.SortOrder
+  userResponseText?: Prisma.SortOrder
   analyzeRunId?: Prisma.SortOrder
   analyzeStartedAt?: Prisma.SortOrder
   analyzeAttemptCount?: Prisma.SortOrder
@@ -885,18 +753,6 @@ export type EnumAnalysisCaseStatusFieldUpdateOperationsInput = {
   set?: $Enums.AnalysisCaseStatus
 }
 
-export type NullableBoolFieldUpdateOperationsInput = {
-  set?: boolean | null
-}
-
-export type NullableEnumToneTypeFieldUpdateOperationsInput = {
-  set?: $Enums.ToneType | null
-}
-
-export type NullableEnumMessageLengthTypeFieldUpdateOperationsInput = {
-  set?: $Enums.MessageLengthType | null
-}
-
 export type IntFieldUpdateOperationsInput = {
   set?: number
   increment?: number
@@ -936,19 +792,13 @@ export type AnalysisCaseUpdateOneRequiredWithoutFeedbacksNestedInput = {
 export type AnalysisCaseCreateWithoutPersonInput = {
   id?: string
   status?: $Enums.AnalysisCaseStatus
+  userAgeRange: string
+  userGender: string
+  perceivedPartnerReaction: string
+  elapsedTimeType: string
   eventFacts: string
-  selfMessage: string
-  partnerMessage: string
-  recentConversationText?: string | null
-  appType?: string | null
-  userEmotion?: string | null
-  assumedPartnerEmotion?: string | null
-  partnerSpeakingStyle?: string | null
-  contextNote?: string | null
-  concernText?: string | null
-  emojiUsed?: boolean | null
-  toneType?: $Enums.ToneType | null
-  messageLengthType?: $Enums.MessageLengthType | null
+  userResponseType: string
+  userResponseText?: string | null
   personSnapshot: Prisma.JsonNullValueInput | runtime.InputJsonValue
   analyzeRunId?: string | null
   analyzeStartedAt?: Date | string | null
@@ -965,19 +815,13 @@ export type AnalysisCaseCreateWithoutPersonInput = {
 export type AnalysisCaseUncheckedCreateWithoutPersonInput = {
   id?: string
   status?: $Enums.AnalysisCaseStatus
+  userAgeRange: string
+  userGender: string
+  perceivedPartnerReaction: string
+  elapsedTimeType: string
   eventFacts: string
-  selfMessage: string
-  partnerMessage: string
-  recentConversationText?: string | null
-  appType?: string | null
-  userEmotion?: string | null
-  assumedPartnerEmotion?: string | null
-  partnerSpeakingStyle?: string | null
-  contextNote?: string | null
-  concernText?: string | null
-  emojiUsed?: boolean | null
-  toneType?: $Enums.ToneType | null
-  messageLengthType?: $Enums.MessageLengthType | null
+  userResponseType: string
+  userResponseText?: string | null
   personSnapshot: Prisma.JsonNullValueInput | runtime.InputJsonValue
   analyzeRunId?: string | null
   analyzeStartedAt?: Date | string | null
@@ -1025,19 +869,13 @@ export type AnalysisCaseScalarWhereInput = {
   userId?: Prisma.UuidFilter<"AnalysisCase"> | string
   personId?: Prisma.UuidFilter<"AnalysisCase"> | string
   status?: Prisma.EnumAnalysisCaseStatusFilter<"AnalysisCase"> | $Enums.AnalysisCaseStatus
+  userAgeRange?: Prisma.StringFilter<"AnalysisCase"> | string
+  userGender?: Prisma.StringFilter<"AnalysisCase"> | string
+  perceivedPartnerReaction?: Prisma.StringFilter<"AnalysisCase"> | string
+  elapsedTimeType?: Prisma.StringFilter<"AnalysisCase"> | string
   eventFacts?: Prisma.StringFilter<"AnalysisCase"> | string
-  selfMessage?: Prisma.StringFilter<"AnalysisCase"> | string
-  partnerMessage?: Prisma.StringFilter<"AnalysisCase"> | string
-  recentConversationText?: Prisma.StringNullableFilter<"AnalysisCase"> | string | null
-  appType?: Prisma.StringNullableFilter<"AnalysisCase"> | string | null
-  userEmotion?: Prisma.StringNullableFilter<"AnalysisCase"> | string | null
-  assumedPartnerEmotion?: Prisma.StringNullableFilter<"AnalysisCase"> | string | null
-  partnerSpeakingStyle?: Prisma.StringNullableFilter<"AnalysisCase"> | string | null
-  contextNote?: Prisma.StringNullableFilter<"AnalysisCase"> | string | null
-  concernText?: Prisma.StringNullableFilter<"AnalysisCase"> | string | null
-  emojiUsed?: Prisma.BoolNullableFilter<"AnalysisCase"> | boolean | null
-  toneType?: Prisma.EnumToneTypeNullableFilter<"AnalysisCase"> | $Enums.ToneType | null
-  messageLengthType?: Prisma.EnumMessageLengthTypeNullableFilter<"AnalysisCase"> | $Enums.MessageLengthType | null
+  userResponseType?: Prisma.StringFilter<"AnalysisCase"> | string
+  userResponseText?: Prisma.StringNullableFilter<"AnalysisCase"> | string | null
   personSnapshot?: Prisma.JsonFilter<"AnalysisCase">
   analyzeRunId?: Prisma.UuidNullableFilter<"AnalysisCase"> | string | null
   analyzeStartedAt?: Prisma.DateTimeNullableFilter<"AnalysisCase"> | Date | string | null
@@ -1052,19 +890,13 @@ export type AnalysisCaseScalarWhereInput = {
 export type AnalysisCaseCreateWithoutResultsInput = {
   id?: string
   status?: $Enums.AnalysisCaseStatus
+  userAgeRange: string
+  userGender: string
+  perceivedPartnerReaction: string
+  elapsedTimeType: string
   eventFacts: string
-  selfMessage: string
-  partnerMessage: string
-  recentConversationText?: string | null
-  appType?: string | null
-  userEmotion?: string | null
-  assumedPartnerEmotion?: string | null
-  partnerSpeakingStyle?: string | null
-  contextNote?: string | null
-  concernText?: string | null
-  emojiUsed?: boolean | null
-  toneType?: $Enums.ToneType | null
-  messageLengthType?: $Enums.MessageLengthType | null
+  userResponseType: string
+  userResponseText?: string | null
   personSnapshot: Prisma.JsonNullValueInput | runtime.InputJsonValue
   analyzeRunId?: string | null
   analyzeStartedAt?: Date | string | null
@@ -1083,19 +915,13 @@ export type AnalysisCaseUncheckedCreateWithoutResultsInput = {
   userId: string
   personId: string
   status?: $Enums.AnalysisCaseStatus
+  userAgeRange: string
+  userGender: string
+  perceivedPartnerReaction: string
+  elapsedTimeType: string
   eventFacts: string
-  selfMessage: string
-  partnerMessage: string
-  recentConversationText?: string | null
-  appType?: string | null
-  userEmotion?: string | null
-  assumedPartnerEmotion?: string | null
-  partnerSpeakingStyle?: string | null
-  contextNote?: string | null
-  concernText?: string | null
-  emojiUsed?: boolean | null
-  toneType?: $Enums.ToneType | null
-  messageLengthType?: $Enums.MessageLengthType | null
+  userResponseType: string
+  userResponseText?: string | null
   personSnapshot: Prisma.JsonNullValueInput | runtime.InputJsonValue
   analyzeRunId?: string | null
   analyzeStartedAt?: Date | string | null
@@ -1127,19 +953,13 @@ export type AnalysisCaseUpdateToOneWithWhereWithoutResultsInput = {
 export type AnalysisCaseUpdateWithoutResultsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumAnalysisCaseStatusFieldUpdateOperationsInput | $Enums.AnalysisCaseStatus
+  userAgeRange?: Prisma.StringFieldUpdateOperationsInput | string
+  userGender?: Prisma.StringFieldUpdateOperationsInput | string
+  perceivedPartnerReaction?: Prisma.StringFieldUpdateOperationsInput | string
+  elapsedTimeType?: Prisma.StringFieldUpdateOperationsInput | string
   eventFacts?: Prisma.StringFieldUpdateOperationsInput | string
-  selfMessage?: Prisma.StringFieldUpdateOperationsInput | string
-  partnerMessage?: Prisma.StringFieldUpdateOperationsInput | string
-  recentConversationText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  appType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  userEmotion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  assumedPartnerEmotion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  partnerSpeakingStyle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  contextNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  concernText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  emojiUsed?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  toneType?: Prisma.NullableEnumToneTypeFieldUpdateOperationsInput | $Enums.ToneType | null
-  messageLengthType?: Prisma.NullableEnumMessageLengthTypeFieldUpdateOperationsInput | $Enums.MessageLengthType | null
+  userResponseType?: Prisma.StringFieldUpdateOperationsInput | string
+  userResponseText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   personSnapshot?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   analyzeRunId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   analyzeStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1158,19 +978,13 @@ export type AnalysisCaseUncheckedUpdateWithoutResultsInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   personId?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumAnalysisCaseStatusFieldUpdateOperationsInput | $Enums.AnalysisCaseStatus
+  userAgeRange?: Prisma.StringFieldUpdateOperationsInput | string
+  userGender?: Prisma.StringFieldUpdateOperationsInput | string
+  perceivedPartnerReaction?: Prisma.StringFieldUpdateOperationsInput | string
+  elapsedTimeType?: Prisma.StringFieldUpdateOperationsInput | string
   eventFacts?: Prisma.StringFieldUpdateOperationsInput | string
-  selfMessage?: Prisma.StringFieldUpdateOperationsInput | string
-  partnerMessage?: Prisma.StringFieldUpdateOperationsInput | string
-  recentConversationText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  appType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  userEmotion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  assumedPartnerEmotion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  partnerSpeakingStyle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  contextNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  concernText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  emojiUsed?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  toneType?: Prisma.NullableEnumToneTypeFieldUpdateOperationsInput | $Enums.ToneType | null
-  messageLengthType?: Prisma.NullableEnumMessageLengthTypeFieldUpdateOperationsInput | $Enums.MessageLengthType | null
+  userResponseType?: Prisma.StringFieldUpdateOperationsInput | string
+  userResponseText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   personSnapshot?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   analyzeRunId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   analyzeStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1186,19 +1000,13 @@ export type AnalysisCaseUncheckedUpdateWithoutResultsInput = {
 export type AnalysisCaseCreateWithoutFeedbacksInput = {
   id?: string
   status?: $Enums.AnalysisCaseStatus
+  userAgeRange: string
+  userGender: string
+  perceivedPartnerReaction: string
+  elapsedTimeType: string
   eventFacts: string
-  selfMessage: string
-  partnerMessage: string
-  recentConversationText?: string | null
-  appType?: string | null
-  userEmotion?: string | null
-  assumedPartnerEmotion?: string | null
-  partnerSpeakingStyle?: string | null
-  contextNote?: string | null
-  concernText?: string | null
-  emojiUsed?: boolean | null
-  toneType?: $Enums.ToneType | null
-  messageLengthType?: $Enums.MessageLengthType | null
+  userResponseType: string
+  userResponseText?: string | null
   personSnapshot: Prisma.JsonNullValueInput | runtime.InputJsonValue
   analyzeRunId?: string | null
   analyzeStartedAt?: Date | string | null
@@ -1217,19 +1025,13 @@ export type AnalysisCaseUncheckedCreateWithoutFeedbacksInput = {
   userId: string
   personId: string
   status?: $Enums.AnalysisCaseStatus
+  userAgeRange: string
+  userGender: string
+  perceivedPartnerReaction: string
+  elapsedTimeType: string
   eventFacts: string
-  selfMessage: string
-  partnerMessage: string
-  recentConversationText?: string | null
-  appType?: string | null
-  userEmotion?: string | null
-  assumedPartnerEmotion?: string | null
-  partnerSpeakingStyle?: string | null
-  contextNote?: string | null
-  concernText?: string | null
-  emojiUsed?: boolean | null
-  toneType?: $Enums.ToneType | null
-  messageLengthType?: $Enums.MessageLengthType | null
+  userResponseType: string
+  userResponseText?: string | null
   personSnapshot: Prisma.JsonNullValueInput | runtime.InputJsonValue
   analyzeRunId?: string | null
   analyzeStartedAt?: Date | string | null
@@ -1261,19 +1063,13 @@ export type AnalysisCaseUpdateToOneWithWhereWithoutFeedbacksInput = {
 export type AnalysisCaseUpdateWithoutFeedbacksInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumAnalysisCaseStatusFieldUpdateOperationsInput | $Enums.AnalysisCaseStatus
+  userAgeRange?: Prisma.StringFieldUpdateOperationsInput | string
+  userGender?: Prisma.StringFieldUpdateOperationsInput | string
+  perceivedPartnerReaction?: Prisma.StringFieldUpdateOperationsInput | string
+  elapsedTimeType?: Prisma.StringFieldUpdateOperationsInput | string
   eventFacts?: Prisma.StringFieldUpdateOperationsInput | string
-  selfMessage?: Prisma.StringFieldUpdateOperationsInput | string
-  partnerMessage?: Prisma.StringFieldUpdateOperationsInput | string
-  recentConversationText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  appType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  userEmotion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  assumedPartnerEmotion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  partnerSpeakingStyle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  contextNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  concernText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  emojiUsed?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  toneType?: Prisma.NullableEnumToneTypeFieldUpdateOperationsInput | $Enums.ToneType | null
-  messageLengthType?: Prisma.NullableEnumMessageLengthTypeFieldUpdateOperationsInput | $Enums.MessageLengthType | null
+  userResponseType?: Prisma.StringFieldUpdateOperationsInput | string
+  userResponseText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   personSnapshot?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   analyzeRunId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   analyzeStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1292,19 +1088,13 @@ export type AnalysisCaseUncheckedUpdateWithoutFeedbacksInput = {
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   personId?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumAnalysisCaseStatusFieldUpdateOperationsInput | $Enums.AnalysisCaseStatus
+  userAgeRange?: Prisma.StringFieldUpdateOperationsInput | string
+  userGender?: Prisma.StringFieldUpdateOperationsInput | string
+  perceivedPartnerReaction?: Prisma.StringFieldUpdateOperationsInput | string
+  elapsedTimeType?: Prisma.StringFieldUpdateOperationsInput | string
   eventFacts?: Prisma.StringFieldUpdateOperationsInput | string
-  selfMessage?: Prisma.StringFieldUpdateOperationsInput | string
-  partnerMessage?: Prisma.StringFieldUpdateOperationsInput | string
-  recentConversationText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  appType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  userEmotion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  assumedPartnerEmotion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  partnerSpeakingStyle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  contextNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  concernText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  emojiUsed?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  toneType?: Prisma.NullableEnumToneTypeFieldUpdateOperationsInput | $Enums.ToneType | null
-  messageLengthType?: Prisma.NullableEnumMessageLengthTypeFieldUpdateOperationsInput | $Enums.MessageLengthType | null
+  userResponseType?: Prisma.StringFieldUpdateOperationsInput | string
+  userResponseText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   personSnapshot?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   analyzeRunId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   analyzeStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1320,19 +1110,13 @@ export type AnalysisCaseUncheckedUpdateWithoutFeedbacksInput = {
 export type AnalysisCaseCreateManyPersonInput = {
   id?: string
   status?: $Enums.AnalysisCaseStatus
+  userAgeRange: string
+  userGender: string
+  perceivedPartnerReaction: string
+  elapsedTimeType: string
   eventFacts: string
-  selfMessage: string
-  partnerMessage: string
-  recentConversationText?: string | null
-  appType?: string | null
-  userEmotion?: string | null
-  assumedPartnerEmotion?: string | null
-  partnerSpeakingStyle?: string | null
-  contextNote?: string | null
-  concernText?: string | null
-  emojiUsed?: boolean | null
-  toneType?: $Enums.ToneType | null
-  messageLengthType?: $Enums.MessageLengthType | null
+  userResponseType: string
+  userResponseText?: string | null
   personSnapshot: Prisma.JsonNullValueInput | runtime.InputJsonValue
   analyzeRunId?: string | null
   analyzeStartedAt?: Date | string | null
@@ -1347,19 +1131,13 @@ export type AnalysisCaseCreateManyPersonInput = {
 export type AnalysisCaseUpdateWithoutPersonInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumAnalysisCaseStatusFieldUpdateOperationsInput | $Enums.AnalysisCaseStatus
+  userAgeRange?: Prisma.StringFieldUpdateOperationsInput | string
+  userGender?: Prisma.StringFieldUpdateOperationsInput | string
+  perceivedPartnerReaction?: Prisma.StringFieldUpdateOperationsInput | string
+  elapsedTimeType?: Prisma.StringFieldUpdateOperationsInput | string
   eventFacts?: Prisma.StringFieldUpdateOperationsInput | string
-  selfMessage?: Prisma.StringFieldUpdateOperationsInput | string
-  partnerMessage?: Prisma.StringFieldUpdateOperationsInput | string
-  recentConversationText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  appType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  userEmotion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  assumedPartnerEmotion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  partnerSpeakingStyle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  contextNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  concernText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  emojiUsed?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  toneType?: Prisma.NullableEnumToneTypeFieldUpdateOperationsInput | $Enums.ToneType | null
-  messageLengthType?: Prisma.NullableEnumMessageLengthTypeFieldUpdateOperationsInput | $Enums.MessageLengthType | null
+  userResponseType?: Prisma.StringFieldUpdateOperationsInput | string
+  userResponseText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   personSnapshot?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   analyzeRunId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   analyzeStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1376,19 +1154,13 @@ export type AnalysisCaseUpdateWithoutPersonInput = {
 export type AnalysisCaseUncheckedUpdateWithoutPersonInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumAnalysisCaseStatusFieldUpdateOperationsInput | $Enums.AnalysisCaseStatus
+  userAgeRange?: Prisma.StringFieldUpdateOperationsInput | string
+  userGender?: Prisma.StringFieldUpdateOperationsInput | string
+  perceivedPartnerReaction?: Prisma.StringFieldUpdateOperationsInput | string
+  elapsedTimeType?: Prisma.StringFieldUpdateOperationsInput | string
   eventFacts?: Prisma.StringFieldUpdateOperationsInput | string
-  selfMessage?: Prisma.StringFieldUpdateOperationsInput | string
-  partnerMessage?: Prisma.StringFieldUpdateOperationsInput | string
-  recentConversationText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  appType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  userEmotion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  assumedPartnerEmotion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  partnerSpeakingStyle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  contextNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  concernText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  emojiUsed?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  toneType?: Prisma.NullableEnumToneTypeFieldUpdateOperationsInput | $Enums.ToneType | null
-  messageLengthType?: Prisma.NullableEnumMessageLengthTypeFieldUpdateOperationsInput | $Enums.MessageLengthType | null
+  userResponseType?: Prisma.StringFieldUpdateOperationsInput | string
+  userResponseText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   personSnapshot?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   analyzeRunId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   analyzeStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1405,19 +1177,13 @@ export type AnalysisCaseUncheckedUpdateWithoutPersonInput = {
 export type AnalysisCaseUncheckedUpdateManyWithoutPersonInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumAnalysisCaseStatusFieldUpdateOperationsInput | $Enums.AnalysisCaseStatus
+  userAgeRange?: Prisma.StringFieldUpdateOperationsInput | string
+  userGender?: Prisma.StringFieldUpdateOperationsInput | string
+  perceivedPartnerReaction?: Prisma.StringFieldUpdateOperationsInput | string
+  elapsedTimeType?: Prisma.StringFieldUpdateOperationsInput | string
   eventFacts?: Prisma.StringFieldUpdateOperationsInput | string
-  selfMessage?: Prisma.StringFieldUpdateOperationsInput | string
-  partnerMessage?: Prisma.StringFieldUpdateOperationsInput | string
-  recentConversationText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  appType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  userEmotion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  assumedPartnerEmotion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  partnerSpeakingStyle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  contextNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  concernText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  emojiUsed?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  toneType?: Prisma.NullableEnumToneTypeFieldUpdateOperationsInput | $Enums.ToneType | null
-  messageLengthType?: Prisma.NullableEnumMessageLengthTypeFieldUpdateOperationsInput | $Enums.MessageLengthType | null
+  userResponseType?: Prisma.StringFieldUpdateOperationsInput | string
+  userResponseText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   personSnapshot?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   analyzeRunId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   analyzeStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1474,19 +1240,13 @@ export type AnalysisCaseSelect<ExtArgs extends runtime.Types.Extensions.Internal
   userId?: boolean
   personId?: boolean
   status?: boolean
+  userAgeRange?: boolean
+  userGender?: boolean
+  perceivedPartnerReaction?: boolean
+  elapsedTimeType?: boolean
   eventFacts?: boolean
-  selfMessage?: boolean
-  partnerMessage?: boolean
-  recentConversationText?: boolean
-  appType?: boolean
-  userEmotion?: boolean
-  assumedPartnerEmotion?: boolean
-  partnerSpeakingStyle?: boolean
-  contextNote?: boolean
-  concernText?: boolean
-  emojiUsed?: boolean
-  toneType?: boolean
-  messageLengthType?: boolean
+  userResponseType?: boolean
+  userResponseText?: boolean
   personSnapshot?: boolean
   analyzeRunId?: boolean
   analyzeStartedAt?: boolean
@@ -1507,19 +1267,13 @@ export type AnalysisCaseSelectCreateManyAndReturn<ExtArgs extends runtime.Types.
   userId?: boolean
   personId?: boolean
   status?: boolean
+  userAgeRange?: boolean
+  userGender?: boolean
+  perceivedPartnerReaction?: boolean
+  elapsedTimeType?: boolean
   eventFacts?: boolean
-  selfMessage?: boolean
-  partnerMessage?: boolean
-  recentConversationText?: boolean
-  appType?: boolean
-  userEmotion?: boolean
-  assumedPartnerEmotion?: boolean
-  partnerSpeakingStyle?: boolean
-  contextNote?: boolean
-  concernText?: boolean
-  emojiUsed?: boolean
-  toneType?: boolean
-  messageLengthType?: boolean
+  userResponseType?: boolean
+  userResponseText?: boolean
   personSnapshot?: boolean
   analyzeRunId?: boolean
   analyzeStartedAt?: boolean
@@ -1537,19 +1291,13 @@ export type AnalysisCaseSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.
   userId?: boolean
   personId?: boolean
   status?: boolean
+  userAgeRange?: boolean
+  userGender?: boolean
+  perceivedPartnerReaction?: boolean
+  elapsedTimeType?: boolean
   eventFacts?: boolean
-  selfMessage?: boolean
-  partnerMessage?: boolean
-  recentConversationText?: boolean
-  appType?: boolean
-  userEmotion?: boolean
-  assumedPartnerEmotion?: boolean
-  partnerSpeakingStyle?: boolean
-  contextNote?: boolean
-  concernText?: boolean
-  emojiUsed?: boolean
-  toneType?: boolean
-  messageLengthType?: boolean
+  userResponseType?: boolean
+  userResponseText?: boolean
   personSnapshot?: boolean
   analyzeRunId?: boolean
   analyzeStartedAt?: boolean
@@ -1567,19 +1315,13 @@ export type AnalysisCaseSelectScalar = {
   userId?: boolean
   personId?: boolean
   status?: boolean
+  userAgeRange?: boolean
+  userGender?: boolean
+  perceivedPartnerReaction?: boolean
+  elapsedTimeType?: boolean
   eventFacts?: boolean
-  selfMessage?: boolean
-  partnerMessage?: boolean
-  recentConversationText?: boolean
-  appType?: boolean
-  userEmotion?: boolean
-  assumedPartnerEmotion?: boolean
-  partnerSpeakingStyle?: boolean
-  contextNote?: boolean
-  concernText?: boolean
-  emojiUsed?: boolean
-  toneType?: boolean
-  messageLengthType?: boolean
+  userResponseType?: boolean
+  userResponseText?: boolean
   personSnapshot?: boolean
   analyzeRunId?: boolean
   analyzeStartedAt?: boolean
@@ -1591,7 +1333,7 @@ export type AnalysisCaseSelectScalar = {
   updatedAt?: boolean
 }
 
-export type AnalysisCaseOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "personId" | "status" | "eventFacts" | "selfMessage" | "partnerMessage" | "recentConversationText" | "appType" | "userEmotion" | "assumedPartnerEmotion" | "partnerSpeakingStyle" | "contextNote" | "concernText" | "emojiUsed" | "toneType" | "messageLengthType" | "personSnapshot" | "analyzeRunId" | "analyzeStartedAt" | "analyzeAttemptCount" | "lastAnalyzedAt" | "failureCode" | "failureMessage" | "createdAt" | "updatedAt", ExtArgs["result"]["analysisCase"]>
+export type AnalysisCaseOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "personId" | "status" | "userAgeRange" | "userGender" | "perceivedPartnerReaction" | "elapsedTimeType" | "eventFacts" | "userResponseType" | "userResponseText" | "personSnapshot" | "analyzeRunId" | "analyzeStartedAt" | "analyzeAttemptCount" | "lastAnalyzedAt" | "failureCode" | "failureMessage" | "createdAt" | "updatedAt", ExtArgs["result"]["analysisCase"]>
 export type AnalysisCaseInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   person?: boolean | Prisma.PersonDefaultArgs<ExtArgs>
   results?: boolean | Prisma.AnalysisCase$resultsArgs<ExtArgs>
@@ -1617,19 +1359,13 @@ export type $AnalysisCasePayload<ExtArgs extends runtime.Types.Extensions.Intern
     userId: string
     personId: string
     status: $Enums.AnalysisCaseStatus
+    userAgeRange: string
+    userGender: string
+    perceivedPartnerReaction: string
+    elapsedTimeType: string
     eventFacts: string
-    selfMessage: string
-    partnerMessage: string
-    recentConversationText: string | null
-    appType: string | null
-    userEmotion: string | null
-    assumedPartnerEmotion: string | null
-    partnerSpeakingStyle: string | null
-    contextNote: string | null
-    concernText: string | null
-    emojiUsed: boolean | null
-    toneType: $Enums.ToneType | null
-    messageLengthType: $Enums.MessageLengthType | null
+    userResponseType: string
+    userResponseText: string | null
     personSnapshot: runtime.JsonValue
     analyzeRunId: string | null
     analyzeStartedAt: Date | null
@@ -2069,19 +1805,13 @@ export interface AnalysisCaseFieldRefs {
   readonly userId: Prisma.FieldRef<"AnalysisCase", 'String'>
   readonly personId: Prisma.FieldRef<"AnalysisCase", 'String'>
   readonly status: Prisma.FieldRef<"AnalysisCase", 'AnalysisCaseStatus'>
+  readonly userAgeRange: Prisma.FieldRef<"AnalysisCase", 'String'>
+  readonly userGender: Prisma.FieldRef<"AnalysisCase", 'String'>
+  readonly perceivedPartnerReaction: Prisma.FieldRef<"AnalysisCase", 'String'>
+  readonly elapsedTimeType: Prisma.FieldRef<"AnalysisCase", 'String'>
   readonly eventFacts: Prisma.FieldRef<"AnalysisCase", 'String'>
-  readonly selfMessage: Prisma.FieldRef<"AnalysisCase", 'String'>
-  readonly partnerMessage: Prisma.FieldRef<"AnalysisCase", 'String'>
-  readonly recentConversationText: Prisma.FieldRef<"AnalysisCase", 'String'>
-  readonly appType: Prisma.FieldRef<"AnalysisCase", 'String'>
-  readonly userEmotion: Prisma.FieldRef<"AnalysisCase", 'String'>
-  readonly assumedPartnerEmotion: Prisma.FieldRef<"AnalysisCase", 'String'>
-  readonly partnerSpeakingStyle: Prisma.FieldRef<"AnalysisCase", 'String'>
-  readonly contextNote: Prisma.FieldRef<"AnalysisCase", 'String'>
-  readonly concernText: Prisma.FieldRef<"AnalysisCase", 'String'>
-  readonly emojiUsed: Prisma.FieldRef<"AnalysisCase", 'Boolean'>
-  readonly toneType: Prisma.FieldRef<"AnalysisCase", 'ToneType'>
-  readonly messageLengthType: Prisma.FieldRef<"AnalysisCase", 'MessageLengthType'>
+  readonly userResponseType: Prisma.FieldRef<"AnalysisCase", 'String'>
+  readonly userResponseText: Prisma.FieldRef<"AnalysisCase", 'String'>
   readonly personSnapshot: Prisma.FieldRef<"AnalysisCase", 'Json'>
   readonly analyzeRunId: Prisma.FieldRef<"AnalysisCase", 'String'>
   readonly analyzeStartedAt: Prisma.FieldRef<"AnalysisCase", 'DateTime'>

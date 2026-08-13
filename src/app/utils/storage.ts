@@ -20,8 +20,8 @@ export const getConsultation = (id: string): ConsultationData | undefined => {
 };
 
 // 分析結果の保存
-export const saveAnalysis = (consultationId: string, data: AnalysisResult): void => {
-  const newAnalysis = { ...data, consultationId };
+export const saveAnalysis = (consultationId: string, data: AnalysisResult | Record<string, unknown>): void => {
+  const newAnalysis = { ...data, consultationId } as AnalysisResult;
   const existingIndex = analyses.findIndex(a => a.consultationId === consultationId);
   if (existingIndex > -1) {
     analyses[existingIndex] = newAnalysis;

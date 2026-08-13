@@ -29,5 +29,11 @@ export const errorHandler: ErrorRequestHandler = (
     const normalized = normalizeError(error);
     const body = toErrorResponse(normalized);
 
-    return res.status(normalized.status).json(body);
+    return res.status(normalized.status).json({
+        ...body,
+        error: {
+            ...body.error,
+            requestId: String(res.locals.requestId ?? ""),
+        },
+    });
 };

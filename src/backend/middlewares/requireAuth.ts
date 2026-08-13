@@ -44,7 +44,7 @@ function extractBearerToken(authorization: string | undefined): string | null {
 
 function buildAuthRequiredError(): AppError {
     return new AppError({
-        code: 'AUTH_REQUIRED',
+        code: 'UNAUTHENTICATED',
         message: 'ログインが必要です。',
         status: 401,
     });

@@ -2,13 +2,13 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { ArrowLeft, Send, MessageSquare, PenLine, X, ChevronDown, AlertCircle, UserCheck } from 'lucide-react';
 import { ConsultationData, RelationType, Reaction, Timing } from '../types';
-import { createPerson, createAnalysisCase, analyze } from '../api/session';
+import { createPerson, createAnalysisCase, analyze } from '../api/sessionV17';
 import { saveConsultation, getConsultations } from '../utils/storage';
 import { getRelationStyle } from '../utils/relationStyles';
 import { Navigation } from '../components/Navigation';
 
 type ChatMessage = { sender: '自分' | '相手'; text: string };
-type ActionMode = 'text' | 'chat';
+type ActionMode = 'text' | 'chat' | 'none';
 type ChatPlatform = 'LINE' | 'other';
 
 const BUSINESS_RELATIONS: RelationType[] = ['上司', '同僚', '部下'];
@@ -189,7 +189,9 @@ export function NewConsultation() {
 
     const effectiveUserAction = actionMode === 'chat'
       ? (chatPlatform === 'LINE' ? getChatSummary() : otherChatText)
-      : formData.userAction;
+      : actionMode === 'text'
+        ? formData.userAction
+        : null;
 
     // --- ここからAPI連携の実装 ---
     setIsAnalyzing(true);
@@ -199,18 +201,19 @@ export function NewConsultation() {
       const personRes = await createPerson({
         displayName: formData.personName,
         relationshipType: effectiveRelation,
-        ageRange: formData.ageGroup,
-        genderHint: formData.gender,
       });
       const personId = personRes.person.id;
 
       // 2. 相談ケース（AnalysisCase）の作成+API呼び出し+保存
       const caseRes = await createAnalysisCase({
         personId,
+        userAgeRange: formData.ageGroup,
+        userGender: formData.gender,
+        perceivedPartnerReaction: effectiveReaction,
+        elapsedTimeType: formData.timing,
         eventFacts: formData.event,
-        selfMessage: effectiveUserAction,
-        partnerMessage: effectiveReaction, // APIの必須項目に合わせてマッピング
-        assumedPartnerEmotion: effectiveReaction,
+        userResponseType: actionMode === 'text' ? 'action' : actionMode === 'chat' ? 'conversation' : 'none',
+        userResponseText: effectiveUserAction,
       });
       const caseId = caseRes.analysisCase.id;
 
@@ -221,7 +224,7 @@ export function NewConsultation() {
         relation: effectiveRelation,
         event: formData.event,
         reaction: effectiveReaction,
-        userAction: effectiveUserAction,
+        userAction: effectiveUserAction ?? '',
         timing: formData.timing,
         createdAt: new Date().toISOString(),
         ageGroup: formData.ageGroup,
@@ -235,9 +238,8 @@ export function NewConsultation() {
       // 4. 結果画面へ遷移
       navigate(`/analysis/${caseId}`);
 
-    } catch (err: any) {
-      console.error(err);
-      setApiError(err.message || "サーバーとの通信に失敗しました。時間をおいて再試行してください。");
+    } catch (error: unknown) {
+      setApiError(error instanceof Error ? error.message : "サーバーとの通信に失敗しました。時間をおいて再試行してください。");
     } finally {
       setIsAnalyzing(false);
     }
@@ -368,7 +370,7 @@ export function NewConsultation() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-[#5B6573] mb-2">
-                      相手の年代<span className="text-red-500 ml-0.5">*</span>
+                      あなたの年代<span className="text-red-500 ml-0.5">*</span>
                     </label>
                     <div className="relative">
                       <select
@@ -385,7 +387,7 @@ export function NewConsultation() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-[#5B6573] mb-2">
-                      相手の性別<span className="text-red-500 ml-0.5">*</span>
+                      あなたの性別<span className="text-red-500 ml-0.5">*</span>
                     </label>
                     <div className="relative">
                       <select
@@ -556,6 +558,13 @@ export function NewConsultation() {
                     >
                       <MessageSquare className="w-4 h-4" />
                       会話を入力
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActionMode('none')}
+                      className={'flex-1 py-2.5 px-2 rounded-lg border-2 text-sm transition-colors ' + (actionMode === 'none' ? selectedBtn : unselectedBtn)}
+                    >
+                      何もしていない
                     </button>
                   </div>
 

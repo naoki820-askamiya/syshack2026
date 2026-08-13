@@ -71,3 +71,28 @@ export type PersonProfile = Prisma.PersonProfileModel
  * 
  */
 export type UserPatternSummary = Prisma.UserPatternSummaryModel
+/**
+ * Model UserPrivacySetting
+ * 
+ */
+export type UserPrivacySetting = Prisma.UserPrivacySettingModel
+/**
+ * Model UserConsentRecord
+ * 
+ */
+export type UserConsentRecord = Prisma.UserConsentRecordModel
+/**
+ * Model GuestTrialAttempt
+ * 
+ */
+export type GuestTrialAttempt = Prisma.GuestTrialAttemptModel
+/**
+ * Model ApiUsageEvent
+ * 
+ */
+export type ApiUsageEvent = Prisma.ApiUsageEventModel
+/**
+ * Model RateLimitPolicy
+ * 
+ */
+export type RateLimitPolicy = Prisma.RateLimitPolicyModel

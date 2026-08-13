@@ -12,25 +12,17 @@
 export const RelationshipType = {
   boss: 'boss',
   coworker: 'coworker',
+  subordinate: 'subordinate',
   lover: 'lover',
-  family: 'family',
+  spouse: 'spouse',
   friend: 'friend',
-  classmate: 'classmate',
+  family: 'family',
   customer: 'customer',
+  classmate: 'classmate',
   other: 'other'
 } as const
 
 export type RelationshipType = (typeof RelationshipType)[keyof typeof RelationshipType]
-
-
-export const GenderHint = {
-  male: 'male',
-  female: 'female',
-  other: 'other',
-  unknown: 'unknown'
-} as const
-
-export type GenderHint = (typeof GenderHint)[keyof typeof GenderHint]
 
 
 export const AnalysisCaseStatus = {
@@ -41,23 +33,3 @@ export const AnalysisCaseStatus = {
 } as const
 
 export type AnalysisCaseStatus = (typeof AnalysisCaseStatus)[keyof typeof AnalysisCaseStatus]
-
-
-export const ToneType = {
-  formal: 'formal',
-  casual: 'casual',
-  mixed: 'mixed',
-  unknown: 'unknown'
-} as const
-
-export type ToneType = (typeof ToneType)[keyof typeof ToneType]
-
-
-export const MessageLengthType = {
-  short: 'short',
-  normal: 'normal',
-  long: 'long',
-  unknown: 'unknown'
-} as const
-
-export type MessageLengthType = (typeof MessageLengthType)[keyof typeof MessageLengthType]

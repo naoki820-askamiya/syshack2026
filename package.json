@@ -8,12 +8,18 @@
     "lint:md": "markdownlint-cli2 \"README.md\" \"docs/**/*.md\"",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "build:client": "vite build",
-    "build:server": "tsc -p tsconfig.server.json",
+    "build:server": "npm run prisma:generate && tsc -p tsconfig.server.json",
     "build": "npm run build:client && npm run build:server",
     "dev": "vite",
     "server": "tsx src/server.ts",
     "server:dev": "tsx watch src/server.ts",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "test": "tsx --test src/backend/**/*.test.ts",
+    "prisma:validate": "prisma validate --config src/backend/prisma.config.ts",
+    "prisma:format": "prisma format --config src/backend/prisma.config.ts",
+    "prisma:generate": "prisma generate --config src/backend/prisma.config.ts",
+    "prisma:migrate:deploy": "prisma migrate deploy --config src/backend/prisma.config.ts",
+    "prisma:migrate:status": "prisma migrate status --config src/backend/prisma.config.ts"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
@@ -21,6 +27,8 @@
     "@mui/icons-material": "7.3.5",
     "@mui/material": "7.3.5",
     "@popperjs/core": "2.11.8",
+    "@prisma/adapter-pg": "7.9.1",
+    "@prisma/client": "7.9.1",
     "@radix-ui/react-accordion": "1.2.3",
     "@radix-ui/react-alert-dialog": "1.1.6",
     "@radix-ui/react-aspect-ratio": "1.1.2",
@@ -62,6 +70,7 @@
     "motion": "12.23.24",
     "next-themes": "0.4.6",
     "openai": "^4.104.0",
+    "pg": "^8.23.0",
     "react-day-picker": "8.10.1",
     "react-dnd": "16.0.1",
     "react-dnd-html5-backend": "16.0.1",
@@ -69,7 +78,7 @@
     "react-popper": "2.3.0",
     "react-resizable-panels": "2.1.7",
     "react-responsive-masonry": "2.7.1",
-    "react-router": "7.13.0",
+    "react-router": "7.18.2",
     "react-slick": "0.31.0",
     "recharts": "2.15.2",
     "sonner": "2.0.3",
@@ -86,11 +95,12 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "4.7.0",
-    "markdownlint-cli2": "^0.22.0",
+    "markdownlint-cli2": "0.23.2",
+    "prisma": "7.9.1",
     "tailwindcss": "4.1.12",
-    "tsx": "^4.19.4",
+    "tsx": "4.23.12",
     "typescript": "^5.8.3",
-    "vite": "6.3.5"
+    "vite": "6.4.3"
   },
   "peerDependencies": {
     "react": "18.3.1",
@@ -106,7 +116,7 @@
   },
   "pnpm": {
     "overrides": {
-      "vite": "6.3.5"
+      "vite": "6.4.3"
     }
   }
 }

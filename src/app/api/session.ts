@@ -95,7 +95,6 @@ export async function createPerson(params: {
     method: 'POST',
     body: JSON.stringify(apiParams),
   });
-  console.log('createPerson response:', res); // debug
   return res.json();
 }
 
@@ -111,7 +110,6 @@ export async function createAnalysisCase(params: {
     method: 'POST',
     body: JSON.stringify(params),
   });
-  console.log('createAnalysisCase response:', res); // debug
   return res.json();
 }
 
@@ -120,7 +118,6 @@ export async function analyze(caseId: string): Promise<any> {
     method: 'POST',
   });
   const analysisResult = await res.json();
-  console.log('analyze response:', analysisResult); // debug
   saveAnalysis(caseId, analysisResult);
   return analysisResult;
 }
@@ -129,7 +126,6 @@ export async function getResult(caseId: string): Promise<any> {
   const res = await fetchWithAuth(`/api/analysis-cases/${caseId}/results`, {
     method: 'GET',
   });
-  console.log('getResult response:', res); // debug
   return res.json();
 }
 
@@ -139,6 +135,5 @@ export async function getCasesByPerson(personId: string, options?: { limit?: num
   const res = await fetchWithAuth(endpoint, {
     method: 'GET',
   });
-  console.log('getCasesByPerson response:', res); // debug
   return res.json();
 }

@@ -14,6 +14,7 @@
 import { config as loadDotenv } from "dotenv";
 import express from "express";
 import cors from "cors";
+import { randomUUID } from "node:crypto";
 import type { Express, Router } from "express";
 import type { CorsOptions } from "cors";
 import { errorHandler } from "./middlewares/errorHandler.js";
@@ -73,6 +74,16 @@ export async function createServerApp() {
     // `POST` で送られた JSON を `req.body` から読めるようになります。
     app.use(express.json());
 
+    app.use((req, res, next) => {
+        const supplied = req.header("x-request-id")?.trim();
+        const requestId = supplied && supplied.length <= 100
+            ? supplied
+            : `req_${randomUUID()}`;
+        res.locals.requestId = requestId;
+        res.setHeader("x-request-id", requestId);
+        next();
+    });
+
     // 疎通確認用のシンプルなエンドポイントです。
     // サーバーが起動しているかだけを見たいときに使います。
     app.get("/health", (_req, res) => {
@@ -90,12 +101,27 @@ export async function createServerApp() {
     await mountOptionalRouter(
         app,
         "/api/persons",
-        () => import("./routes/persons.routes.js"),
+        () => import("./v17/persons.routes.js"),
     );
     await mountOptionalRouter(
         app,
         "/api/analysis-cases",
-        () => import("./routes/analysisCases.routes.js"),
+        () => import("./v17/analysisCases.routes.js"),
+    );
+    await mountOptionalRouter(
+        app,
+        "/api/user-pattern-summary",
+        () => import("./v17/userPattern.routes.js"),
+    );
+    await mountOptionalRouter(
+        app,
+        "/api/privacy-settings",
+        () => import("./v17/privacy.routes.js"),
+    );
+    await mountOptionalRouter(
+        app,
+        "/api",
+        () => import("./v17/feedback.routes.js"),
     );
 
     // 共通エラーハンドラは最後につなぎます。

@@ -80,12 +80,12 @@ export type PrismaVersion = {
 }
 
 /**
- * Prisma Client JS version: 7.8.0
- * Query Engine version: 3c6e192761c0362d496ed980de936e2f3cebcd3a
+ * Prisma Client JS version: 7.9.1
+ * Query Engine version: e922089b7d7502aff4249d5da3420f6fa55fc6ad
  */
 export const prismaVersion: PrismaVersion = {
-  client: "7.8.0",
-  engine: "3c6e192761c0362d496ed980de936e2f3cebcd3a"
+  client: "7.9.1",
+  engine: "e922089b7d7502aff4249d5da3420f6fa55fc6ad"
 }
 
 /**
@@ -156,6 +156,19 @@ export type Subset<T, U> = {
 };
 
 /**
+ * Resolved type of the argument passed to the `PrismaClient` constructor.
+ *
+ * When called without a narrower options type (the common case), this resolves
+ * to `PrismaClientOptions` directly, which produces a clear TypeScript error
+ * message (`not assignable to parameter of type 'PrismaClientOptions'`) when
+ * the argument is missing or incomplete. When the user supplies a narrower
+ * options type (e.g. via a literal), it falls back to `Subset` to keep
+ * filtering out unknown properties.
+ */
+export type PrismaClientConstructorArgs<Options extends PrismaClientOptions> =
+  [PrismaClientOptions] extends [Options] ? PrismaClientOptions : Subset<Options, PrismaClientOptions>;
+
+/**
  * SelectSubset
  * @desc From `T` pick properties that exist in `U`. Simple version of Intersection.
  * Additionally, it validates, if both select and include are present. If the case, it errors.
@@ -187,7 +200,7 @@ type Without<T, U> = { [P in Exclude<keyof T, keyof U>]?: never };
 export type XOR<T, U> =
   T extends object ?
   U extends object ?
-    (Without<T, U> & U) | (Without<U, T> & T)
+    ((Without<T, U> & U) | (Without<U, T> & T)) & object
   : U : T
 
 
@@ -389,7 +402,12 @@ export const ModelName = {
   AnalysisResult: 'AnalysisResult',
   AnalysisFeedback: 'AnalysisFeedback',
   PersonProfile: 'PersonProfile',
-  UserPatternSummary: 'UserPatternSummary'
+  UserPatternSummary: 'UserPatternSummary',
+  UserPrivacySetting: 'UserPrivacySetting',
+  UserConsentRecord: 'UserConsentRecord',
+  GuestTrialAttempt: 'GuestTrialAttempt',
+  ApiUsageEvent: 'ApiUsageEvent',
+  RateLimitPolicy: 'RateLimitPolicy'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -405,7 +423,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "person" | "analysisCase" | "analysisResult" | "analysisFeedback" | "personProfile" | "userPatternSummary"
+    modelProps: "person" | "analysisCase" | "analysisResult" | "analysisFeedback" | "personProfile" | "userPatternSummary" | "userPrivacySetting" | "userConsentRecord" | "guestTrialAttempt" | "apiUsageEvent" | "rateLimitPolicy"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -853,6 +871,376 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    UserPrivacySetting: {
+      payload: Prisma.$UserPrivacySettingPayload<ExtArgs>
+      fields: Prisma.UserPrivacySettingFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.UserPrivacySettingFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserPrivacySettingPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.UserPrivacySettingFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserPrivacySettingPayload>
+        }
+        findFirst: {
+          args: Prisma.UserPrivacySettingFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserPrivacySettingPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.UserPrivacySettingFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserPrivacySettingPayload>
+        }
+        findMany: {
+          args: Prisma.UserPrivacySettingFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserPrivacySettingPayload>[]
+        }
+        create: {
+          args: Prisma.UserPrivacySettingCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserPrivacySettingPayload>
+        }
+        createMany: {
+          args: Prisma.UserPrivacySettingCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.UserPrivacySettingCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserPrivacySettingPayload>[]
+        }
+        delete: {
+          args: Prisma.UserPrivacySettingDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserPrivacySettingPayload>
+        }
+        update: {
+          args: Prisma.UserPrivacySettingUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserPrivacySettingPayload>
+        }
+        deleteMany: {
+          args: Prisma.UserPrivacySettingDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.UserPrivacySettingUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.UserPrivacySettingUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserPrivacySettingPayload>[]
+        }
+        upsert: {
+          args: Prisma.UserPrivacySettingUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserPrivacySettingPayload>
+        }
+        aggregate: {
+          args: Prisma.UserPrivacySettingAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateUserPrivacySetting>
+        }
+        groupBy: {
+          args: Prisma.UserPrivacySettingGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UserPrivacySettingGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.UserPrivacySettingCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UserPrivacySettingCountAggregateOutputType> | number
+        }
+      }
+    }
+    UserConsentRecord: {
+      payload: Prisma.$UserConsentRecordPayload<ExtArgs>
+      fields: Prisma.UserConsentRecordFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.UserConsentRecordFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserConsentRecordPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.UserConsentRecordFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserConsentRecordPayload>
+        }
+        findFirst: {
+          args: Prisma.UserConsentRecordFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserConsentRecordPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.UserConsentRecordFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserConsentRecordPayload>
+        }
+        findMany: {
+          args: Prisma.UserConsentRecordFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserConsentRecordPayload>[]
+        }
+        create: {
+          args: Prisma.UserConsentRecordCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserConsentRecordPayload>
+        }
+        createMany: {
+          args: Prisma.UserConsentRecordCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.UserConsentRecordCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserConsentRecordPayload>[]
+        }
+        delete: {
+          args: Prisma.UserConsentRecordDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserConsentRecordPayload>
+        }
+        update: {
+          args: Prisma.UserConsentRecordUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserConsentRecordPayload>
+        }
+        deleteMany: {
+          args: Prisma.UserConsentRecordDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.UserConsentRecordUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.UserConsentRecordUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserConsentRecordPayload>[]
+        }
+        upsert: {
+          args: Prisma.UserConsentRecordUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserConsentRecordPayload>
+        }
+        aggregate: {
+          args: Prisma.UserConsentRecordAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateUserConsentRecord>
+        }
+        groupBy: {
+          args: Prisma.UserConsentRecordGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UserConsentRecordGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.UserConsentRecordCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UserConsentRecordCountAggregateOutputType> | number
+        }
+      }
+    }
+    GuestTrialAttempt: {
+      payload: Prisma.$GuestTrialAttemptPayload<ExtArgs>
+      fields: Prisma.GuestTrialAttemptFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.GuestTrialAttemptFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GuestTrialAttemptPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.GuestTrialAttemptFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GuestTrialAttemptPayload>
+        }
+        findFirst: {
+          args: Prisma.GuestTrialAttemptFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GuestTrialAttemptPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.GuestTrialAttemptFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GuestTrialAttemptPayload>
+        }
+        findMany: {
+          args: Prisma.GuestTrialAttemptFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GuestTrialAttemptPayload>[]
+        }
+        create: {
+          args: Prisma.GuestTrialAttemptCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GuestTrialAttemptPayload>
+        }
+        createMany: {
+          args: Prisma.GuestTrialAttemptCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.GuestTrialAttemptCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GuestTrialAttemptPayload>[]
+        }
+        delete: {
+          args: Prisma.GuestTrialAttemptDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GuestTrialAttemptPayload>
+        }
+        update: {
+          args: Prisma.GuestTrialAttemptUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GuestTrialAttemptPayload>
+        }
+        deleteMany: {
+          args: Prisma.GuestTrialAttemptDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.GuestTrialAttemptUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.GuestTrialAttemptUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GuestTrialAttemptPayload>[]
+        }
+        upsert: {
+          args: Prisma.GuestTrialAttemptUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GuestTrialAttemptPayload>
+        }
+        aggregate: {
+          args: Prisma.GuestTrialAttemptAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateGuestTrialAttempt>
+        }
+        groupBy: {
+          args: Prisma.GuestTrialAttemptGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.GuestTrialAttemptGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.GuestTrialAttemptCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.GuestTrialAttemptCountAggregateOutputType> | number
+        }
+      }
+    }
+    ApiUsageEvent: {
+      payload: Prisma.$ApiUsageEventPayload<ExtArgs>
+      fields: Prisma.ApiUsageEventFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ApiUsageEventFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ApiUsageEventPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ApiUsageEventFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ApiUsageEventPayload>
+        }
+        findFirst: {
+          args: Prisma.ApiUsageEventFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ApiUsageEventPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ApiUsageEventFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ApiUsageEventPayload>
+        }
+        findMany: {
+          args: Prisma.ApiUsageEventFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ApiUsageEventPayload>[]
+        }
+        create: {
+          args: Prisma.ApiUsageEventCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ApiUsageEventPayload>
+        }
+        createMany: {
+          args: Prisma.ApiUsageEventCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ApiUsageEventCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ApiUsageEventPayload>[]
+        }
+        delete: {
+          args: Prisma.ApiUsageEventDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ApiUsageEventPayload>
+        }
+        update: {
+          args: Prisma.ApiUsageEventUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ApiUsageEventPayload>
+        }
+        deleteMany: {
+          args: Prisma.ApiUsageEventDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ApiUsageEventUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ApiUsageEventUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ApiUsageEventPayload>[]
+        }
+        upsert: {
+          args: Prisma.ApiUsageEventUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ApiUsageEventPayload>
+        }
+        aggregate: {
+          args: Prisma.ApiUsageEventAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateApiUsageEvent>
+        }
+        groupBy: {
+          args: Prisma.ApiUsageEventGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ApiUsageEventGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ApiUsageEventCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ApiUsageEventCountAggregateOutputType> | number
+        }
+      }
+    }
+    RateLimitPolicy: {
+      payload: Prisma.$RateLimitPolicyPayload<ExtArgs>
+      fields: Prisma.RateLimitPolicyFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.RateLimitPolicyFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RateLimitPolicyPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.RateLimitPolicyFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RateLimitPolicyPayload>
+        }
+        findFirst: {
+          args: Prisma.RateLimitPolicyFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RateLimitPolicyPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.RateLimitPolicyFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RateLimitPolicyPayload>
+        }
+        findMany: {
+          args: Prisma.RateLimitPolicyFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RateLimitPolicyPayload>[]
+        }
+        create: {
+          args: Prisma.RateLimitPolicyCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RateLimitPolicyPayload>
+        }
+        createMany: {
+          args: Prisma.RateLimitPolicyCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.RateLimitPolicyCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RateLimitPolicyPayload>[]
+        }
+        delete: {
+          args: Prisma.RateLimitPolicyDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RateLimitPolicyPayload>
+        }
+        update: {
+          args: Prisma.RateLimitPolicyUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RateLimitPolicyPayload>
+        }
+        deleteMany: {
+          args: Prisma.RateLimitPolicyDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.RateLimitPolicyUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.RateLimitPolicyUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RateLimitPolicyPayload>[]
+        }
+        upsert: {
+          args: Prisma.RateLimitPolicyUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RateLimitPolicyPayload>
+        }
+        aggregate: {
+          args: Prisma.RateLimitPolicyAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateRateLimitPolicy>
+        }
+        groupBy: {
+          args: Prisma.RateLimitPolicyGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.RateLimitPolicyGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.RateLimitPolicyCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.RateLimitPolicyCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -897,12 +1285,10 @@ export const PersonScalarFieldEnum = {
   userId: 'userId',
   displayName: 'displayName',
   relationshipType: 'relationshipType',
-  ageRange: 'ageRange',
-  genderHint: 'genderHint',
   notes: 'notes',
+  archivedAt: 'archivedAt',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  archivedAt: 'archivedAt'
+  updatedAt: 'updatedAt'
 } as const
 
 export type PersonScalarFieldEnum = (typeof PersonScalarFieldEnum)[keyof typeof PersonScalarFieldEnum]
@@ -913,19 +1299,13 @@ export const AnalysisCaseScalarFieldEnum = {
   userId: 'userId',
   personId: 'personId',
   status: 'status',
+  userAgeRange: 'userAgeRange',
+  userGender: 'userGender',
+  perceivedPartnerReaction: 'perceivedPartnerReaction',
+  elapsedTimeType: 'elapsedTimeType',
   eventFacts: 'eventFacts',
-  selfMessage: 'selfMessage',
-  partnerMessage: 'partnerMessage',
-  recentConversationText: 'recentConversationText',
-  appType: 'appType',
-  userEmotion: 'userEmotion',
-  assumedPartnerEmotion: 'assumedPartnerEmotion',
-  partnerSpeakingStyle: 'partnerSpeakingStyle',
-  contextNote: 'contextNote',
-  concernText: 'concernText',
-  emojiUsed: 'emojiUsed',
-  toneType: 'toneType',
-  messageLengthType: 'messageLengthType',
+  userResponseType: 'userResponseType',
+  userResponseText: 'userResponseText',
   personSnapshot: 'personSnapshot',
   analyzeRunId: 'analyzeRunId',
   analyzeStartedAt: 'analyzeStartedAt',
@@ -950,6 +1330,11 @@ export const AnalysisResultScalarFieldEnum = {
   resultSchemaVersion: 'resultSchemaVersion',
   model: 'model',
   resultJson: 'resultJson',
+  personProfileId: 'personProfileId',
+  userPatternSummaryId: 'userPatternSummaryId',
+  usedCaseIds: 'usedCaseIds',
+  usedFeedbackIds: 'usedFeedbackIds',
+  contextJson: 'contextJson',
   createdAt: 'createdAt'
 } as const
 
@@ -961,10 +1346,12 @@ export const AnalysisFeedbackScalarFieldEnum = {
   userId: 'userId',
   analysisCaseId: 'analysisCaseId',
   analysisResultId: 'analysisResultId',
-  wasHelpful: 'wasHelpful',
-  outcomeType: 'outcomeType',
-  actualOutcomeNote: 'actualOutcomeNote',
-  userCorrection: 'userCorrection',
+  actualOutcome: 'actualOutcome',
+  helpfulnessScore: 'helpfulnessScore',
+  overreadScore: 'overreadScore',
+  usedRecommendedAction: 'usedRecommendedAction',
+  outcomeNote: 'outcomeNote',
+  allowPersonalizationUse: 'allowPersonalizationUse',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -979,7 +1366,12 @@ export const PersonProfileScalarFieldEnum = {
   profileSchemaVersion: 'profileSchemaVersion',
   profileJson: 'profileJson',
   sourceCaseCount: 'sourceCaseCount',
-  lastGeneratedAt: 'lastGeneratedAt',
+  sourceFeedbackCount: 'sourceFeedbackCount',
+  sourceLatestCaseId: 'sourceLatestCaseId',
+  needsRefresh: 'needsRefresh',
+  staleSince: 'staleSince',
+  generatedByModel: 'generatedByModel',
+  generatedAt: 'generatedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -993,12 +1385,93 @@ export const UserPatternSummaryScalarFieldEnum = {
   summarySchemaVersion: 'summarySchemaVersion',
   summaryJson: 'summaryJson',
   sourceCaseCount: 'sourceCaseCount',
-  lastGeneratedAt: 'lastGeneratedAt',
+  sourceFeedbackCount: 'sourceFeedbackCount',
+  generatedByModel: 'generatedByModel',
+  generatedAt: 'generatedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
 export type UserPatternSummaryScalarFieldEnum = (typeof UserPatternSummaryScalarFieldEnum)[keyof typeof UserPatternSummaryScalarFieldEnum]
+
+
+export const UserPrivacySettingScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  personalizationEnabled: 'personalizationEnabled',
+  usePersonProfile: 'usePersonProfile',
+  useUserPatternSummary: 'useUserPatternSummary',
+  useFeedbackForContext: 'useFeedbackForContext',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type UserPrivacySettingScalarFieldEnum = (typeof UserPrivacySettingScalarFieldEnum)[keyof typeof UserPrivacySettingScalarFieldEnum]
+
+
+export const UserConsentRecordScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  termsVersion: 'termsVersion',
+  privacyPolicyVersion: 'privacyPolicyVersion',
+  consentedAt: 'consentedAt',
+  ipAddressHash: 'ipAddressHash',
+  userAgentHash: 'userAgentHash'
+} as const
+
+export type UserConsentRecordScalarFieldEnum = (typeof UserConsentRecordScalarFieldEnum)[keyof typeof UserConsentRecordScalarFieldEnum]
+
+
+export const GuestTrialAttemptScalarFieldEnum = {
+  id: 'id',
+  trialTokenHash: 'trialTokenHash',
+  ipHash: 'ipHash',
+  userAgentHash: 'userAgentHash',
+  deviceHintHash: 'deviceHintHash',
+  status: 'status',
+  consumedAt: 'consumedAt',
+  blockedReason: 'blockedReason',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type GuestTrialAttemptScalarFieldEnum = (typeof GuestTrialAttemptScalarFieldEnum)[keyof typeof GuestTrialAttemptScalarFieldEnum]
+
+
+export const ApiUsageEventScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  guestTrialAttemptId: 'guestTrialAttemptId',
+  routeKey: 'routeKey',
+  ipHash: 'ipHash',
+  userAgentHash: 'userAgentHash',
+  costUnits: 'costUnits',
+  status: 'status',
+  createdAt: 'createdAt'
+} as const
+
+export type ApiUsageEventScalarFieldEnum = (typeof ApiUsageEventScalarFieldEnum)[keyof typeof ApiUsageEventScalarFieldEnum]
+
+
+export const RateLimitPolicyScalarFieldEnum = {
+  id: 'id',
+  policyKey: 'policyKey',
+  subjectType: 'subjectType',
+  routeKey: 'routeKey',
+  windowType: 'windowType',
+  windowSeconds: 'windowSeconds',
+  resetTimezone: 'resetTimezone',
+  maxRequests: 'maxRequests',
+  maxCostUnits: 'maxCostUnits',
+  planType: 'planType',
+  isEnabled: 'isEnabled',
+  priority: 'priority',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type RateLimitPolicyScalarFieldEnum = (typeof RateLimitPolicyScalarFieldEnum)[keyof typeof RateLimitPolicyScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -1014,6 +1487,14 @@ export const JsonNullValueInput = {
 } as const
 
 export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
+
+
+export const NullableJsonNullValueInput = {
+  DbNull: DbNull,
+  JsonNull: JsonNull
+} as const
+
+export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
 
 
 export const QueryMode = {
@@ -1076,20 +1557,6 @@ export type ListEnumRelationshipTypeFieldRefInput<$PrismaModel> = FieldRefInputT
 
 
 /**
- * Reference to a field of type 'GenderHint'
- */
-export type EnumGenderHintFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'GenderHint'>
-    
-
-
-/**
- * Reference to a field of type 'GenderHint[]'
- */
-export type ListEnumGenderHintFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'GenderHint[]'>
-    
-
-
-/**
  * Reference to a field of type 'DateTime'
  */
 export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime'>
@@ -1114,41 +1581,6 @@ export type EnumAnalysisCaseStatusFieldRefInput<$PrismaModel> = FieldRefInputTyp
  * Reference to a field of type 'AnalysisCaseStatus[]'
  */
 export type ListEnumAnalysisCaseStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AnalysisCaseStatus[]'>
-    
-
-
-/**
- * Reference to a field of type 'Boolean'
- */
-export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
-    
-
-
-/**
- * Reference to a field of type 'ToneType'
- */
-export type EnumToneTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ToneType'>
-    
-
-
-/**
- * Reference to a field of type 'ToneType[]'
- */
-export type ListEnumToneTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ToneType[]'>
-    
-
-
-/**
- * Reference to a field of type 'MessageLengthType'
- */
-export type EnumMessageLengthTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'MessageLengthType'>
-    
-
-
-/**
- * Reference to a field of type 'MessageLengthType[]'
- */
-export type ListEnumMessageLengthTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'MessageLengthType[]'>
     
 
 
@@ -1181,6 +1613,13 @@ export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel,
 
 
 /**
+ * Reference to a field of type 'Boolean'
+ */
+export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
+    
+
+
+/**
  * Reference to a field of type 'Float'
  */
 export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
@@ -1203,19 +1642,10 @@ export type BatchPayload = {
 export const defineExtension = runtime.Extensions.defineExtension as unknown as runtime.Types.Extensions.ExtendsHook<"define", TypeMapCb, runtime.Types.Extensions.DefaultArgs>
 export type DefaultPrismaClient = PrismaClient
 export type ErrorFormat = 'pretty' | 'colorless' | 'minimal'
-export type PrismaClientOptions = ({
-  /**
-   * Instance of a Driver Adapter, e.g., like one provided by `@prisma/adapter-pg`.
-   */
-  adapter: runtime.SqlDriverAdapterFactory
-  accelerateUrl?: never
-} | {
-  /**
-   * Prisma Accelerate URL allowing the client to connect through Accelerate instead of a direct database.
-   */
-  accelerateUrl: string
-  adapter?: never
-}) & {
+/**
+ * Options common to all variants of `PrismaClientOptions`, regardless of whether you connect to your database through a driver adapter or through Prisma Accelerate.
+ */
+export interface PrismaClientBaseOptions {
   /**
    * @default "colorless"
    */
@@ -1302,6 +1732,56 @@ export type PrismaClientOptions = ({
    */
   queryPlanCacheMaxSize?: number
 }
+
+/**
+ * `PrismaClient` options for connecting to your database through Prisma Accelerate instead of a driver adapter.
+ * 
+ * Learn more: https://pris.ly/d/accelerate
+ */
+export interface PrismaClientOptionsWithAccelerateUrl extends PrismaClientBaseOptions {
+  /**
+   * The Prisma Accelerate connection URL. Use this option to connect to your database through Prisma Accelerate instead of using a driver adapter to connect directly.
+   * 
+   * Learn more: https://pris.ly/d/accelerate
+   */
+  accelerateUrl: string
+  adapter?: never
+}
+
+/**
+ * `PrismaClient` options for connecting to your database through a driver adapter. This is the common case in Prisma 7.
+ * 
+ * Learn more: https://pris.ly/d/driver-adapters
+ */
+export interface PrismaClientOptionsWithAdapter extends PrismaClientBaseOptions {
+  /**
+   * A driver adapter that PrismaClient uses to connect to your database, such as the ones provided by `@prisma/adapter-pg`, `@prisma/adapter-libsql`, `@prisma/adapter-planetscale`, etc.
+   * 
+   * A driver adapter is **required** unless you connect to your database through Prisma Accelerate (in which case use `accelerateUrl` instead).
+   * 
+   * Learn more: https://pris.ly/d/driver-adapters
+   * 
+   * @example
+   * ```ts
+   * import { PrismaPg } from '@prisma/adapter-pg'
+   * import { PrismaClient } from './generated/prisma/client'
+   * 
+   * const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
+   * const prisma = new PrismaClient({ adapter })
+   * ```
+   */
+  adapter: runtime.SqlDriverAdapterFactory
+  accelerateUrl?: never
+}
+
+/**
+ * Options passed to the `PrismaClient` constructor.
+ * 
+ * A driver adapter (or, alternatively, a Prisma Accelerate URL) is **required**. See {@link PrismaClientOptionsWithAdapter} and {@link PrismaClientOptionsWithAccelerateUrl} for the two variants. All other properties live in {@link PrismaClientBaseOptions} and are optional.
+ * 
+ * Learn more about driver adapters: https://pris.ly/d/driver-adapters
+ */
+export type PrismaClientOptions = PrismaClientOptionsWithAccelerateUrl | PrismaClientOptionsWithAdapter
 export type GlobalOmitConfig = {
   person?: Prisma.PersonOmit
   analysisCase?: Prisma.AnalysisCaseOmit
@@ -1309,6 +1789,11 @@ export type GlobalOmitConfig = {
   analysisFeedback?: Prisma.AnalysisFeedbackOmit
   personProfile?: Prisma.PersonProfileOmit
   userPatternSummary?: Prisma.UserPatternSummaryOmit
+  userPrivacySetting?: Prisma.UserPrivacySettingOmit
+  userConsentRecord?: Prisma.UserConsentRecordOmit
+  guestTrialAttempt?: Prisma.GuestTrialAttemptOmit
+  apiUsageEvent?: Prisma.ApiUsageEventOmit
+  rateLimitPolicy?: Prisma.RateLimitPolicyOmit
 }
 
 /* Types for Logging */

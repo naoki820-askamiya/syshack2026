@@ -28,10 +28,12 @@ export type AggregateUserPatternSummary = {
 
 export type UserPatternSummaryAvgAggregateOutputType = {
   sourceCaseCount: number | null
+  sourceFeedbackCount: number | null
 }
 
 export type UserPatternSummarySumAggregateOutputType = {
   sourceCaseCount: number | null
+  sourceFeedbackCount: number | null
 }
 
 export type UserPatternSummaryMinAggregateOutputType = {
@@ -39,7 +41,9 @@ export type UserPatternSummaryMinAggregateOutputType = {
   userId: string | null
   summarySchemaVersion: string | null
   sourceCaseCount: number | null
-  lastGeneratedAt: Date | null
+  sourceFeedbackCount: number | null
+  generatedByModel: string | null
+  generatedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -49,7 +53,9 @@ export type UserPatternSummaryMaxAggregateOutputType = {
   userId: string | null
   summarySchemaVersion: string | null
   sourceCaseCount: number | null
-  lastGeneratedAt: Date | null
+  sourceFeedbackCount: number | null
+  generatedByModel: string | null
+  generatedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -60,7 +66,9 @@ export type UserPatternSummaryCountAggregateOutputType = {
   summarySchemaVersion: number
   summaryJson: number
   sourceCaseCount: number
-  lastGeneratedAt: number
+  sourceFeedbackCount: number
+  generatedByModel: number
+  generatedAt: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -69,10 +77,12 @@ export type UserPatternSummaryCountAggregateOutputType = {
 
 export type UserPatternSummaryAvgAggregateInputType = {
   sourceCaseCount?: true
+  sourceFeedbackCount?: true
 }
 
 export type UserPatternSummarySumAggregateInputType = {
   sourceCaseCount?: true
+  sourceFeedbackCount?: true
 }
 
 export type UserPatternSummaryMinAggregateInputType = {
@@ -80,7 +90,9 @@ export type UserPatternSummaryMinAggregateInputType = {
   userId?: true
   summarySchemaVersion?: true
   sourceCaseCount?: true
-  lastGeneratedAt?: true
+  sourceFeedbackCount?: true
+  generatedByModel?: true
+  generatedAt?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -90,7 +102,9 @@ export type UserPatternSummaryMaxAggregateInputType = {
   userId?: true
   summarySchemaVersion?: true
   sourceCaseCount?: true
-  lastGeneratedAt?: true
+  sourceFeedbackCount?: true
+  generatedByModel?: true
+  generatedAt?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -101,7 +115,9 @@ export type UserPatternSummaryCountAggregateInputType = {
   summarySchemaVersion?: true
   summaryJson?: true
   sourceCaseCount?: true
-  lastGeneratedAt?: true
+  sourceFeedbackCount?: true
+  generatedByModel?: true
+  generatedAt?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -199,7 +215,9 @@ export type UserPatternSummaryGroupByOutputType = {
   summarySchemaVersion: string
   summaryJson: runtime.JsonValue
   sourceCaseCount: number
-  lastGeneratedAt: Date | null
+  sourceFeedbackCount: number
+  generatedByModel: string | null
+  generatedAt: Date
   createdAt: Date
   updatedAt: Date
   _count: UserPatternSummaryCountAggregateOutputType | null
@@ -233,7 +251,9 @@ export type UserPatternSummaryWhereInput = {
   summarySchemaVersion?: Prisma.StringFilter<"UserPatternSummary"> | string
   summaryJson?: Prisma.JsonFilter<"UserPatternSummary">
   sourceCaseCount?: Prisma.IntFilter<"UserPatternSummary"> | number
-  lastGeneratedAt?: Prisma.DateTimeNullableFilter<"UserPatternSummary"> | Date | string | null
+  sourceFeedbackCount?: Prisma.IntFilter<"UserPatternSummary"> | number
+  generatedByModel?: Prisma.StringNullableFilter<"UserPatternSummary"> | string | null
+  generatedAt?: Prisma.DateTimeFilter<"UserPatternSummary"> | Date | string
   createdAt?: Prisma.DateTimeFilter<"UserPatternSummary"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"UserPatternSummary"> | Date | string
 }
@@ -244,7 +264,9 @@ export type UserPatternSummaryOrderByWithRelationInput = {
   summarySchemaVersion?: Prisma.SortOrder
   summaryJson?: Prisma.SortOrder
   sourceCaseCount?: Prisma.SortOrder
-  lastGeneratedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  sourceFeedbackCount?: Prisma.SortOrder
+  generatedByModel?: Prisma.SortOrderInput | Prisma.SortOrder
+  generatedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -258,7 +280,9 @@ export type UserPatternSummaryWhereUniqueInput = Prisma.AtLeast<{
   summarySchemaVersion?: Prisma.StringFilter<"UserPatternSummary"> | string
   summaryJson?: Prisma.JsonFilter<"UserPatternSummary">
   sourceCaseCount?: Prisma.IntFilter<"UserPatternSummary"> | number
-  lastGeneratedAt?: Prisma.DateTimeNullableFilter<"UserPatternSummary"> | Date | string | null
+  sourceFeedbackCount?: Prisma.IntFilter<"UserPatternSummary"> | number
+  generatedByModel?: Prisma.StringNullableFilter<"UserPatternSummary"> | string | null
+  generatedAt?: Prisma.DateTimeFilter<"UserPatternSummary"> | Date | string
   createdAt?: Prisma.DateTimeFilter<"UserPatternSummary"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"UserPatternSummary"> | Date | string
 }, "id" | "userId">
@@ -269,7 +293,9 @@ export type UserPatternSummaryOrderByWithAggregationInput = {
   summarySchemaVersion?: Prisma.SortOrder
   summaryJson?: Prisma.SortOrder
   sourceCaseCount?: Prisma.SortOrder
-  lastGeneratedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  sourceFeedbackCount?: Prisma.SortOrder
+  generatedByModel?: Prisma.SortOrderInput | Prisma.SortOrder
+  generatedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.UserPatternSummaryCountOrderByAggregateInput
@@ -288,7 +314,9 @@ export type UserPatternSummaryScalarWhereWithAggregatesInput = {
   summarySchemaVersion?: Prisma.StringWithAggregatesFilter<"UserPatternSummary"> | string
   summaryJson?: Prisma.JsonWithAggregatesFilter<"UserPatternSummary">
   sourceCaseCount?: Prisma.IntWithAggregatesFilter<"UserPatternSummary"> | number
-  lastGeneratedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"UserPatternSummary"> | Date | string | null
+  sourceFeedbackCount?: Prisma.IntWithAggregatesFilter<"UserPatternSummary"> | number
+  generatedByModel?: Prisma.StringNullableWithAggregatesFilter<"UserPatternSummary"> | string | null
+  generatedAt?: Prisma.DateTimeWithAggregatesFilter<"UserPatternSummary"> | Date | string
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"UserPatternSummary"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"UserPatternSummary"> | Date | string
 }
@@ -299,7 +327,9 @@ export type UserPatternSummaryCreateInput = {
   summarySchemaVersion: string
   summaryJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
   sourceCaseCount?: number
-  lastGeneratedAt?: Date | string | null
+  sourceFeedbackCount?: number
+  generatedByModel?: string | null
+  generatedAt?: Date | string
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -310,7 +340,9 @@ export type UserPatternSummaryUncheckedCreateInput = {
   summarySchemaVersion: string
   summaryJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
   sourceCaseCount?: number
-  lastGeneratedAt?: Date | string | null
+  sourceFeedbackCount?: number
+  generatedByModel?: string | null
+  generatedAt?: Date | string
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -321,7 +353,9 @@ export type UserPatternSummaryUpdateInput = {
   summarySchemaVersion?: Prisma.StringFieldUpdateOperationsInput | string
   summaryJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   sourceCaseCount?: Prisma.IntFieldUpdateOperationsInput | number
-  lastGeneratedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  sourceFeedbackCount?: Prisma.IntFieldUpdateOperationsInput | number
+  generatedByModel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  generatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -332,7 +366,9 @@ export type UserPatternSummaryUncheckedUpdateInput = {
   summarySchemaVersion?: Prisma.StringFieldUpdateOperationsInput | string
   summaryJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   sourceCaseCount?: Prisma.IntFieldUpdateOperationsInput | number
-  lastGeneratedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  sourceFeedbackCount?: Prisma.IntFieldUpdateOperationsInput | number
+  generatedByModel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  generatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -343,7 +379,9 @@ export type UserPatternSummaryCreateManyInput = {
   summarySchemaVersion: string
   summaryJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
   sourceCaseCount?: number
-  lastGeneratedAt?: Date | string | null
+  sourceFeedbackCount?: number
+  generatedByModel?: string | null
+  generatedAt?: Date | string
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -354,7 +392,9 @@ export type UserPatternSummaryUpdateManyMutationInput = {
   summarySchemaVersion?: Prisma.StringFieldUpdateOperationsInput | string
   summaryJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   sourceCaseCount?: Prisma.IntFieldUpdateOperationsInput | number
-  lastGeneratedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  sourceFeedbackCount?: Prisma.IntFieldUpdateOperationsInput | number
+  generatedByModel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  generatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -365,7 +405,9 @@ export type UserPatternSummaryUncheckedUpdateManyInput = {
   summarySchemaVersion?: Prisma.StringFieldUpdateOperationsInput | string
   summaryJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   sourceCaseCount?: Prisma.IntFieldUpdateOperationsInput | number
-  lastGeneratedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  sourceFeedbackCount?: Prisma.IntFieldUpdateOperationsInput | number
+  generatedByModel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  generatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -376,13 +418,16 @@ export type UserPatternSummaryCountOrderByAggregateInput = {
   summarySchemaVersion?: Prisma.SortOrder
   summaryJson?: Prisma.SortOrder
   sourceCaseCount?: Prisma.SortOrder
-  lastGeneratedAt?: Prisma.SortOrder
+  sourceFeedbackCount?: Prisma.SortOrder
+  generatedByModel?: Prisma.SortOrder
+  generatedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
 
 export type UserPatternSummaryAvgOrderByAggregateInput = {
   sourceCaseCount?: Prisma.SortOrder
+  sourceFeedbackCount?: Prisma.SortOrder
 }
 
 export type UserPatternSummaryMaxOrderByAggregateInput = {
@@ -390,7 +435,9 @@ export type UserPatternSummaryMaxOrderByAggregateInput = {
   userId?: Prisma.SortOrder
   summarySchemaVersion?: Prisma.SortOrder
   sourceCaseCount?: Prisma.SortOrder
-  lastGeneratedAt?: Prisma.SortOrder
+  sourceFeedbackCount?: Prisma.SortOrder
+  generatedByModel?: Prisma.SortOrder
+  generatedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -400,13 +447,16 @@ export type UserPatternSummaryMinOrderByAggregateInput = {
   userId?: Prisma.SortOrder
   summarySchemaVersion?: Prisma.SortOrder
   sourceCaseCount?: Prisma.SortOrder
-  lastGeneratedAt?: Prisma.SortOrder
+  sourceFeedbackCount?: Prisma.SortOrder
+  generatedByModel?: Prisma.SortOrder
+  generatedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
 
 export type UserPatternSummarySumOrderByAggregateInput = {
   sourceCaseCount?: Prisma.SortOrder
+  sourceFeedbackCount?: Prisma.SortOrder
 }
 
 
@@ -417,7 +467,9 @@ export type UserPatternSummarySelect<ExtArgs extends runtime.Types.Extensions.In
   summarySchemaVersion?: boolean
   summaryJson?: boolean
   sourceCaseCount?: boolean
-  lastGeneratedAt?: boolean
+  sourceFeedbackCount?: boolean
+  generatedByModel?: boolean
+  generatedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["userPatternSummary"]>
@@ -428,7 +480,9 @@ export type UserPatternSummarySelectCreateManyAndReturn<ExtArgs extends runtime.
   summarySchemaVersion?: boolean
   summaryJson?: boolean
   sourceCaseCount?: boolean
-  lastGeneratedAt?: boolean
+  sourceFeedbackCount?: boolean
+  generatedByModel?: boolean
+  generatedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["userPatternSummary"]>
@@ -439,7 +493,9 @@ export type UserPatternSummarySelectUpdateManyAndReturn<ExtArgs extends runtime.
   summarySchemaVersion?: boolean
   summaryJson?: boolean
   sourceCaseCount?: boolean
-  lastGeneratedAt?: boolean
+  sourceFeedbackCount?: boolean
+  generatedByModel?: boolean
+  generatedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["userPatternSummary"]>
@@ -450,12 +506,14 @@ export type UserPatternSummarySelectScalar = {
   summarySchemaVersion?: boolean
   summaryJson?: boolean
   sourceCaseCount?: boolean
-  lastGeneratedAt?: boolean
+  sourceFeedbackCount?: boolean
+  generatedByModel?: boolean
+  generatedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type UserPatternSummaryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "summarySchemaVersion" | "summaryJson" | "sourceCaseCount" | "lastGeneratedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["userPatternSummary"]>
+export type UserPatternSummaryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "summarySchemaVersion" | "summaryJson" | "sourceCaseCount" | "sourceFeedbackCount" | "generatedByModel" | "generatedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["userPatternSummary"]>
 
 export type $UserPatternSummaryPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "UserPatternSummary"
@@ -466,7 +524,9 @@ export type $UserPatternSummaryPayload<ExtArgs extends runtime.Types.Extensions.
     summarySchemaVersion: string
     summaryJson: runtime.JsonValue
     sourceCaseCount: number
-    lastGeneratedAt: Date | null
+    sourceFeedbackCount: number
+    generatedByModel: string | null
+    generatedAt: Date
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["userPatternSummary"]>
@@ -897,7 +957,9 @@ export interface UserPatternSummaryFieldRefs {
   readonly summarySchemaVersion: Prisma.FieldRef<"UserPatternSummary", 'String'>
   readonly summaryJson: Prisma.FieldRef<"UserPatternSummary", 'Json'>
   readonly sourceCaseCount: Prisma.FieldRef<"UserPatternSummary", 'Int'>
-  readonly lastGeneratedAt: Prisma.FieldRef<"UserPatternSummary", 'DateTime'>
+  readonly sourceFeedbackCount: Prisma.FieldRef<"UserPatternSummary", 'Int'>
+  readonly generatedByModel: Prisma.FieldRef<"UserPatternSummary", 'String'>
+  readonly generatedAt: Prisma.FieldRef<"UserPatternSummary", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"UserPatternSummary", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"UserPatternSummary", 'DateTime'>
 }

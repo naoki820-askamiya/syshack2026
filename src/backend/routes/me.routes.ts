@@ -24,6 +24,7 @@ router.get('/', (req: Request, res: Response, next) => {
                     code: 'AUTH_INVALID',
                     message: '認証情報が無効です。',
                     status: 401,
+                    requestId: String(res.locals.requestId ?? ""),
                 },
             });
             return;

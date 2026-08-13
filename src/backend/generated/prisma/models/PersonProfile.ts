@@ -28,10 +28,12 @@ export type AggregatePersonProfile = {
 
 export type PersonProfileAvgAggregateOutputType = {
   sourceCaseCount: number | null
+  sourceFeedbackCount: number | null
 }
 
 export type PersonProfileSumAggregateOutputType = {
   sourceCaseCount: number | null
+  sourceFeedbackCount: number | null
 }
 
 export type PersonProfileMinAggregateOutputType = {
@@ -40,7 +42,12 @@ export type PersonProfileMinAggregateOutputType = {
   personId: string | null
   profileSchemaVersion: string | null
   sourceCaseCount: number | null
-  lastGeneratedAt: Date | null
+  sourceFeedbackCount: number | null
+  sourceLatestCaseId: string | null
+  needsRefresh: boolean | null
+  staleSince: Date | null
+  generatedByModel: string | null
+  generatedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -51,7 +58,12 @@ export type PersonProfileMaxAggregateOutputType = {
   personId: string | null
   profileSchemaVersion: string | null
   sourceCaseCount: number | null
-  lastGeneratedAt: Date | null
+  sourceFeedbackCount: number | null
+  sourceLatestCaseId: string | null
+  needsRefresh: boolean | null
+  staleSince: Date | null
+  generatedByModel: string | null
+  generatedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -63,7 +75,12 @@ export type PersonProfileCountAggregateOutputType = {
   profileSchemaVersion: number
   profileJson: number
   sourceCaseCount: number
-  lastGeneratedAt: number
+  sourceFeedbackCount: number
+  sourceLatestCaseId: number
+  needsRefresh: number
+  staleSince: number
+  generatedByModel: number
+  generatedAt: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -72,10 +89,12 @@ export type PersonProfileCountAggregateOutputType = {
 
 export type PersonProfileAvgAggregateInputType = {
   sourceCaseCount?: true
+  sourceFeedbackCount?: true
 }
 
 export type PersonProfileSumAggregateInputType = {
   sourceCaseCount?: true
+  sourceFeedbackCount?: true
 }
 
 export type PersonProfileMinAggregateInputType = {
@@ -84,7 +103,12 @@ export type PersonProfileMinAggregateInputType = {
   personId?: true
   profileSchemaVersion?: true
   sourceCaseCount?: true
-  lastGeneratedAt?: true
+  sourceFeedbackCount?: true
+  sourceLatestCaseId?: true
+  needsRefresh?: true
+  staleSince?: true
+  generatedByModel?: true
+  generatedAt?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -95,7 +119,12 @@ export type PersonProfileMaxAggregateInputType = {
   personId?: true
   profileSchemaVersion?: true
   sourceCaseCount?: true
-  lastGeneratedAt?: true
+  sourceFeedbackCount?: true
+  sourceLatestCaseId?: true
+  needsRefresh?: true
+  staleSince?: true
+  generatedByModel?: true
+  generatedAt?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -107,7 +136,12 @@ export type PersonProfileCountAggregateInputType = {
   profileSchemaVersion?: true
   profileJson?: true
   sourceCaseCount?: true
-  lastGeneratedAt?: true
+  sourceFeedbackCount?: true
+  sourceLatestCaseId?: true
+  needsRefresh?: true
+  staleSince?: true
+  generatedByModel?: true
+  generatedAt?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -206,7 +240,12 @@ export type PersonProfileGroupByOutputType = {
   profileSchemaVersion: string
   profileJson: runtime.JsonValue
   sourceCaseCount: number
-  lastGeneratedAt: Date | null
+  sourceFeedbackCount: number
+  sourceLatestCaseId: string | null
+  needsRefresh: boolean
+  staleSince: Date | null
+  generatedByModel: string | null
+  generatedAt: Date
   createdAt: Date
   updatedAt: Date
   _count: PersonProfileCountAggregateOutputType | null
@@ -241,7 +280,12 @@ export type PersonProfileWhereInput = {
   profileSchemaVersion?: Prisma.StringFilter<"PersonProfile"> | string
   profileJson?: Prisma.JsonFilter<"PersonProfile">
   sourceCaseCount?: Prisma.IntFilter<"PersonProfile"> | number
-  lastGeneratedAt?: Prisma.DateTimeNullableFilter<"PersonProfile"> | Date | string | null
+  sourceFeedbackCount?: Prisma.IntFilter<"PersonProfile"> | number
+  sourceLatestCaseId?: Prisma.UuidNullableFilter<"PersonProfile"> | string | null
+  needsRefresh?: Prisma.BoolFilter<"PersonProfile"> | boolean
+  staleSince?: Prisma.DateTimeNullableFilter<"PersonProfile"> | Date | string | null
+  generatedByModel?: Prisma.StringNullableFilter<"PersonProfile"> | string | null
+  generatedAt?: Prisma.DateTimeFilter<"PersonProfile"> | Date | string
   createdAt?: Prisma.DateTimeFilter<"PersonProfile"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"PersonProfile"> | Date | string
   person?: Prisma.XOR<Prisma.PersonScalarRelationFilter, Prisma.PersonWhereInput>
@@ -254,7 +298,12 @@ export type PersonProfileOrderByWithRelationInput = {
   profileSchemaVersion?: Prisma.SortOrder
   profileJson?: Prisma.SortOrder
   sourceCaseCount?: Prisma.SortOrder
-  lastGeneratedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  sourceFeedbackCount?: Prisma.SortOrder
+  sourceLatestCaseId?: Prisma.SortOrderInput | Prisma.SortOrder
+  needsRefresh?: Prisma.SortOrder
+  staleSince?: Prisma.SortOrderInput | Prisma.SortOrder
+  generatedByModel?: Prisma.SortOrderInput | Prisma.SortOrder
+  generatedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   person?: Prisma.PersonOrderByWithRelationInput
@@ -271,7 +320,12 @@ export type PersonProfileWhereUniqueInput = Prisma.AtLeast<{
   profileSchemaVersion?: Prisma.StringFilter<"PersonProfile"> | string
   profileJson?: Prisma.JsonFilter<"PersonProfile">
   sourceCaseCount?: Prisma.IntFilter<"PersonProfile"> | number
-  lastGeneratedAt?: Prisma.DateTimeNullableFilter<"PersonProfile"> | Date | string | null
+  sourceFeedbackCount?: Prisma.IntFilter<"PersonProfile"> | number
+  sourceLatestCaseId?: Prisma.UuidNullableFilter<"PersonProfile"> | string | null
+  needsRefresh?: Prisma.BoolFilter<"PersonProfile"> | boolean
+  staleSince?: Prisma.DateTimeNullableFilter<"PersonProfile"> | Date | string | null
+  generatedByModel?: Prisma.StringNullableFilter<"PersonProfile"> | string | null
+  generatedAt?: Prisma.DateTimeFilter<"PersonProfile"> | Date | string
   createdAt?: Prisma.DateTimeFilter<"PersonProfile"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"PersonProfile"> | Date | string
   person?: Prisma.XOR<Prisma.PersonScalarRelationFilter, Prisma.PersonWhereInput>
@@ -284,7 +338,12 @@ export type PersonProfileOrderByWithAggregationInput = {
   profileSchemaVersion?: Prisma.SortOrder
   profileJson?: Prisma.SortOrder
   sourceCaseCount?: Prisma.SortOrder
-  lastGeneratedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  sourceFeedbackCount?: Prisma.SortOrder
+  sourceLatestCaseId?: Prisma.SortOrderInput | Prisma.SortOrder
+  needsRefresh?: Prisma.SortOrder
+  staleSince?: Prisma.SortOrderInput | Prisma.SortOrder
+  generatedByModel?: Prisma.SortOrderInput | Prisma.SortOrder
+  generatedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.PersonProfileCountOrderByAggregateInput
@@ -304,7 +363,12 @@ export type PersonProfileScalarWhereWithAggregatesInput = {
   profileSchemaVersion?: Prisma.StringWithAggregatesFilter<"PersonProfile"> | string
   profileJson?: Prisma.JsonWithAggregatesFilter<"PersonProfile">
   sourceCaseCount?: Prisma.IntWithAggregatesFilter<"PersonProfile"> | number
-  lastGeneratedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"PersonProfile"> | Date | string | null
+  sourceFeedbackCount?: Prisma.IntWithAggregatesFilter<"PersonProfile"> | number
+  sourceLatestCaseId?: Prisma.UuidNullableWithAggregatesFilter<"PersonProfile"> | string | null
+  needsRefresh?: Prisma.BoolWithAggregatesFilter<"PersonProfile"> | boolean
+  staleSince?: Prisma.DateTimeNullableWithAggregatesFilter<"PersonProfile"> | Date | string | null
+  generatedByModel?: Prisma.StringNullableWithAggregatesFilter<"PersonProfile"> | string | null
+  generatedAt?: Prisma.DateTimeWithAggregatesFilter<"PersonProfile"> | Date | string
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"PersonProfile"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"PersonProfile"> | Date | string
 }
@@ -314,7 +378,12 @@ export type PersonProfileCreateInput = {
   profileSchemaVersion: string
   profileJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
   sourceCaseCount?: number
-  lastGeneratedAt?: Date | string | null
+  sourceFeedbackCount?: number
+  sourceLatestCaseId?: string | null
+  needsRefresh?: boolean
+  staleSince?: Date | string | null
+  generatedByModel?: string | null
+  generatedAt?: Date | string
   createdAt?: Date | string
   updatedAt?: Date | string
   person: Prisma.PersonCreateNestedOneWithoutProfileInput
@@ -327,7 +396,12 @@ export type PersonProfileUncheckedCreateInput = {
   profileSchemaVersion: string
   profileJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
   sourceCaseCount?: number
-  lastGeneratedAt?: Date | string | null
+  sourceFeedbackCount?: number
+  sourceLatestCaseId?: string | null
+  needsRefresh?: boolean
+  staleSince?: Date | string | null
+  generatedByModel?: string | null
+  generatedAt?: Date | string
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -337,7 +411,12 @@ export type PersonProfileUpdateInput = {
   profileSchemaVersion?: Prisma.StringFieldUpdateOperationsInput | string
   profileJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   sourceCaseCount?: Prisma.IntFieldUpdateOperationsInput | number
-  lastGeneratedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  sourceFeedbackCount?: Prisma.IntFieldUpdateOperationsInput | number
+  sourceLatestCaseId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  needsRefresh?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  staleSince?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  generatedByModel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  generatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   person?: Prisma.PersonUpdateOneRequiredWithoutProfileNestedInput
@@ -350,7 +429,12 @@ export type PersonProfileUncheckedUpdateInput = {
   profileSchemaVersion?: Prisma.StringFieldUpdateOperationsInput | string
   profileJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   sourceCaseCount?: Prisma.IntFieldUpdateOperationsInput | number
-  lastGeneratedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  sourceFeedbackCount?: Prisma.IntFieldUpdateOperationsInput | number
+  sourceLatestCaseId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  needsRefresh?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  staleSince?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  generatedByModel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  generatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -362,7 +446,12 @@ export type PersonProfileCreateManyInput = {
   profileSchemaVersion: string
   profileJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
   sourceCaseCount?: number
-  lastGeneratedAt?: Date | string | null
+  sourceFeedbackCount?: number
+  sourceLatestCaseId?: string | null
+  needsRefresh?: boolean
+  staleSince?: Date | string | null
+  generatedByModel?: string | null
+  generatedAt?: Date | string
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -372,7 +461,12 @@ export type PersonProfileUpdateManyMutationInput = {
   profileSchemaVersion?: Prisma.StringFieldUpdateOperationsInput | string
   profileJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   sourceCaseCount?: Prisma.IntFieldUpdateOperationsInput | number
-  lastGeneratedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  sourceFeedbackCount?: Prisma.IntFieldUpdateOperationsInput | number
+  sourceLatestCaseId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  needsRefresh?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  staleSince?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  generatedByModel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  generatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -384,7 +478,12 @@ export type PersonProfileUncheckedUpdateManyInput = {
   profileSchemaVersion?: Prisma.StringFieldUpdateOperationsInput | string
   profileJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   sourceCaseCount?: Prisma.IntFieldUpdateOperationsInput | number
-  lastGeneratedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  sourceFeedbackCount?: Prisma.IntFieldUpdateOperationsInput | number
+  sourceLatestCaseId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  needsRefresh?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  staleSince?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  generatedByModel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  generatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -406,13 +505,19 @@ export type PersonProfileCountOrderByAggregateInput = {
   profileSchemaVersion?: Prisma.SortOrder
   profileJson?: Prisma.SortOrder
   sourceCaseCount?: Prisma.SortOrder
-  lastGeneratedAt?: Prisma.SortOrder
+  sourceFeedbackCount?: Prisma.SortOrder
+  sourceLatestCaseId?: Prisma.SortOrder
+  needsRefresh?: Prisma.SortOrder
+  staleSince?: Prisma.SortOrder
+  generatedByModel?: Prisma.SortOrder
+  generatedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
 
 export type PersonProfileAvgOrderByAggregateInput = {
   sourceCaseCount?: Prisma.SortOrder
+  sourceFeedbackCount?: Prisma.SortOrder
 }
 
 export type PersonProfileMaxOrderByAggregateInput = {
@@ -421,7 +526,12 @@ export type PersonProfileMaxOrderByAggregateInput = {
   personId?: Prisma.SortOrder
   profileSchemaVersion?: Prisma.SortOrder
   sourceCaseCount?: Prisma.SortOrder
-  lastGeneratedAt?: Prisma.SortOrder
+  sourceFeedbackCount?: Prisma.SortOrder
+  sourceLatestCaseId?: Prisma.SortOrder
+  needsRefresh?: Prisma.SortOrder
+  staleSince?: Prisma.SortOrder
+  generatedByModel?: Prisma.SortOrder
+  generatedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -432,13 +542,19 @@ export type PersonProfileMinOrderByAggregateInput = {
   personId?: Prisma.SortOrder
   profileSchemaVersion?: Prisma.SortOrder
   sourceCaseCount?: Prisma.SortOrder
-  lastGeneratedAt?: Prisma.SortOrder
+  sourceFeedbackCount?: Prisma.SortOrder
+  sourceLatestCaseId?: Prisma.SortOrder
+  needsRefresh?: Prisma.SortOrder
+  staleSince?: Prisma.SortOrder
+  generatedByModel?: Prisma.SortOrder
+  generatedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
 
 export type PersonProfileSumOrderByAggregateInput = {
   sourceCaseCount?: Prisma.SortOrder
+  sourceFeedbackCount?: Prisma.SortOrder
 }
 
 export type PersonProfileCreateNestedOneWithoutPersonInput = {
@@ -478,7 +594,12 @@ export type PersonProfileCreateWithoutPersonInput = {
   profileSchemaVersion: string
   profileJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
   sourceCaseCount?: number
-  lastGeneratedAt?: Date | string | null
+  sourceFeedbackCount?: number
+  sourceLatestCaseId?: string | null
+  needsRefresh?: boolean
+  staleSince?: Date | string | null
+  generatedByModel?: string | null
+  generatedAt?: Date | string
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -488,7 +609,12 @@ export type PersonProfileUncheckedCreateWithoutPersonInput = {
   profileSchemaVersion: string
   profileJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
   sourceCaseCount?: number
-  lastGeneratedAt?: Date | string | null
+  sourceFeedbackCount?: number
+  sourceLatestCaseId?: string | null
+  needsRefresh?: boolean
+  staleSince?: Date | string | null
+  generatedByModel?: string | null
+  generatedAt?: Date | string
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -514,7 +640,12 @@ export type PersonProfileUpdateWithoutPersonInput = {
   profileSchemaVersion?: Prisma.StringFieldUpdateOperationsInput | string
   profileJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   sourceCaseCount?: Prisma.IntFieldUpdateOperationsInput | number
-  lastGeneratedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  sourceFeedbackCount?: Prisma.IntFieldUpdateOperationsInput | number
+  sourceLatestCaseId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  needsRefresh?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  staleSince?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  generatedByModel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  generatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -524,7 +655,12 @@ export type PersonProfileUncheckedUpdateWithoutPersonInput = {
   profileSchemaVersion?: Prisma.StringFieldUpdateOperationsInput | string
   profileJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   sourceCaseCount?: Prisma.IntFieldUpdateOperationsInput | number
-  lastGeneratedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  sourceFeedbackCount?: Prisma.IntFieldUpdateOperationsInput | number
+  sourceLatestCaseId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  needsRefresh?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  staleSince?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  generatedByModel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  generatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -538,7 +674,12 @@ export type PersonProfileSelect<ExtArgs extends runtime.Types.Extensions.Interna
   profileSchemaVersion?: boolean
   profileJson?: boolean
   sourceCaseCount?: boolean
-  lastGeneratedAt?: boolean
+  sourceFeedbackCount?: boolean
+  sourceLatestCaseId?: boolean
+  needsRefresh?: boolean
+  staleSince?: boolean
+  generatedByModel?: boolean
+  generatedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   person?: boolean | Prisma.PersonDefaultArgs<ExtArgs>
@@ -551,7 +692,12 @@ export type PersonProfileSelectCreateManyAndReturn<ExtArgs extends runtime.Types
   profileSchemaVersion?: boolean
   profileJson?: boolean
   sourceCaseCount?: boolean
-  lastGeneratedAt?: boolean
+  sourceFeedbackCount?: boolean
+  sourceLatestCaseId?: boolean
+  needsRefresh?: boolean
+  staleSince?: boolean
+  generatedByModel?: boolean
+  generatedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   person?: boolean | Prisma.PersonDefaultArgs<ExtArgs>
@@ -564,7 +710,12 @@ export type PersonProfileSelectUpdateManyAndReturn<ExtArgs extends runtime.Types
   profileSchemaVersion?: boolean
   profileJson?: boolean
   sourceCaseCount?: boolean
-  lastGeneratedAt?: boolean
+  sourceFeedbackCount?: boolean
+  sourceLatestCaseId?: boolean
+  needsRefresh?: boolean
+  staleSince?: boolean
+  generatedByModel?: boolean
+  generatedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   person?: boolean | Prisma.PersonDefaultArgs<ExtArgs>
@@ -577,12 +728,17 @@ export type PersonProfileSelectScalar = {
   profileSchemaVersion?: boolean
   profileJson?: boolean
   sourceCaseCount?: boolean
-  lastGeneratedAt?: boolean
+  sourceFeedbackCount?: boolean
+  sourceLatestCaseId?: boolean
+  needsRefresh?: boolean
+  staleSince?: boolean
+  generatedByModel?: boolean
+  generatedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type PersonProfileOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "personId" | "profileSchemaVersion" | "profileJson" | "sourceCaseCount" | "lastGeneratedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["personProfile"]>
+export type PersonProfileOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "personId" | "profileSchemaVersion" | "profileJson" | "sourceCaseCount" | "sourceFeedbackCount" | "sourceLatestCaseId" | "needsRefresh" | "staleSince" | "generatedByModel" | "generatedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["personProfile"]>
 export type PersonProfileInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   person?: boolean | Prisma.PersonDefaultArgs<ExtArgs>
 }
@@ -605,7 +761,12 @@ export type $PersonProfilePayload<ExtArgs extends runtime.Types.Extensions.Inter
     profileSchemaVersion: string
     profileJson: runtime.JsonValue
     sourceCaseCount: number
-    lastGeneratedAt: Date | null
+    sourceFeedbackCount: number
+    sourceLatestCaseId: string | null
+    needsRefresh: boolean
+    staleSince: Date | null
+    generatedByModel: string | null
+    generatedAt: Date
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["personProfile"]>
@@ -1038,7 +1199,12 @@ export interface PersonProfileFieldRefs {
   readonly profileSchemaVersion: Prisma.FieldRef<"PersonProfile", 'String'>
   readonly profileJson: Prisma.FieldRef<"PersonProfile", 'Json'>
   readonly sourceCaseCount: Prisma.FieldRef<"PersonProfile", 'Int'>
-  readonly lastGeneratedAt: Prisma.FieldRef<"PersonProfile", 'DateTime'>
+  readonly sourceFeedbackCount: Prisma.FieldRef<"PersonProfile", 'Int'>
+  readonly sourceLatestCaseId: Prisma.FieldRef<"PersonProfile", 'String'>
+  readonly needsRefresh: Prisma.FieldRef<"PersonProfile", 'Boolean'>
+  readonly staleSince: Prisma.FieldRef<"PersonProfile", 'DateTime'>
+  readonly generatedByModel: Prisma.FieldRef<"PersonProfile", 'String'>
+  readonly generatedAt: Prisma.FieldRef<"PersonProfile", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"PersonProfile", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"PersonProfile", 'DateTime'>
 }

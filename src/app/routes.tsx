@@ -1,13 +1,14 @@
 import { createBrowserRouter } from 'react-router';
 import { Home } from './pages/Home';
 import { NewConsultation } from './pages/NewConsultation';
-import { Analysis } from './pages/Analysis';
-import { ActionSuggestion } from './pages/ActionSuggestion';
+import { AnalysisV17 } from './pages/AnalysisV17';
+import { ActionSuggestionV17 } from './pages/ActionSuggestionV17';
 import { History } from './pages/History';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { ProtectedPlaceholder } from './pages/ProtectedPlaceholder';
+import { PrivacySettingsV17 } from './pages/PrivacySettingsV17';
 
 export const router = createBrowserRouter([
   {
@@ -26,7 +27,7 @@ export const router = createBrowserRouter([
     path: '/analysis/:id',
     element: (
       <ProtectedRoute>
-        <Analysis />
+        <AnalysisV17 />
       </ProtectedRoute>
     ),
   },
@@ -34,7 +35,7 @@ export const router = createBrowserRouter([
     path: '/action/:id',
     element: (
       <ProtectedRoute>
-        <ActionSuggestion />
+        <ActionSuggestionV17 />
       </ProtectedRoute>
     ),
   },
@@ -86,7 +87,7 @@ export const router = createBrowserRouter([
     path: '/analysis-cases/:caseId',
     element: (
       <ProtectedRoute>
-        <Analysis />
+        <AnalysisV17 />
       </ProtectedRoute>
     ),
   },
@@ -102,7 +103,7 @@ export const router = createBrowserRouter([
     path: '/privacy-settings',
     element: (
       <ProtectedRoute>
-        <ProtectedPlaceholder title="プライバシー設定" />
+        <PrivacySettingsV17 />
       </ProtectedRoute>
     ),
   },
