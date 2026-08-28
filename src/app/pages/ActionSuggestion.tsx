@@ -10,7 +10,7 @@ import {
     AlertTriangle,
     MessageSquare,
 } from "lucide-react";
-import { getConsultation, getAnalysis } from "../utils/storage";
+import { getConsultation, getAnalysis, isAnalysisResult } from "../utils/storage";
 import { getRelationStyle } from "../utils/relationStyles";
 import { Navigation } from "../components/Navigation";
 
@@ -26,7 +26,8 @@ export function ActionSuggestion() {
     const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
     const consultation = id ? getConsultation(id) : undefined;
-    const analysis = id ? getAnalysis(id) : undefined;
+    const rawAnalysis = id ? getAnalysis(id) : undefined;
+    const analysis = isAnalysisResult(rawAnalysis) ? rawAnalysis : undefined;
 
     if (!consultation || !analysis) {
         return (

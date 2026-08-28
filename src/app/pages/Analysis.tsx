@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router';
 import { ArrowLeft, ArrowRight, Clock, AlertCircle, CheckCircle2, Info } from 'lucide-react';
-import { getConsultation, getAnalysis } from '../utils/storage';
+import { getConsultation, getAnalysis, isAnalysisResult } from '../utils/storage';
 import { getRelationStyle, getReactionStyle } from '../utils/relationStyles';
 import { EmotionRadarChart } from '../components/EmotionRadarChart';
 import { Navigation } from '../components/Navigation';
@@ -17,7 +17,8 @@ export function Analysis() {
   const resolvedId = id ?? caseId;
 
   const consultation = resolvedId ? getConsultation(resolvedId) : undefined;
-  const analysis = resolvedId ? getAnalysis(resolvedId) : undefined;
+  const rawAnalysis = resolvedId ? getAnalysis(resolvedId) : undefined;
+  const analysis = isAnalysisResult(rawAnalysis) ? rawAnalysis : undefined;
 
   if (!consultation || !analysis) {
     return (

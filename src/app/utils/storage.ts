@@ -1,7 +1,21 @@
 import { ConsultationData, AnalysisResult } from '../types';
 
 const consultations: ConsultationData[] = [];
-const analyses: AnalysisResult[] = [];
+type StoredAnalysis = { consultationId: string } & Record<string, unknown>;
+
+const analyses: StoredAnalysis[] = [];
+const isObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+export const isAnalysisResult = (value: unknown): value is AnalysisResult => {
+  if (!isObject(value)) return false;
+  const { consultationId, status, result } = value;
+  return (
+    typeof consultationId === 'string'
+    && status === 'analyzed'
+    && isObject(result)
+  );
+};
 
 // 画面遷移中の表示用キャッシュです。相談本文やAI結果はブラウザへ永続保存しません。
 export const saveConsultation = (data: ConsultationData): void => {
@@ -21,7 +35,10 @@ export const getConsultation = (id: string): ConsultationData | undefined => {
 
 // 分析結果の保存
 export const saveAnalysis = (consultationId: string, data: AnalysisResult | Record<string, unknown>): void => {
-  const newAnalysis = { ...data, consultationId } as AnalysisResult;
+  const newAnalysis = {
+    ...(isObject(data) ? data : {}),
+    consultationId,
+  };
   const existingIndex = analyses.findIndex(a => a.consultationId === consultationId);
   if (existingIndex > -1) {
     analyses[existingIndex] = newAnalysis;
@@ -31,7 +48,7 @@ export const saveAnalysis = (consultationId: string, data: AnalysisResult | Reco
 };
 
 // 全分析結果の取得
-export const getAnalyses = (): AnalysisResult[] => {
+export const getAnalyses = (): StoredAnalysis[] => {
   return [...analyses];
 };
 
@@ -41,7 +58,7 @@ export const clearCachedConsultations = (): void => {
 };
 
 // 特定の分析結果取得
-export const getAnalysis = (consultationId: string): AnalysisResult | undefined => {
+export const getAnalysis = (consultationId: string): StoredAnalysis | undefined => {
   const analyses = getAnalyses();
   return analyses.find(a => a.consultationId === consultationId);
 };
