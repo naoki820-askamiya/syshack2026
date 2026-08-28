@@ -359,6 +359,48 @@ npm run server
 
 > 実際にどちらを使うかは、このリポジトリの `package.json` に合わせてください。
 
+### Docker Composeで開発する
+
+Dockerではフロントエンド（Vite、`5173`）とバックエンド（Express、`3000`）のみを起動します。
+Supabase AuthとPostgreSQLは外部サービスをそのまま利用します。
+
+初めてセットアップする場合は、[Docker開発環境セットアップ](docs/docker-development-setup.md)を参照してください。
+
+`.env.local`に既存のローカル開発用環境変数を設定してから起動してください。
+Composeの変数展開には同じファイルを指定しますが、フロントエンドへ渡すのは公開用の
+`VITE_SUPABASE_URL`、`VITE_SUPABASE_PUBLISHABLE_KEY`と`VITE_SERVER_URL`だけです。
+
+```bash
+docker compose --env-file .env.local up --build -d
+```
+
+起動後は、フロントエンドを `http://localhost:5173`、バックエンドのヘルスチェックを
+`http://localhost:3000/health` で確認できます。
+
+```bash
+# ログを確認する
+docker compose logs -f
+
+# 停止する
+docker compose down
+
+# 依存関係の変更後にnode_modulesを作り直す
+docker compose down -v
+docker compose --env-file .env.local up --build -d
+```
+
+Prisma migrationはコンテナ起動時には自動実行されません。必要なときだけ明示的に実行します。
+
+```bash
+docker compose run --rm backend npm run prisma:migrate:deploy
+```
+
+既存テストもバックエンドコンテナから実行できます。
+
+```bash
+docker compose run --rm backend npm test
+```
+
 ---
 
 ## 動作確認例

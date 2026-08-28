@@ -88,7 +88,7 @@ DROP INDEX IF EXISTS analysis_results_latest_lookup_idx;
 CREATE INDEX analysis_results_latest_lookup_idx
   ON analysis_results(user_id, analysis_case_id, version DESC);
 
-CREATE INDEX analysis_cases_stale_analyzing_idx
+CREATE INDEX IF NOT EXISTS analysis_cases_stale_analyzing_idx
   ON analysis_cases(analyze_started_at)
   WHERE status = 'analyzing';
 

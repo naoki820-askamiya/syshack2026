@@ -14,7 +14,7 @@
     "server": "tsx src/server.ts",
     "server:dev": "tsx watch src/server.ts",
     "start": "node dist/server.js",
-    "test": "tsx --test src/backend/**/*.test.ts",
+    "test": "tsx --test \"src/backend/**/*.test.ts\"",
     "prisma:validate": "prisma validate --config src/backend/prisma.config.ts",
     "prisma:format": "prisma format --config src/backend/prisma.config.ts",
     "prisma:generate": "prisma generate --config src/backend/prisma.config.ts",
