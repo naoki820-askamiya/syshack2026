@@ -3,9 +3,10 @@ import test from "node:test";
 
 process.env.DATABASE_URL ??= "postgresql://test:test@127.0.0.1:5432/kigen404_test";
 
-const [{ prisma }, repository] = await Promise.all([
+const [{ prisma }, repository, rateLimit] = await Promise.all([
     import("../prisma/client.js"),
     import("./workflow.repository.js"),
+    import("./rateLimit.js"),
 ]);
 
 const USER_ID = "11111111-1111-4111-8111-111111111111";
@@ -70,11 +71,50 @@ test("only draft and failed AnalysisCases can start analysis", async (t) => {
             usageEventId: "usage-event-id",
             analyzeRunId: RUN_ID,
         });
+        const lockSql = rawSql.find((sql) => sql.includes("pg_advisory_xact_lock"));
+        assert.match(lockSql ?? "", /SELECT 1 AS locked/);
+        assert.match(lockSql ?? "", /FROM pg_advisory_xact_lock/);
         const startSql = rawSql.find((sql) => sql.includes("UPDATE analysis_cases"));
         assert.match(startSql ?? "", /status = 'analyzing'/);
         assert.match(startSql ?? "", /analyze_run_id = gen_random_uuid\(\)/);
         assert.match(startSql ?? "", /status IN \('draft', 'failed'\)/);
     }
+});
+
+test("rate-limit advisory locks also return a scalar Prisma can deserialize", async () => {
+    const rawSql: string[] = [];
+    const tx = {
+        $queryRaw: async (first: TemplateStringsArray | { strings?: readonly string[] }) => {
+            const queryStrings = (first as { strings?: readonly string[] }).strings;
+            const sql = queryStrings
+                ? queryStrings.join("")
+                : Array.from(first as TemplateStringsArray).join("");
+            rawSql.push(sql);
+            if (sql.includes("COUNT(*)")) return [{ requests: 0n, cost: 0n }];
+            if (sql.includes("UPDATE analysis_cases")) return [{ analyze_run_id: RUN_ID }];
+            return [{ locked: 1 }];
+        },
+        rateLimitPolicy: {
+            findMany: async () => [{
+                id: "policy-id",
+                policyKey: "test-policy",
+                windowType: "rolling",
+                windowSeconds: 60,
+                resetTimezone: null,
+                maxRequests: 10,
+                maxCostUnits: 10,
+            }],
+        },
+        apiUsageEvent: { create: async () => ({ id: "usage-event-id" }) },
+    };
+
+    assert.deepEqual(
+        await rateLimit.reserveAnalyzeUsageAndStartCase(tx as never, USER_ID, CASE_ID),
+        { usageEventId: "usage-event-id", analyzeRunId: RUN_ID },
+    );
+    const lockSql = rawSql.find((sql) => sql.includes("pg_advisory_xact_lock"));
+    assert.match(lockSql ?? "", /SELECT 1 AS locked/);
+    assert.match(lockSql ?? "", /FROM pg_advisory_xact_lock/);
 });
 
 test("analyzing, analyzed, and another user's case do not start again", async (t) => {

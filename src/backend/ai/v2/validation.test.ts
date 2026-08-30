@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createAnalysisCaseSchema } from '../../v17/schemas.js';
-import { kigenAnalysisResultV2Schema } from './output.schema.js';
+import { kigenAnalysisResultV2Schema, type KigenAnalysisResultV2 } from './output.schema.js';
 import { AiOutputValidationError, validateAiOutput } from './validation.js';
+import type { ReferenceContext } from './input.schema.js';
 
 function validResult() {
   return {
@@ -66,6 +67,45 @@ test('minor definitive wording is softened without changing the object shape', (
   const result = validResult();
   result.textImpression.body = '相手は怒っていますが、理由までは入力情報から判断できません。';
   assert.match(validateAiOutput(result).textImpression.body, /可能性があります/);
+});
+
+const emptyReferenceContext = (): ReferenceContext => ({
+  personProfile: null,
+  userPatternSummary: null,
+  recentCaseSummaries: [],
+  recentFeedbacks: [],
+});
+
+test('unavailable personalization comparison sources are removed', () => {
+  const result = validResult() as unknown as KigenAnalysisResultV2;
+  result.usualVsCurrent.enabled = true;
+  result.usualVsCurrent.usualPatternsUsed = [{
+    label: '普段の傾向', source: 'person_profile', relevance: 'high',
+  }];
+
+  const normalized = validateAiOutput(result, emptyReferenceContext());
+  assert.equal(normalized.usualVsCurrent.enabled, false);
+  assert.deepEqual(normalized.usualVsCurrent.usualPatternsUsed, []);
+  assert.match(normalized.usualVsCurrent.comparisonConclusion, /参考情報がない/);
+});
+
+test('available personalization context enables a comparison only with a valid source', () => {
+  const context = emptyReferenceContext();
+  context.recentCaseSummaries = [{
+    analysisCaseId: '55555555-5555-4555-8555-555555555555',
+    summary: '前回も短い返信だったが、実際には忙しかった。',
+  }];
+
+  const insufficient = validateAiOutput(validResult(), context);
+  assert.equal(insufficient.usualVsCurrent.enabled, false);
+  assert.match(insufficient.usualVsCurrent.comparisonConclusion, /過去の参考情報はあります/);
+
+  const personalized = validResult() as unknown as KigenAnalysisResultV2;
+  personalized.usualVsCurrent.enabled = true;
+  personalized.usualVsCurrent.usualPatternsUsed = [{
+    label: '短い返信', source: 'recent_case', relevance: 'high',
+  }];
+  assert.equal(validateAiOutput(personalized, context).usualVsCurrent.enabled, true);
 });
 
 test('analysis case enforces the none/null pair and rejects unknown userId', () => {

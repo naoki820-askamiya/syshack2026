@@ -4,6 +4,8 @@ import { defineConfig } from "prisma/config";
 loadDotenv({ path: ".env" });
 loadDotenv({ path: ".env.local", override: true });
 
+// schemaはClient生成用の写像です。RLS、CHECK、trigger、partial/DESC indexなど
+// PostgreSQL固有の実体は適用済みmigrationを正とし、schemaにないことを理由に削除しません。
 export default defineConfig({
     experimental: {
         externalTables: true,

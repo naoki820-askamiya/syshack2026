@@ -44,10 +44,15 @@ export async function reserveAnalyzeUsageAndStartCase(
 
     const lockKeys = policies
         .map((policy) => `${policy.policyKey}:user:${userId}`)
+        // 複数policyを全リクエストで同じ順にlockし、相互待ちを避けます。
         .sort();
 
     for (const lockKey of lockKeys) {
-        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))`;
+        // 上限確認と予約を直列化します。SELECT 1はPrismaがvoid戻り値を扱えないため必要です。
+        await tx.$queryRaw<Array<{ locked: number }>>`
+            SELECT 1 AS locked
+            FROM pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))
+        `;
     }
 
     for (const policy of policies) {
@@ -90,6 +95,7 @@ export async function reserveAnalyzeUsageAndStartCase(
         },
     });
 
+    // 実行ごとのrun idを後続の完了・失敗条件に使い、古い応答による上書きを防ぎます。
     const started = await tx.$queryRaw<Array<{ analyze_run_id: string }>>`
         UPDATE analysis_cases
         SET

@@ -11,10 +11,7 @@ if (!supabaseUrl || !supabasePublishableKey) {
 
 export const supabase = createClient(supabaseUrl, supabasePublishableKey, {
   auth: {
-    // access token / refresh token をブラウザ永続ストレージへ保存しない安全寄りの設定です。
-    // その代わり、ページリロード後はログイン状態が消える可能性があり、
-    // access token 期限切れ後は再ログインが必要になります。
-    // ログイン維持が必要になった段階で、HttpOnly Cookie / BFF 方式を検討します。
+    // 認証の正本はSupabaseに置き、tokenをブラウザへ永続化しない現在の再ログイン方針を維持します。
     autoRefreshToken: false,
     detectSessionInUrl: true,
     persistSession: false,

@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { AlertTriangle, ArrowLeft, CheckCircle2, Copy, MessageSquare, XCircle } from 'lucide-react';
 import { Navigation } from '../components/Navigation';
-import { getAnalysis, getConsultation } from '../utils/storage';
-import { normalizeAnalysis } from '../utils/analysisViewModel';
+import { useHydratedAnalysis } from '../hooks/useHydratedAnalysis';
 
 const TONES = {
   formal: { label: '丁寧', className: 'bg-[#E8F1F8] text-[#0F4C81]' },
@@ -15,13 +14,12 @@ export function ActionSuggestionV17() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [copied, setCopied] = useState<number | null>(null);
-  const consultation = id ? getConsultation(id) : undefined;
-  const view = id ? normalizeAnalysis(getAnalysis(id)) : null;
+  const { consultation, view, loading, error } = useHydratedAnalysis(id);
 
   if (!consultation || !view) {
     return (
       <div className="min-h-screen bg-[#F7F9FC] flex items-center justify-center text-center">
-        <div><p className="mb-4 text-[#5B6573]">提案データが見つかりません</p>
+        <div><p className="mb-4 text-[#5B6573]">{loading ? '提案データを読み込んでいます...' : error || '提案データが見つかりません'}</p>
           <button onClick={() => navigate('/')} className="font-medium text-[#0F4C81]">ホームに戻る</button></div>
       </div>
     );

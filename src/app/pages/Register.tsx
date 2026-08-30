@@ -54,7 +54,6 @@ export function Register() {
   return (
     <div className="min-h-screen bg-[#F7F9FC] flex items-center justify-center p-4 lg:p-8">
       <div className="w-full max-w-md lg:max-w-lg">
-        {/* 戻るボタン */}
         <button
           onClick={() => navigate('/login')}
           className="flex items-center gap-2 text-[#5B6573] hover:text-[#1F2A37] mb-6 lg:mb-8"
@@ -63,7 +62,6 @@ export function Register() {
           <span>戻る</span>
         </button>
 
-        {/* 登録カード */}
         <div className="bg-white rounded-2xl p-8 lg:p-10 shadow-sm border border-[#D9E1EA]">
           <div className="text-center mb-8">
             <div className="w-16 h-16 lg:w-20 lg:h-20 bg-[#E8F1F8] rounded-full flex items-center justify-center mx-auto mb-4">
@@ -85,7 +83,6 @@ export function Register() {
               </div>
             )}
 
-            {/* 名前 */}
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-[#5B6573] mb-2">
                 お名前
@@ -101,7 +98,6 @@ export function Register() {
               />
             </div>
 
-            {/* メールアドレス */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-[#5B6573] mb-2">
                 メールアドレス
@@ -117,7 +113,6 @@ export function Register() {
               />
             </div>
 
-            {/* パスワード */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-[#5B6573] mb-2">
                 パスワード
@@ -134,7 +129,6 @@ export function Register() {
               />
             </div>
 
-            {/* パスワード確認 */}
             <div>
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-[#5B6573] mb-2">
                 パスワード（確認）
@@ -150,7 +144,6 @@ export function Register() {
               />
             </div>
 
-            {/* 登録ボタン */}
             <button
               type="submit"
               disabled={isSubmitting}
@@ -160,7 +153,6 @@ export function Register() {
             </button>
           </form>
 
-          {/* ログイン */}
           <div className="mt-6 lg:mt-8 pt-6 border-t border-[#D9E1EA] text-center">
             <p className="text-sm text-[#5B6573]">
               すでにアカウントをお持ちの方は

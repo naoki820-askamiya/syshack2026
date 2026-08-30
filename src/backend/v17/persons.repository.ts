@@ -16,6 +16,7 @@ export async function createPerson(
 }
 
 export async function findOwnedPerson(userId: string, personId: string) {
+    // 所有権は取得後に判定せずWHEREへ含め、他ユーザーの存在を応答差から漏らしません。
     return prisma.person.findFirst({
         where: { id: personId, userId, archivedAt: null },
     });
@@ -43,6 +44,7 @@ export async function updateOwnedPerson(
         notes: string | null;
     }>,
 ) {
+    // 読み取り後の更新に分けると競合できるため、所有権と未archive条件を更新自体に課します。
     const result = await prisma.person.updateMany({
         where: { id: personId, userId, archivedAt: null },
         data,

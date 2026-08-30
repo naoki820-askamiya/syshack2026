@@ -9,8 +9,9 @@ import { useAuth } from '../auth/AuthContext';
 
 export function Home() {
   const { user } = useAuth();
-  const persons = getRegisteredPersons();
-  const recentConsultations = getConsultations().slice(-5).reverse();
+  const consultations = getConsultations();
+  const persons = getRegisteredPersons(consultations);
+  const recentConsultations = consultations.slice(-5).reverse();
 
   const randomMessage = useMemo(() => getRandomSubtitle(), []);
 
@@ -20,14 +21,12 @@ export function Home() {
       
       <div className="lg:ml-64 p-4 lg:p-4 pb-24 lg:pb-8">
         <div className="max-w-4xl mx-auto">
-          {/* ヘッダー */}
           <div className="text-center py-8 lg:py-8 relative">
-            <div className="mx-auto mb-4 h-5 lg:h-5"/> {/* blank */}
+            <div className="mx-auto mb-4 h-5 lg:h-5" />
             <img src="/kigen404_title_b_transparent.png" alt="KIGEN404" className="mx-auto mb-4 h-28 lg:h-44" />
             <p className="text-[#5B6573] lg:text-lg">{randomMessage}<br/>相手の反応から「本音」をAIが予測、最適な返しまで提案</p>
           </div>
 
-          {/* メインアクション */}
           <Link to={user ? '/new' : '/login?returnTo=%2Fnew'} className="block mb-6">
             <button className="w-full bg-[#0F4C81] text-white rounded-2xl p-5 lg:p-7 shadow-sm hover:bg-[#0C3E69] transition-colors hover:scale-[1.01] active:scale-[0.99]">
               <div className="flex items-center justify-center gap-3">
@@ -43,7 +42,6 @@ export function Home() {
           </Link>
 
           <div className="lg:grid lg:grid-cols-3 lg:gap-6 space-y-6 lg:space-y-0">
-            {/* 左カラム: 過去の人物 */}
             <div className="lg:col-span-1">
               <div className="bg-white rounded-2xl p-5 shadow-sm h-full border border-[#D9E1EA]">
                 <div className="flex items-center justify-between mb-4">
@@ -61,7 +59,7 @@ export function Home() {
                 {persons.length > 0 ? (
                   <div className="space-y-2">
                     {persons.map((person) => {
-                      const personConsultations = getConsultations().filter(c => c.personName === person);
+                      const personConsultations = consultations.filter(c => c.personName === person);
                       const latest = personConsultations.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
                       const style = getRelationStyle(latest?.relation ?? 'その他');
                       const RelationIcon = style.lucideIcon;
@@ -76,10 +74,8 @@ export function Home() {
                               {RelationIcon ? <RelationIcon className="w-4 h-4" /> : style.emoji}
                             </div>
                             <div>
-                              {/* ニックネームを大きめに */}
                               <p className="text-base font-semibold text-[#1F2A37] leading-tight">{person}</p>
                               <div className="flex items-center gap-1.5 mt-1">
-                                {/* 関係性バッジ（丸くくる） */}
                                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${style.badge}`}>
                                   {latest?.relation ?? 'その他'}
                                 </span>
@@ -96,7 +92,7 @@ export function Home() {
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center py-8 text-center">
-                    <UserRoundSearch className="w-16 h-16 text-4xl mb-3" /> {/* Icon */}
+                    <UserRoundSearch className="w-16 h-16 text-4xl mb-3" />
                     <p className="text-sm">まだ相談した人物はいません</p>
                     <p className="text-xs text-[#8A94A6] mt-1">相談すると人物が登録されます</p>
                   </div>
@@ -104,7 +100,6 @@ export function Home() {
               </div>
             </div>
 
-            {/* 右カラム: 最近の相談履歴 */}
             <div className="lg:col-span-2">
               <div className="bg-white rounded-2xl p-5 shadow-sm border border-[#D9E1EA]">
                 <div className="flex items-center justify-between mb-4">
@@ -162,7 +157,7 @@ export function Home() {
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center py-10 text-center">
-                    <MessageSquareDashed className="w-16 h-16 text-4xl mb-3" /> {/* Icon */}
+                    <MessageSquareDashed className="w-16 h-16 text-4xl mb-3" />
                     <h3 className="text-base font-semibold text-[#1F2A37] mb-2">
                       人間関係の悩み、相談してみませんか？
                     </h3>

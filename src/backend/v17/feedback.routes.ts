@@ -3,7 +3,13 @@ import { z } from "zod";
 import { requireAuth } from "../middlewares/requireAuth.js";
 import { prisma } from "../prisma/client.js";
 import { AppError } from "../utils/index.js";
-import { asyncHandler, getUuidParam, parseOrThrow, requireUserId } from "./http.js";
+import {
+    asyncHandler,
+    getUuidParam,
+    parseOrThrow,
+    requireUserId,
+    resourceNotFound,
+} from "./http.js";
 
 const feedbackSchema = z
     .object({
@@ -27,7 +33,7 @@ router.post("/analysis-results/:resultId/feedback", asyncHandler(async (req, res
         where: { id: resultId, userId },
         select: { id: true, analysisCaseId: true, analysisCase: { select: { personId: true } } },
     });
-    if (!result) throw notFound();
+    if (!result) throw resourceNotFound();
 
     try {
         const feedback = await prisma.analysisFeedback.create({
@@ -57,7 +63,7 @@ router.get("/analysis-results/:resultId/feedback", asyncHandler(async (req, res)
     const userId = requireUserId(req);
     const resultId = getUuidParam(req.params.resultId);
     const ownedResult = await prisma.analysisResult.findFirst({ where: { id: resultId, userId } });
-    if (!ownedResult) throw notFound();
+    if (!ownedResult) throw resourceNotFound();
     const feedback = await prisma.analysisFeedback.findFirst({
         where: { userId, analysisResultId: resultId },
     });
@@ -72,7 +78,7 @@ router.patch("/analysis-feedbacks/:feedbackId", asyncHandler(async (req, res) =>
         where: { id: feedbackId, userId },
         select: { id: true, analysisCase: { select: { personId: true } } },
     });
-    if (!existing) throw notFound();
+    if (!existing) throw resourceNotFound();
     const feedback = await prisma.analysisFeedback.update({
         where: { id: existing.id },
         data,
@@ -82,6 +88,7 @@ router.patch("/analysis-feedbacks/:feedbackId", asyncHandler(async (req, res) =>
 }));
 
 async function markProfileStaleIfAllowed(userId: string, personId: string, feedbackAllows: boolean) {
+    // Feedback単体とユーザー設定の両方で許可された場合だけ、次回集計の対象にします。
     if (!feedbackAllows) return;
     const privacy = await prisma.userPrivacySetting.findUnique({ where: { userId } });
     if (!privacy?.personalizationEnabled || !privacy.useFeedbackForContext) return;
@@ -94,14 +101,6 @@ async function markProfileStaleIfAllowed(userId: string, personId: string, feedb
 
 function isUniqueViolation(error: unknown): boolean {
     return (error as { code?: string } | null)?.code === "P2002";
-}
-
-function notFound() {
-    return new AppError({
-        code: "RESOURCE_NOT_FOUND",
-        message: "対象が見つかりません。",
-        status: 404,
-    });
 }
 
 export default router;

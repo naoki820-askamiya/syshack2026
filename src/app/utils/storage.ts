@@ -1,27 +1,36 @@
-import { ConsultationData, AnalysisResult } from '../types';
+import type { ConsultationData } from '../types.js';
+
+type CachedAnalysis = Record<string, unknown> & { consultationId: string };
 
 const consultations: ConsultationData[] = [];
-const analyses: AnalysisResult[] = [];
+const analyses: CachedAnalysis[] = [];
 
-// 画面遷移中の表示用キャッシュです。相談本文やAI結果はブラウザへ永続保存しません。
+// 業務データの正本はDBです。この配列は画面遷移用に限り、Web Storageへ永続化しません。
 export const saveConsultation = (data: ConsultationData): void => {
-  consultations.push(data);
+  const existingIndex = consultations.findIndex(c => c.id === data.id);
+  if (existingIndex > -1) {
+    consultations[existingIndex] = data;
+  } else {
+    consultations.push(data);
+  }
 };
 
-// 全相談データの取得
+export const replaceConsultations = (data: ConsultationData[]): void => {
+  consultations.length = 0;
+  consultations.push(...data);
+};
+
 export const getConsultations = (): ConsultationData[] => {
   return [...consultations];
 };
 
-// 特定の相談データ取得
 export const getConsultation = (id: string): ConsultationData | undefined => {
   const consultations = getConsultations();
   return consultations.find(c => c.id === id);
 };
 
-// 分析結果の保存
-export const saveAnalysis = (consultationId: string, data: AnalysisResult | Record<string, unknown>): void => {
-  const newAnalysis = { ...data, consultationId } as AnalysisResult;
+export const saveAnalysis = (consultationId: string, data: Record<string, unknown>): void => {
+  const newAnalysis: CachedAnalysis = { ...data, consultationId };
   const existingIndex = analyses.findIndex(a => a.consultationId === consultationId);
   if (existingIndex > -1) {
     analyses[existingIndex] = newAnalysis;
@@ -30,8 +39,7 @@ export const saveAnalysis = (consultationId: string, data: AnalysisResult | Reco
   }
 };
 
-// 全分析結果の取得
-export const getAnalyses = (): AnalysisResult[] => {
+export const getAnalyses = (): CachedAnalysis[] => {
   return [...analyses];
 };
 
@@ -40,21 +48,12 @@ export const clearCachedConsultations = (): void => {
   analyses.length = 0;
 };
 
-// 特定の分析結果取得
-export const getAnalysis = (consultationId: string): AnalysisResult | undefined => {
+export const getAnalysis = (consultationId: string): CachedAnalysis | undefined => {
   const analyses = getAnalyses();
   return analyses.find(a => a.consultationId === consultationId);
 };
 
-// 人物ごとの相談履歴を取得
-export const getConsultationsByPerson = (personName: string): ConsultationData[] => {
-  const consultations = getConsultations();
-  return consultations.filter(c => c.personName === personName);
-};
-
-// 登録済みの人物一覧を取得
-export const getRegisteredPersons = (): string[] => {
-  const consultations = getConsultations();
-  const personNames = consultations.map(c => c.personName);
+export const getRegisteredPersons = (data = getConsultations()): string[] => {
+  const personNames = data.map(c => c.personName);
   return Array.from(new Set(personNames));
 };

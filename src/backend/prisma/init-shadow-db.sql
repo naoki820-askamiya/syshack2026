@@ -1,3 +1,5 @@
+-- Prismaのshadow DBだけでSupabase管理テーブルへの参照を解決するstubです。
+-- アプリ用usersテーブルや独自認証基盤として利用しません。
 CREATE SCHEMA IF NOT EXISTS auth;
 
 CREATE TABLE IF NOT EXISTS auth.users (

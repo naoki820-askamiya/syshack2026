@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { ArrowLeft, Calendar, User, PlusCircle } from 'lucide-react';
-import { getConsultations, getRegisteredPersons } from '../utils/storage';
+import type { ConsultationData } from '../types';
+import { getConsultations } from '../utils/storage';
+import { loadConsultationHistory } from '../api/sessionV17';
 import { Navigation } from '../components/Navigation';
 import { getRelationStyle, getReactionStyle } from '../utils/relationStyles';
 
@@ -10,15 +12,30 @@ export function History() {
   const [searchParams] = useSearchParams();
   const initialPerson = searchParams.get('person') ?? 'すべて';
   const [filterPerson, setFilterPerson] = useState<string>(initialPerson);
+  const [allConsultations, setAllConsultations] = useState<ConsultationData[]>(getConsultations);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
-  // URLパラメータが変わったときにフィルターを更新
   useEffect(() => {
-    const p = searchParams.get('person') ?? 'すべて';
-    setFilterPerson(p);
+    let active = true;
+    void loadConsultationHistory()
+      .then((consultations) => {
+        if (active) setAllConsultations(consultations);
+      })
+      .catch((error: unknown) => {
+        if (active) setLoadError(error instanceof Error ? error.message : '相談履歴を取得できませんでした。');
+      })
+      .finally(() => {
+        if (active) setIsLoading(false);
+      });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    setFilterPerson(searchParams.get('person') ?? 'すべて');
   }, [searchParams]);
 
-  const allConsultations = getConsultations();
-  const persons = ['すべて', ...getRegisteredPersons()];
+  const persons = ['すべて', ...Array.from(new Set(allConsultations.map(c => c.personName)))];
   
   const filteredConsultations = filterPerson === 'すべて'
     ? allConsultations
@@ -33,7 +50,6 @@ export function History() {
       <Navigation />
       
       <div className="lg:ml-64 pb-24 lg:pb-8">
-        {/* ヘッダー */}
         <div className="bg-white border-b border-[#D9E1EA] p-4 lg:px-8 sticky top-0 z-10">
           <div className="max-w-5xl mx-auto flex items-center gap-3">
             <button onClick={() => navigate('/')} className="lg:hidden text-[#5B6573] hover:text-[#1F2A37]">
@@ -44,7 +60,6 @@ export function History() {
         </div>
 
         <div className="max-w-5xl mx-auto p-4 lg:p-8">
-          {/* 人物フィルター */}
           {persons.length > 1 && (
             <div className="mb-6">
               <div className="flex items-center gap-2 mb-3">
@@ -72,8 +87,15 @@ export function History() {
             </div>
           )}
 
-          {/* 相談リスト */}
-          {sortedConsultations.length === 0 ? (
+          {isLoading ? (
+            <div className="bg-white rounded-2xl p-8 shadow-sm text-center border border-[#D9E1EA]">
+              <p className="text-[#5B6573]">相談履歴を読み込んでいます...</p>
+            </div>
+          ) : loadError ? (
+            <div className="bg-red-50 rounded-2xl p-8 text-center border border-red-200">
+              <p className="text-red-700">{loadError}</p>
+            </div>
+          ) : sortedConsultations.length === 0 ? (
             <div className="bg-white rounded-2xl p-8 shadow-sm text-center border border-[#D9E1EA]">
               <Calendar className="w-12 h-12 mx-auto text-[#B8C2CF] mb-3" />
               <p className="text-[#5B6573] mb-4">
@@ -115,7 +137,6 @@ export function History() {
                       to={`/analysis/${consultation.id}`}
                       className={`block bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow border border-[#D9E1EA] ${relStyle.bgHover}`}
                     >
-                      {/* ヘッダー行 */}
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center gap-2">
                           <div className={`w-7 h-7 rounded-full flex items-center justify-center text-sm flex-shrink-0 ${relStyle.badge}`}>
@@ -147,7 +168,6 @@ export function History() {
                         </div>
                       </div>
                       
-                      {/* 出来事 */}
                       <div className="mb-3">
                         <span className="text-xs text-[#5B6573]">出来事</span>
                         <p className="text-sm text-[#1F2A37] line-clamp-2 mt-0.5">
@@ -155,7 +175,6 @@ export function History() {
                         </p>
                       </div>
 
-                      {/* 反応・タイミングを個別の行に */}
                       <div className="space-y-1.5">
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-[#8A94A6] w-14 flex-shrink-0">反応</span>

@@ -16,6 +16,7 @@ export async function requireAuth(
         return;
     }
 
+    // JWTを独自検証せずSupabaseへ照会し、失効を含む現在の認証状態を正本に従わせます。
     const { data, error } = await supabaseAuth.auth.getUser(token);
 
     if (error || !data.user) {

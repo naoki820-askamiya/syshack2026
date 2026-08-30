@@ -34,7 +34,6 @@ export function Login() {
   return (
     <div className="min-h-screen bg-[#F7F9FC] flex items-center justify-center p-4 lg:p-8">
       <div className="w-full max-w-md lg:max-w-lg">
-        {/* 戻るボタン */}
         <button
           onClick={() => navigate('/')}
           className="flex items-center gap-2 text-[#5B6573] hover:text-[#1F2A37] mb-6 lg:mb-8"
@@ -43,7 +42,6 @@ export function Login() {
           <span>戻る</span>
         </button>
 
-        {/* ログインカード */}
         <div className="bg-white rounded-2xl p-8 lg:p-10 shadow-sm border border-[#D9E1EA]">
           <div className="text-center mb-8">
             <div className="w-16 h-16 lg:w-20 lg:h-20 bg-[#E8F1F8] rounded-full flex items-center justify-center mx-auto mb-4">
@@ -60,7 +58,6 @@ export function Login() {
               </div>
             )}
 
-            {/* メールアドレス */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-[#5B6573] mb-2">
                 メールアドレス
@@ -76,7 +73,6 @@ export function Login() {
               />
             </div>
 
-            {/* パスワード */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-[#5B6573] mb-2">
                 パスワード
@@ -92,7 +88,6 @@ export function Login() {
               />
             </div>
 
-            {/* パスワードを忘れた */}
             <div className="text-right">
               <button
                 type="button"
@@ -102,7 +97,6 @@ export function Login() {
               </button>
             </div>
 
-            {/* ログインボタン */}
             <button
               type="submit"
               disabled={isSubmitting}
@@ -112,7 +106,6 @@ export function Login() {
             </button>
           </form>
 
-          {/* 新規登録 */}
           <div className="mt-6 lg:mt-8 pt-6 border-t border-[#D9E1EA] text-center">
             <p className="text-sm text-[#5B6573] mb-3">
               アカウントをお持ちでない方

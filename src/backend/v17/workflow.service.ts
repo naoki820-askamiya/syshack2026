@@ -5,7 +5,7 @@ import {
 import { analyzeMoodV2, AnalyzeMoodV2Error } from "../ai/v2/analyzeMood.js";
 import { AppError } from "../utils/index.js";
 import { buildAiContext } from "./context.repository.js";
-import { parseOrThrow } from "./http.js";
+import { parseOrThrow, resourceNotFound } from "./http.js";
 import { paginationSchema, buildPersonSnapshot, createAnalysisCaseSchema } from "./schemas.js";
 import { getOwnedPersonOrThrow } from "./persons.service.js";
 import { settleUsage } from "./rateLimit.js";
@@ -28,7 +28,7 @@ export async function getAnalysisCase(userId: string, caseId: string) {
 
 export async function analyzeCase(userId: string, caseId: string) {
     const started = await repository.startAnalysis(userId, caseId);
-    if (started.kind === "not_found") throw notFound();
+    if (started.kind === "not_found") throw resourceNotFound();
     if (started.kind === "analyzing") {
         throw conflict("CASE_ALREADY_ANALYZING", "この相談は現在分析中です。");
     }
@@ -39,7 +39,7 @@ export async function analyzeCase(userId: string, caseId: string) {
     let actualAttempts = 0;
     try {
         const context = await buildAiContext(userId, caseId);
-        if (!context) throw notFound();
+        if (!context) throw resourceNotFound();
 
         const generated = await analyzeMoodV2(context.aiInput);
         actualAttempts = generated.attempts;
@@ -59,6 +59,7 @@ export async function analyzeCase(userId: string, caseId: string) {
         });
 
         if (!saved) {
+            // run idが更新済みなら、遅れて返ったAI結果は現在のcaseを変更できません。
             throw new AppError({
                 code: "ANALYSIS_STALE",
                 message: "分析状態が更新されたため、古い結果は保存されませんでした。",
@@ -66,15 +67,7 @@ export async function analyzeCase(userId: string, caseId: string) {
             });
         }
 
-        try {
-            await settleUsage(repository.prisma, started.usageEventId, "succeeded", actualAttempts);
-        } catch (usageError) {
-            console.error("usage_reconciliation_required", {
-                usageEventId: started.usageEventId,
-                status: "succeeded",
-                errorName: usageError instanceof Error ? usageError.name : "UnknownError",
-            });
-        }
+        await settleUsageOrLog(started.usageEventId, "succeeded", actualAttempts);
         return {
             status: "analyzed",
             result: {
@@ -92,7 +85,8 @@ export async function analyzeCase(userId: string, caseId: string) {
         if (error instanceof AnalyzeMoodV2Error) actualAttempts = error.attempts;
         const normalized = normalizeAnalysisError(error);
 
-        const [, usageSettlement] = await Promise.allSettled([
+        // case状態の復旧と利用量精算は、一方の失敗で他方を中断しないよう独立して試みます。
+        await Promise.allSettled([
             repository.failAnalysis({
                 userId,
                 caseId,
@@ -100,17 +94,8 @@ export async function analyzeCase(userId: string, caseId: string) {
                 failureCode: normalized.code,
                 failureMessage: normalized.message,
             }),
-            settleUsage(repository.prisma, started.usageEventId, "failed", actualAttempts),
+            settleUsageOrLog(started.usageEventId, "failed", actualAttempts),
         ]);
-        if (usageSettlement.status === "rejected") {
-            console.error("usage_reconciliation_required", {
-                usageEventId: started.usageEventId,
-                status: "failed",
-                errorName: usageSettlement.reason instanceof Error
-                    ? usageSettlement.reason.name
-                    : "UnknownError",
-            });
-        }
         throw normalized;
     }
 }
@@ -151,11 +136,13 @@ export async function listCasesByPerson(
 
 async function ownedCaseOrThrow(userId: string, caseId: string) {
     const analysisCase = await repository.findOwnedCase(userId, caseId);
-    if (!analysisCase) throw notFound();
+    if (!analysisCase) throw resourceNotFound();
     return analysisCase;
 }
 
-function toResultEnvelope(result: Awaited<ReturnType<typeof repository.findLatestResult>> & {}) {
+type StoredAnalysisResult = NonNullable<Awaited<ReturnType<typeof repository.findLatestResult>>>;
+
+function toResultEnvelope(result: StoredAnalysisResult) {
     return {
         id: result.id,
         analysisCaseId: result.analysisCaseId,
@@ -168,18 +155,30 @@ function toResultEnvelope(result: Awaited<ReturnType<typeof repository.findLates
     };
 }
 
+async function settleUsageOrLog(
+    usageEventId: string,
+    status: "succeeded" | "failed",
+    actualAttempts: number,
+): Promise<void> {
+    try {
+        await settleUsage(repository.prisma, usageEventId, status, actualAttempts);
+    } catch (error) {
+        // 利用量集計は運用上補正できるため、分析結果やcase復旧の成否を巻き戻しません。
+        console.error("usage_reconciliation_required", {
+            usageEventId,
+            status,
+            errorName: error instanceof Error ? error.name : "UnknownError",
+        });
+    }
+}
+
 function normalizeAnalysisError(error: unknown): AppError {
     if (error instanceof AppError) return error;
     if (error instanceof AnalyzeMoodV2Error) {
-        const status = error.code === "AI_CONFIG_MISSING"
-            ? 500
-            : error.code === "AI_TIMEOUT"
-                ? 504
-                : 502;
         return new AppError({
             code: error.code,
             message: "分析結果を生成できませんでした。少し時間をおいて再度お試しください。",
-            status,
+            status: analysisFailureStatus(error.code),
             cause: error,
         });
     }
@@ -191,14 +190,12 @@ function normalizeAnalysisError(error: unknown): AppError {
     });
 }
 
-function conflict(code: string, message: string) {
-    return new AppError({ code, message, status: 409 });
+function analysisFailureStatus(code: AnalyzeMoodV2Error["code"]): number {
+    if (code === "AI_CONFIG_MISSING") return 500;
+    if (code === "AI_TIMEOUT") return 504;
+    return 502;
 }
 
-function notFound() {
-    return new AppError({
-        code: "RESOURCE_NOT_FOUND",
-        message: "対象が見つかりません。",
-        status: 404,
-    });
+function conflict(code: string, message: string) {
+    return new AppError({ code, message, status: 409 });
 }

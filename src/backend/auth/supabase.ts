@@ -13,8 +13,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
-        // サーバー側は Authorization ヘッダーの token 検証だけを行い、
-        // Supabase session をプロセス内や永続ストレージに保持しません。
+        // 認証の正本はSupabaseなので、APIサーバー独自のsessionを持たせません。
         autoRefreshToken: false,
         persistSession: false,
     },

@@ -45,8 +45,13 @@ const confidence = (value: unknown): ConfidenceLevel =>
 
 const score100 = (value: unknown): number => {
   const numeric = typeof value === 'number' && Number.isFinite(value) ? value : 0;
-  const converted = numeric >= 0 && numeric <= 1 ? numeric * 100 : numeric;
-  return Math.max(0, Math.min(100, Math.round(converted)));
+  return Math.max(0, Math.min(100, Math.round(numeric)));
+};
+
+const legacyScore100 = (value: unknown): number => {
+  // 旧結果だけは0〜1の確率形式があるため、現行v2の整数スコアと分けて互換変換します。
+  const numeric = typeof value === 'number' && Number.isFinite(value) ? value : 0;
+  return score100(numeric >= 0 && numeric <= 1 ? numeric * 100 : numeric);
 };
 
 const objectArray = (value: unknown): JsonObject[] =>
@@ -74,6 +79,7 @@ function normalizeV2(root: JsonObject): AnalysisView | null {
       reason: text(item.reason),
     }];
   });
+  // 一部欠損をもっともらしく表示せず、固定6指標の契約を満たす結果だけを採用します。
   if (scores.length !== 6) return null;
 
   const evidence = isObject(analysis.evidence) ? analysis.evidence : {};
@@ -141,7 +147,7 @@ function normalizeLegacy(root: JsonObject): AnalysisView | null {
     summary: text(legacy.contextImpression, '旧形式の分析結果です。'),
     textImpression: text(legacy.textImpression),
     situationReading: text(legacy.contextImpression),
-    scores: meta.map(([key, label, category]) => ({ key, label, category, score: score100(rawScores[key]) })),
+    scores: meta.map(([key, label, category]) => ({ key, label, category, score: legacyScore100(rawScores[key]) })),
     concernSignals: objectArray(legacy.reasons).map((item) => `${text(item.label)}：${text(item.detail)}`),
     reassuringSignals: objectArray(legacy.goodSignals).map((item) => text(item.text)).filter(Boolean),
     unknowns: [], alternatives: [], possibleBiases: [],

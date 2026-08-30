@@ -72,8 +72,10 @@ OPENAI_MODEL=
 Docker Desktopが起動していることを確認し、リポジトリ直下で実行します。
 
 ```bash
-docker compose --env-file .env.local up --build -d
+docker compose up --build -d
 ```
+
+`compose.yaml`が`.env.local`を自動的に読み込むため、`--env-file`の指定は不要です。
 
 初回はイメージと依存パッケージを準備するため、数分かかることがあります。
 コマンドが終了したら状態を確認します。
@@ -91,12 +93,34 @@ docker compose ps
 
 APIの画面に`{"status":"ok"}`と表示されれば、backendも動いています。
 
+### 共有テストユーザーでログインする
+
+ログイン画面では、Supabase Authへ登録済みの共有テストユーザーを使用できます。
+
+```text
+メールアドレス: test@test.com
+パスワード: プロジェクト管理者から安全な方法で受け取ってください
+```
+
+パスワードはREADMEやGitへ保存しません。プロジェクト管理者は、1PasswordやBitwardenなどの
+チーム用パスワードマネージャーで共有してください。
+
+必要であれば、受け取った認証情報を各自の`.env.local`へ次の名前で保存できます。
+
+```dotenv
+TEST_USER_EMAIL=test@test.com
+TEST_USER_PASSWORD=管理者から受け取ったパスワード
+```
+
+`.env.local`はGit管理外です。共有テストユーザーで作成した相談データは他のメンバーにも見えるため、
+実在人物の名前、会話内容、その他の個人情報は入力しないでください。
+
 ## 毎日の起動と停止
 
 一度buildが終わった後は、通常は次のコマンドだけで起動できます。
 
 ```bash
-docker compose --env-file .env.local up -d
+docker compose up -d
 ```
 
 ログを確認する場合は次を実行します。
@@ -133,7 +157,7 @@ docker compose down
 
 ```bash
 docker compose down -v
-docker compose --env-file .env.local up --build -d
+docker compose up --build -d
 ```
 
 `down -v`で削除されるのはローカルのコンテナ用volumeです。
@@ -191,7 +215,7 @@ docker info
 
 ```bash
 docker compose down
-docker compose --env-file .env.local up -d
+docker compose up -d
 ```
 
 ### SupabaseまたはDBへ接続できない
@@ -211,7 +235,7 @@ docker compose --env-file .env.local up -d
 
 ```bash
 docker compose down -v
-docker compose --env-file .env.local up --build -d
+docker compose up --build -d
 ```
 
 ### 画面やAPIが開かない
@@ -236,8 +260,8 @@ APIキー、DB接続URL、入力した個人情報は共有しないでくださ
 
 | やりたいこと | コマンド |
 | --- | --- |
-| 初回起動・再build | `docker compose --env-file .env.local up --build -d` |
-| 通常起動 | `docker compose --env-file .env.local up -d` |
+| 初回起動・再build | `docker compose up --build -d` |
+| 通常起動 | `docker compose up -d` |
 | 状態確認 | `docker compose ps` |
 | ログ確認 | `docker compose logs -f` |
 | 停止 | `docker compose down` |

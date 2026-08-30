@@ -6,6 +6,7 @@ const globalForPrisma = globalThis as typeof globalThis & {
 };
 
 function readDatabaseUrl(): string {
+    // 実行時接続はDATABASE_URLを使い、migration用DIRECT_URLとは役割を分けます。
     const connectionString = process.env.DATABASE_URL?.trim();
 
     if (!connectionString) {

@@ -118,7 +118,7 @@ export async function analyzeMoodV2(
             }
 
             return {
-                analysis: validateAiOutput(response.output_parsed),
+                analysis: validateAiOutput(response.output_parsed, input.referenceContext),
                 model,
                 attempts: attempt,
             };

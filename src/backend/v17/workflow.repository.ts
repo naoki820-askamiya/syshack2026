@@ -22,12 +22,17 @@ export async function createCase(
 }
 
 export async function findOwnedCase(userId: string, caseId: string) {
+    // 所有権をクエリ条件へ含め、他ユーザーのcaseも一律not foundとして扱えるようにします。
     return prisma.analysisCase.findFirst({ where: { id: caseId, userId } });
 }
 
 export async function startAnalysis(userId: string, caseId: string) {
     return prisma.$transaction(async (tx) => {
-        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`analysis-case:${caseId}`}, 0))`;
+        // 同じcaseの開始判定を直列化します。SELECT 1はPrismaがvoid戻り値を扱えないため必要です。
+        await tx.$queryRaw<Array<{ locked: number }>>`
+            SELECT 1 AS locked
+            FROM pg_advisory_xact_lock(hashtextextended(${`analysis-case:${caseId}`}, 0))
+        `;
         const current = await tx.analysisCase.findFirst({
             where: { id: caseId, userId },
             select: { status: true },
@@ -56,6 +61,8 @@ export async function completeAnalysis(input: {
     userPatternSummaryId: string | null;
 }) {
     return prisma.$transaction(async (tx) => {
+        // 状態更新と結果保存を同一SQLにし、run idが一致しない古い非同期結果を保存させません。
+        // versionはcase内の論理順序なので、時刻ではなく既存versionの最大値から採番します。
         const rows = await tx.$queryRaw<Array<{
             id: string;
             version: number;
@@ -111,6 +118,7 @@ export async function failAnalysis(input: {
     failureCode: string;
     failureMessage: string;
 }) {
+    // 新しい実行を古い失敗応答で上書きしないよう、開始時のrun idまで更新条件に含めます。
     return prisma.analysisCase.updateMany({
         where: {
             id: input.caseId,
@@ -127,6 +135,7 @@ export async function failAnalysis(input: {
 }
 
 export async function findLatestResult(userId: string, caseId: string) {
+    // 最新性の正本は生成時刻ではなくcase単位のversionです。
     return prisma.analysisResult.findFirst({
         where: { userId, analysisCaseId: caseId },
         orderBy: { version: "desc" },

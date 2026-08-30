@@ -3,8 +3,7 @@ import { AlertCircle, ArrowLeft, ArrowRight, Info } from 'lucide-react';
 import { AnalysisScoreRadar } from '../components/AnalysisScoreRadar';
 import { AnalysisFeedbackForm } from '../components/AnalysisFeedbackForm';
 import { Navigation } from '../components/Navigation';
-import { getAnalysis, getConsultation } from '../utils/storage';
-import { normalizeAnalysis } from '../utils/analysisViewModel';
+import { useHydratedAnalysis } from '../hooks/useHydratedAnalysis';
 
 const CONFIDENCE = {
   low: { label: '低い', className: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
@@ -12,12 +11,12 @@ const CONFIDENCE = {
   high: { label: '高い', className: 'bg-green-50 text-green-700 border-green-200' },
 };
 
-function MissingResult() {
+function MissingResult({ message }: { message?: string }) {
   const navigate = useNavigate();
   return (
     <div className="min-h-screen bg-[#F7F9FC] flex items-center justify-center">
       <div className="text-center">
-        <p className="text-[#5B6573] mb-4">分析結果が見つからないか、表示できない形式です。</p>
+        <p className="text-[#5B6573] mb-4">{message ?? '分析結果が見つからないか、表示できない形式です。'}</p>
         <button onClick={() => navigate('/')} className="font-medium text-[#0F4C81]">ホームに戻る</button>
       </div>
     </div>
@@ -28,10 +27,10 @@ export function AnalysisV17() {
   const { id, caseId } = useParams<{ id?: string; caseId?: string }>();
   const navigate = useNavigate();
   const resolvedId = id ?? caseId;
-  const consultation = resolvedId ? getConsultation(resolvedId) : undefined;
-  const view = resolvedId ? normalizeAnalysis(getAnalysis(resolvedId)) : null;
+  const { consultation, view, loading, error } = useHydratedAnalysis(resolvedId);
 
-  if (!consultation || !view) return <MissingResult />;
+  if (loading) return <MissingResult message="分析結果を読み込んでいます..." />;
+  if (!consultation || !view) return <MissingResult message={error || undefined} />;
   const conf = CONFIDENCE[view.confidenceLevel];
 
   return (

@@ -1,7 +1,6 @@
 import type { RelationshipType } from "../generated/prisma/enums.js";
-import { AppError } from "../utils/index.js";
 import { createPersonSchema, paginationSchema, updatePersonSchema } from "./schemas.js";
-import { parseOrThrow } from "./http.js";
+import { parseOrThrow, resourceNotFound } from "./http.js";
 import * as repository from "./persons.repository.js";
 
 export async function createPerson(userId: string, body: unknown) {
@@ -34,7 +33,7 @@ export async function updatePerson(userId: string, personId: string, body: unkno
         ...data,
         relationshipType: data.relationshipType as RelationshipType | undefined,
     });
-    if (!person) throw notFound();
+    if (!person) throw resourceNotFound();
     return { person };
 }
 
@@ -45,20 +44,12 @@ export async function getPersonProfile(userId: string, personId: string) {
 }
 
 export async function archivePerson(userId: string, personId: string) {
-    if (!(await repository.archiveOwnedPerson(userId, personId))) throw notFound();
+    if (!(await repository.archiveOwnedPerson(userId, personId))) throw resourceNotFound();
     return { archived: true };
 }
 
 export async function getOwnedPersonOrThrow(userId: string, personId: string) {
     const person = await repository.findOwnedPerson(userId, personId);
-    if (!person) throw notFound();
+    if (!person) throw resourceNotFound();
     return person;
-}
-
-function notFound() {
-    return new AppError({
-        code: "RESOURCE_NOT_FOUND",
-        message: "対象が見つかりません。",
-        status: 404,
-    });
 }

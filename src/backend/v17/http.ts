@@ -53,3 +53,12 @@ export function requestIdFrom(req: Request): string {
     const supplied = req.header("x-request-id")?.trim();
     return supplied && supplied.length <= 100 ? supplied : `req_${randomUUID()}`;
 }
+
+export function resourceNotFound(): AppError {
+    // 存在の有無から他ユーザーのデータを推測されないよう、所有権違反も404へ統一します。
+    return new AppError({
+        code: "RESOURCE_NOT_FOUND",
+        message: "対象が見つかりません。",
+        status: 404,
+    });
+}

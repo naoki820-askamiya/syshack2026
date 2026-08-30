@@ -1,513 +1,273 @@
-# 相手の機嫌・感情傾向分析 AI Web アプリ
+# KIGEN404
 
-ユーザーが入力した出来事・会話文・補足情報をもとに、
-**相手の機嫌・感情傾向・温度感を、ポジティブ／ネガティブの両面から分析する AI Web アプリ**です。
+KIGEN404は、出来事、相手の反応、自分の対応、関係性などを入力し、相手の感情傾向と次の行動をAIで整理するWebアプリです。
+AIの出力は事実の断定や診断ではなく、複数の見方を比較するための参考情報として表示します。
 
-このアプリは、ただ「怒っていそう」と決めつけるのではなく、
+現在のアプリでは、Supabase Authによるメールアドレス認証、人物と相談の登録、AI分析、結果表示、
+人物ごとの履歴、分析Feedback、パーソナライズ設定を実装しています。
 
-- 本当に怒っている可能性
-- 忙しいだけの可能性
-- そっけないだけの可能性
-- ポジティブに受け取っている可能性
-- 今どう動くのがよいか
+## 技術スタック
 
-を分けて見られることを目的にしています。
+| 分類 | 使用技術 |
+| --- | --- |
+| フロントエンド | React 18、TypeScript、Vite 6、React Router 7、Tailwind CSS 4、Recharts、Lucide React |
+| バックエンド | Node.js、Express 4、TypeScript、tsx |
+| 認証 | Supabase Auth (`@supabase/supabase-js`) |
+| DB | PostgreSQL、Prisma 7、`@prisma/adapter-pg` |
+| AI | OpenAI Responses API、Structured Outputs、Zod |
+| テスト | Node.js test runner、tsx |
+| 開発環境 | Docker、Docker Compose |
 
----
+DockerイメージはNode.js 22を使用します。
 
-## 背景
+## 主な機能
 
-メッセージアプリや SNS で短い返事が来たときに、
-「怒っているのではないか」「冷たくされたのではないか」「距離を置かれているのではないか」と不安になることがあります。
+- Supabase Authによる登録、ログイン、ログアウト
+- 分析対象となる人物の登録と一覧表示
+- 相談内容の登録とAI分析
+- 6種類の感情スコア、根拠、代替解釈、推奨行動、返信例の表示
+- 人物ごとの相談履歴と最新分析結果の再表示
+- 分析結果へのFeedback登録
+- パーソナライズ利用範囲の設定
 
-しかし実際には、相手が忙しいだけだったり、もともと短文の人だったり、返信を急いでいないだけだったり、そのとき置かれている状況に余裕がないだけだったりすることも多く、ユーザーの不安と実際の状態が一致しているとは限りません。
+## ディレクトリ構成
 
-また、人とのやりとりを考えるときは、現実で起こったことと、チャット上で交わされた文面を分けて考えることが重要です。
-現実では何も問題が起きていなくても、文面だけを見ると冷たく感じることがあります。
-逆に、文面はやわらかく見えても、実際の出来事や関係性を踏まえると別の受け取り方をしたほうがよい場合もあります。
-
-このアプリでは、出来事・会話文・関係性・背景情報をまとめて入力し、AI がそれぞれを整理したうえで見立てを返します。
-そのことで、ユーザーが文面だけで悪い方向に決めつけすぎることを防ぎ、今の状況に対してより適した考え方や行動のヒントを、できるだけ早く得られることを目指しています。
-
-また、分析対象は怒りや不機嫌だけでなく、喜び・安心・前向きさといったポジティブな可能性も含みます。
-
----
-
-## このアプリでできること
-
-### 1. 相手情報の登録
-
-分析対象となる相手を登録できます。
-
-例:
-
-- 上司
-- 恋人
-- 家族
-- 友人
-- 同級生
-- 顧客
-
-### 2. 相談内容の入力
-
-1件の相談ごとに、以下のような情報をまとめて入力できます。
-
-- 実際に何があったか
-- 自分が送った文
-- 相手が返した文
-- 直前の会話
-- 利用アプリの種類
-- 相手の普段の話し方
-- 背景事情
-- 自分の不安や気になっていること
-
-### 3. AI による分析
-
-入力内容をもとに、AI が次のような結果を返します。
-
-- 文面から見える印象
-- 状況込みで見た印象
-- 感情スコア
-- 確信度
-- 連絡のタイミング
-- 今取るべき行動
-- 避けるべき表現
-- ポジティブに見える要素
-- 返信例
-
-### 4. 人物ごとの履歴確認
-
-同じ相手に対して複数の相談ケースを持てるため、  
-人物ごとの履歴一覧も確認できます。
-
----
-
-## 特徴
-
-- **フォーム入力型**  
-  チャット形式ではなく、必要な情報を項目ごとに整理して入力します。  
-  そのため、AI に渡る情報が安定しやすいです。
-
-- **ネガティブ決め打ちをしない**  
-  「怒っているかも」だけでなく、「忙しいだけかも」「好意的かも」も返します。
-
-- **ハッカソン向け MVP 設計**  
-  まずは確実に動くことを優先し、ログインや OCR などは後回しにしています。
-
-- **同じ相手に対して複数ケースを管理できる**  
-  1 人物に対して何件も相談を積み重ねられます。
-
----
-
-## 想定ユーザー
-
-- 返信の温度感に不安を感じやすい人
-- 上司や先輩とのやりとりに気を使う人
-- 恋人や友人とのやりとりを慎重に考えたい人
-- 自分の主観だけで判断せず、一度整理して考えたい人
-
----
-
-## MVP の範囲
-
-### 実装するもの
-
-- セッション作成
-- 人物作成
-- AnalysisCase 作成
-- AI 分析実行
-- 分析結果取得
-- 人物別ケース一覧取得
-
-### 今回は実装しないもの
-
-- ログイン機能
-- 人物更新 API
-- AnalysisCase 更新 API
-- 再分析専用 API
-- OCR 本実装
-- 高度な個人情報マスキング
-- promptVersion の高度運用
-
----
-
-## 画面の流れ
-
-このアプリは、基本的に次の流れで使います。
-
-1. 初回アクセス
-2. セッション作成
-3. 相手情報の入力
-4. 相談内容の入力
-5. AI 分析の実行
-6. 結果表示
-7. 必要に応じて履歴を見る
-
-設計上の操作フローは、  
-**フォーム入力 → AI 分析 → 結果表示** です。
-
----
-
-## AI が見る主な入力情報
-
-AI は、主に以下の情報を使って分析します。
-
-| フィールド               | 内容                             |
-| ------------------------ | -------------------------------- |
-| `eventFacts`             | 実際に何があったか               |
-| `selfMessage`            | 自分が送った文                   |
-| `partnerMessage`         | 相手が返した文                   |
-| `recentConversationText` | 直前の会話                       |
-| `appType`                | LINE / Slack / Instagram DM など |
-| `userEmotion`            | 相談者の感情                     |
-| `assumedPartnerEmotion`  | 相手の感情予想                   |
-| `partnerSpeakingStyle`   | 相手の普段の話し方               |
-| `contextNote`            | 背景事情                         |
-| `concernText`            | 不安に思っていること             |
-| `emojiUsed`              | 絵文字の有無                     |
-| `toneType`               | 文体                             |
-| `messageLengthType`      | 文の長さ傾向                     |
-
----
-
-## AI が返す主な結果
-
-| フィールド          | 内容                   |
-| ------------------- | ---------------------- |
-| `textImpression`    | 文面から見える印象     |
-| `contextImpression` | 状況込みで見た印象     |
-| `scores.angry`      | 怒りスコア             |
-| `scores.busy`       | 忙しさスコア           |
-| `scores.justCold`   | そっけなさスコア       |
-| `scores.positive`   | ポジティブスコア       |
-| `scores.distance`   | 距離感スコア           |
-| `confidenceLevel`   | 確信度                 |
-| `contactTiming`     | 連絡のタイミング       |
-| `actions`           | 今取るべき行動         |
-| `avoidExpressions`  | 避けるべき表現         |
-| `goodSignals`       | ポジティブに見える要素 |
-| `replyExamples`     | 返信例                 |
-| `reasons`           | 判断の根拠             |
-
----
-
-## API 一覧
-
-| 機能             | エンドポイント                          | メソッド | 用途                    |
-| ---------------- | --------------------------------------- | -------- | ----------------------- |
-| セッション作成   | `/api/sessions`                         | POST     | sessionId の発行        |
-| 人物作成         | `/api/persons`                          | POST     | 分析対象人物の保存      |
-| ケース作成       | `/api/analysis-cases`                   | POST     | AnalysisCase の新規作成 |
-| AI 分析実行      | `/api/analysis-cases/:caseId/analyze`   | POST     | AI 分析の開始           |
-| 分析結果取得     | `/api/analysis-cases/:caseId/results`   | GET      | 最新分析結果取得        |
-| 人物別ケース一覧 | `/api/persons/:personId/analysis-cases` | GET      | 人物ごとのケース一覧    |
-
----
-
-## セッション仕様
-
-このアプリでは、MVP ではログインではなく **sessionId** を使って利用者を識別します。
-
-### ルール
-
-- `POST /api/sessions` を除く全 API で `X-Session-Id` が必須
-- `sessionId` はフロント側で `localStorage` に保存
-- 有効期限は 24 時間
-- 無効・期限切れ時は `401 SESSION_INVALID`
-- これは本番認証ではなく、**ハッカソン向けの簡易識別方式**です
-
-```http
-X-Session-Id: sess_xxxxxxxxx
+```text
+.
+├─ public/                         # 画像などの静的ファイル
+├─ docs/                           # 現行仕様、DB設計、Docker開発手順、過去時点の調査資料
+├─ src/
+│  ├─ app/
+│  │  ├─ api/                      # フロントエンドのAPIクライアントと変換処理
+│  │  ├─ auth/                     # Supabase Authの初期化とReact Context
+│  │  ├─ components/               # 画面共通コンポーネント
+│  │  ├─ hooks/                    # 画面共通hooks
+│  │  ├─ pages/                    # 各ページ
+│  │  └─ utils/                    # 表示モデル変換とメモリ内キャッシュ
+│  ├─ backend/
+│  │  ├─ ai/v2/                    # AI入力、指示、出力Schema、検証
+│  │  ├─ auth/                     # サーバー側Supabase Authクライアント
+│  │  ├─ middlewares/              # 認証と共通エラーハンドリング
+│  │  ├─ prisma/                   # Prisma schema、migration、DBクライアント
+│  │  └─ v17/                      # 現在マウントされるAPI route/service/repository
+│  ├─ main.tsx                     # フロントエンドのエントリーポイント
+│  └─ server.ts                    # バックエンドのエントリーポイント
+├─ compose.yaml                    # Composeの入口
+├─ compose.services.yaml           # frontend/backendサービス定義
+├─ Dockerfile
+├─ package.json
+├─ tsconfig.json                   # フロントを含むtypecheck設定
+└─ tsconfig.server.json            # サーバーbuild設定
 ```
 
----
+`src/backend/generated/prisma/`は`npm run prisma:generate`で生成されるPrisma Clientです。
+現在の動作仕様は[現行仕様書](docs/仕様書.md)を参照してください。日付付きの調査メモや設計資料は、その時点の記録として現行実装と区別します。
 
-## エラー形式
+## 環境変数
 
-エラーはすべて次の形式に統一しています。
+`.env`と`.env.local`はGit管理外です。ローカル開発ではリポジトリ直下に`.env.local`を作成してください。
+実際の値はSupabase、PostgreSQL、OpenAIの各環境から取得します。
 
-```json
-{
-    "error": {
-        "code": "NOT_FOUND",
-        "message": "指定されたリソースが存在しません",
-        "status": 404
-    }
-}
+```dotenv
+VITE_SERVER_URL=http://127.0.0.1:3000
+VITE_SUPABASE_URL=
+VITE_SUPABASE_PUBLISHABLE_KEY=
+
+SUPABASE_URL=
+SUPABASE_PUBLISHABLE_KEY=
+DATABASE_URL=
+DIRECT_URL=
+
+OPENAI_API_KEY=
+OPENAI_ANALYSIS_MODEL=
+
+PORT=3000
+ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 ```
 
-主なエラーコード:
+| 変数 | 用途 | 備考 |
+| --- | --- | --- |
+| `VITE_SERVER_URL` | ブラウザから呼ぶAPIのURL | Vite開発時は未設定なら`http://127.0.0.1:3000` |
+| `VITE_SUPABASE_URL` | フロントエンドのSupabase URL | 必須 |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | フロントエンドの公開可能キー | `VITE_SUPABASE_ANON_KEY`もコード上は利用可能 |
+| `SUPABASE_URL` | バックエンドのSupabase URL | 未設定時は`VITE_SUPABASE_URL`を使用 |
+| `SUPABASE_PUBLISHABLE_KEY` | access token検証に使う公開可能キー | 未設定時は`VITE_SUPABASE_PUBLISHABLE_KEY`または`NEXT_PUBLIC_SUPABASE_ANON_KEY` |
+| `DATABASE_URL` | アプリ実行時のPostgreSQL接続先 | 必須 |
+| `DIRECT_URL` | Prisma CLI用の直接接続先 | 未設定時は`DATABASE_URL`を使用 |
+| `OPENAI_API_KEY` | OpenAI APIキー | AI分析に必須 |
+| `OPENAI_ANALYSIS_MODEL` | AI分析で使うモデル | 未設定時は`OPENAI_MODEL`を使用 |
+| `PORT` | Expressの待受ポート | 既定値は`3000` |
+| `ALLOWED_ORIGINS` | CORSで許可するOrigin | カンマ区切り。`FRONTEND_ORIGIN`も利用可能 |
 
-| コード              | 意味                                 | HTTP ステータス |
-| ------------------- | ------------------------------------ | --------------- |
-| `SESSION_INVALID`   | sessionId が無効・不存在・期限切れ   | 401             |
-| `FORBIDDEN`         | 他セッションのリソースにアクセスした | 403             |
-| `NOT_FOUND`         | person / case が存在しない           | 404             |
-| `ALREADY_ANALYZING` | 分析中に再度 analyze を叩いた        | 409             |
-| `ALREADY_ANALYZED`  | 分析済みのケースに analyze を叩いた  | 409             |
-| `VALIDATION_ERROR`  | 入力バリデーション失敗               | 422             |
-| `AI_TIMEOUT`        | AI API タイムアウト                  | 503             |
-| `INTERNAL_ERROR`    | サーバー内部エラー                   | 500             |
+秘密情報を`VITE_`付きの変数へ入れないでください。`VITE_`付きの値はフロントエンドへ組み込まれます。
 
----
+## ローカルセットアップ
 
-## 状態管理
-
-1件の相談ケースは、次の状態を持ちます。
-
-- `draft`
-- `analyzing`
-- `analyzed`
-- `error`
-
-### 状態遷移
-
-```txt
-draft     ──[analyze 開始]────→ analyzing
-analyzing ──[analyze 成功]────→ analyzed
-analyzing ──[analyze 失敗]────→ error
-error     ──[analyze 再実行]──→ analyzing
-```
-
-フロント側では、状態に応じて「未分析 / 分析中 / 分析済み / 分析失敗」を表示し分ける想定です。
-
----
-
-## 想定ディレクトリ構成
-
-```txt
-src/
-├─ app.ts
-├─ server.ts
-├─ routes/
-│   ├─ sessions.routes.ts
-│   ├─ persons.routes.ts
-│   └─ analysisCases.routes.ts
-├─ controllers/
-│   ├─ sessions.controller.ts
-│   ├─ persons.controller.ts
-│   └─ analysisCases.controller.ts
-├─ services/
-│   ├─ sessions.service.ts
-│   ├─ persons.service.ts
-│   └─ analysisCases.service.ts
-├─ repositories/
-│   ├─ sessions.repository.ts
-│   ├─ persons.repository.ts
-│   ├─ analysisCases.repository.ts
-│   └─ analysisResults.repository.ts
-├─ middlewares/
-│   ├─ requireSession.ts
-│   └─ errorHandler.ts
-├─ ai/
-│   └─ analyze.ts
-├─ types/
-│   └─ index.ts
-└─ utils/
-    └─ index.ts
-```
-
-それぞれの役割は、ルーティング・API 入口処理・業務ロジック・DB 操作・共通 middleware・AI 通信処理・型定義・共通関数に分ける設計です。
-
----
-
-## 使用技術
-
-### フロントエンド
-
-- vite
-- react
-- TypeScript
-
-### バックエンド
-
-- Node.js
-- TypeScript
-
----
-
-## ローカルでの起動イメージ
-
-### 1. 依存関係をインストール
+### 1. 依存関係をインストールする
 
 ```bash
-npm install
+npm ci
 ```
 
-### 2. 環境変数を設定
+### 2. 環境変数を設定する
 
-`.env` の例:
+前節を参考に`.env.local`を作成します。Supabase Auth側には、ログインに使用するユーザーが必要です。
+このリポジトリは独自のユーザーテーブルやJWT発行処理を持ちません。
 
-```env
-PORT=8080
-AI_API_KEY=your_api_key_here
-DATABASE_URL=your_database_url_here
-NODE_ENV=development
-```
-
-### 3. 開発サーバーを起動
+### 3. フロントエンドを起動する
 
 ```bash
 npm run dev
 ```
 
-または
+`http://localhost:5173`を開きます。
+
+### 4. バックエンドを起動する
+
+別のターミナルで実行します。
 
 ```bash
-npm run server
+npm run server:dev
 ```
 
-> 実際にどちらを使うかは、このリポジトリの `package.json` に合わせてください。
+`http://localhost:3000/health`が`{"status":"ok"}`を返せば起動しています。
 
-### Docker Composeで開発する
+## Dockerでの起動と停止
 
-Dockerではフロントエンド（Vite、`5173`）とバックエンド（Express、`3000`）のみを起動します。
-Supabase AuthとPostgreSQLは外部サービスをそのまま利用します。
+`compose.yaml`は`.env.local`をCompose変数展開とバックエンド環境変数に使用します。
+PostgreSQLやSupabase自体はComposeサービスに含まれないため、`DATABASE_URL`などには外部の接続先を指定します。
 
-初めてセットアップする場合は、[Docker開発環境セットアップ](docs/docker-development-setup.md)を参照してください。
-
-`.env.local`に既存のローカル開発用環境変数を設定してから起動してください。
-Composeの変数展開には同じファイルを指定しますが、フロントエンドへ渡すのは公開用の
-`VITE_SUPABASE_URL`、`VITE_SUPABASE_PUBLISHABLE_KEY`と`VITE_SERVER_URL`だけです。
+初回起動または依存関係変更後:
 
 ```bash
-docker compose --env-file .env.local up --build -d
+docker compose up --build -d
 ```
 
-起動後は、フロントエンドを `http://localhost:5173`、バックエンドのヘルスチェックを
-`http://localhost:3000/health` で確認できます。
+通常起動:
 
 ```bash
-# ログを確認する
+docker compose up -d
+```
+
+状態とログの確認:
+
+```bash
+docker compose ps
 docker compose logs -f
+```
 
-# 停止する
+停止:
+
+```bash
 docker compose down
+```
 
-# 依存関係の変更後にnode_modulesを作り直す
+依存関係用のnamed volumeも削除する場合:
+
+```bash
 docker compose down -v
-docker compose --env-file .env.local up --build -d
 ```
 
-Prisma migrationはコンテナ起動時には自動実行されません。必要なときだけ明示的に実行します。
+起動後のURLは、フロントエンドが`http://localhost:5173`、バックエンドが`http://localhost:3000`です。
+詳細は[Docker開発環境セットアップ](docs/docker-development-setup.md)も参照してください。
+
+## 開発用コマンド
+
+| 目的 | コマンド |
+| --- | --- |
+| フロントエンド開発サーバー | `npm run dev` |
+| バックエンド起動 | `npm run server` |
+| バックエンド監視起動 | `npm run server:dev` |
+| TypeScript検査 | `npm run lint` または `npm run typecheck` |
+| Markdown検査 | `npm run lint:md` |
+| 全テスト | `npm test` |
+| フロントエンドbuild | `npm run build:client` |
+| バックエンドbuild | `npm run build:server` |
+| 全体build | `npm run build` |
+| build済みサーバー起動 | `npm start` |
+
+`lint`は現在ESLintではなく、`tsc --noEmit`によるTypeScript検査です。
+
+## テスト
 
 ```bash
-docker compose run --rm backend npm run prisma:migrate:deploy
+npm test
 ```
 
-既存テストもバックエンドコンテナから実行できます。
+`src/backend/**/*.test.ts`をNode.js test runnerで実行します。主な対象は次のとおりです。
+
+- AIリクエスト、出力Schema、安全性検証
+- Supabase Auth必須APIと`userId`所有権境界
+- 他人のリソースを404として隠す方針
+- AnalysisCaseの状態遷移と同時実行制御
+- AnalysisResultの保存と`version DESC`による最新判定
+- フロント表示用の結果変換、相談入力の検証、人物別の最新履歴判定、メモリ内キャッシュ
+
+## Prismaとmigration
+
+Prisma設定は`src/backend/prisma.config.ts`、schemaは`src/backend/prisma/schema.prisma`、
+SQL migrationは`src/backend/prisma/migrations/`にあります。
 
 ```bash
-docker compose run --rm backend npm test
+# schemaの検証
+npm run prisma:validate
+
+# schemaの整形
+npm run prisma:format
+
+# Prisma Clientの再生成
+npm run prisma:generate
+
+# migration適用状況の確認
+npm run prisma:migrate:status
+
+# 未適用migrationの適用
+npm run prisma:migrate:deploy
 ```
 
----
+`npm run build:server`は先にPrisma Clientを生成します。Compose起動時にmigrationは自動適用されません。
 
-## 動作確認例
+責務分担は次のとおりです。
 
-### セッション作成
+- Prisma schema: アプリが利用するモデル、列、relation、Prisma Client生成に必要な定義
+- SQL migration: RLS、CHECK制約、trigger、partial index、DESC indexなどのPostgreSQL固有設定
+- `auth.users`: Supabase管理の外部テーブル。アプリ独自の`users`テーブルへ置き換えない
 
-```bash
-curl -X POST http://localhost:8080/api/sessions
-```
+SQL固有設定をPrisma schemaだけで再現しようとせず、migration SQLを正として保守してください。
 
-### 人物作成
+## APIとデータ保護の注意事項
 
-```bash
-curl -X POST http://localhost:8080/api/persons \
-  -H "Content-Type: application/json" \
-  -H "X-Session-Id: sess_xxx" \
-  -d '{
-    "displayName": "上司A",
-    "relationshipType": "boss"
-  }'
-```
+- 認証の正本はSupabase Authです。バックエンドはBearer tokenをSupabaseで検証し、認証済み`user.id`を使用します。
+- クライアントから`user_id`を受け取って所有者を決めません。
+- DBアクセスは`userId`を検索・更新条件に含め、他人のリソースは403ではなく404として扱います。
+- 最新のAnalysisResultは`created_at`ではなく`version DESC`で取得します。
+- RLSも有効ですが、サーバー側の所有権条件を省略する理由にはしません。
+- 相談本文やAI結果はPostgreSQLへ保存します。画面遷移用キャッシュはメモリ内だけで、`localStorage`へ業務データを保存しません。
+- OpenAI Responses API呼び出しは`store: false`です。
+- AI出力は診断や相手の感情の断定ではありません。実在人物の不要な個人情報を入力しないでください。
 
-### ケース作成
+## 現在マウントされる主なAPI
 
-```bash
-curl -X POST http://localhost:8080/api/analysis-cases \
-  -H "Content-Type: application/json" \
-  -H "X-Session-Id: sess_xxx" \
-  -d '{
-    "personId": "person_xxx",
-    "eventFacts": "資料を送ったあと、相手から確認しますだけ返ってきた",
-    "selfMessage": "資料をお送りします。ご確認お願いします。",
-    "partnerMessage": "確認します。"
-  }'
-```
+保護APIはSupabase AuthのBearer tokenを要求します。`/api/me`だけはtoken未指定時に`user: null`を返し、
+token指定時はSupabase Authで検証したユーザーを返します。
 
-### 分析実行
+| Method | Path | 用途 |
+| --- | --- | --- |
+| `GET` | `/health` | ヘルスチェック |
+| `GET` | `/api/me` | 認証ユーザー確認 |
+| `POST` / `GET` | `/api/persons` | 人物作成・一覧 |
+| `GET` / `PATCH` | `/api/persons/:personId` | 人物詳細・更新 |
+| `POST` | `/api/persons/:personId/archive` | 人物のアーカイブ |
+| `GET` | `/api/persons/:personId/profile` | 保存済み人物Profile取得 |
+| `GET` | `/api/persons/:personId/analysis-cases` | 人物別相談一覧 |
+| `POST` | `/api/analysis-cases` | 相談作成 |
+| `GET` | `/api/analysis-cases/:caseId` | 相談詳細 |
+| `POST` | `/api/analysis-cases/:caseId/analyze` | AI分析 |
+| `GET` | `/api/analysis-cases/:caseId/results/latest` | 最新分析結果 |
+| `GET` | `/api/analysis-cases/:caseId/results` | 分析結果一覧 |
+| `GET` / `PATCH` | `/api/privacy-settings` | パーソナライズ設定 |
+| `GET` / `DELETE` | `/api/user-pattern-summary` | 保存済みユーザー傾向要約の取得・削除 |
+| `POST` / `GET` | `/api/analysis-results/:resultId/feedback` | Feedback作成・取得 |
+| `PATCH` | `/api/analysis-feedbacks/:feedbackId` | Feedback更新 |
 
-```bash
-curl -X POST http://localhost:8080/api/analysis-cases/case_xxx/analyze \
-  -H "Content-Type: application/json" \
-  -H "X-Session-Id: sess_xxx" \
-  -d '{}'
-```
-
-### 結果取得
-
-```bash
-curl -X GET http://localhost:8080/api/analysis-cases/case_xxx/results \
-  -H "X-Session-Id: sess_xxx"
-```
-
----
-
-## デプロイ時の確認項目
-
-- [ ] 環境変数が設定されている
-- [ ] `AI_API_KEY` が本番環境に設定されている
-- [ ] `POST /api/sessions` が成功する
-- [ ] `POST /api/persons` が成功する
-- [ ] `POST /api/analysis-cases` が成功する
-- [ ] `POST /api/analysis-cases/:caseId/analyze` が成功する
-- [ ] エラー時に共通形式で返る
-- [ ] ログに API キーや個人情報が出ていない
-
----
-
-## 今後の拡張候補
-
-- ログイン機能
-- 人物更新 API
-- AnalysisCase 更新 API
-- 再分析専用 API
-- OCR 取り込み
-- 複数端末同期
-- promptVersion 比較機能
-- 関係性別の出力最適化
-- 本番向け認証・セキュリティ強化
-
----
-
-## 注意事項
-
-- このアプリは、**相手の感情を断定するものではありません。**
-- AI の出力はあくまで参考情報であり、実際の人間関係や状況判断を完全に代替するものではありません。
-- MVP では sessionId を用いた簡易識別方式を採用しているため、本番公開時には正式な認証方式への変更が必要です。
-
----
-
-## 開発方針
-
-このプロジェクトでは、MVP 段階では次のことを重視しています。
-
-- ハッカソン中に確実に動くこと
-- フロント実装が迷わないこと
-- 必須入力を最小限にすること
-- 結果を見せる体験を最優先にすること
-- 悪い反応だけでなく、良い反応も返せること
-
----
-
-## まとめ
-
-このアプリは、  
-**「相手の返信を悪い方向に決めつけすぎないために、一度情報を整理して AI に見立ててもらう」**  
-ための Web アプリです。
-
-短い返事やそっけない文面に対して、  
-怒り・忙しさ・距離感・ポジティブ要素を分けて見られるようにすることで、  
-ユーザーが次の行動を落ち着いて考えられる体験を目指しています。
+APIエラーは`error.code`、`error.message`、`error.status`、`error.requestId`を持つJSONで返します。
