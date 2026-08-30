@@ -10,18 +10,12 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 
-/**
- * 関係性ごとのスタイル定義（色の一元管理）
- * badge: カテゴリバッジの色クラス
- * bg: 背景色（ホバー含む）
- * emoji: 関係性の絵文字
- */
 export type RelationStyle = {
-  badge: string;       // バッジのbg + textクラス
-  bgHover: string;     // カードホバー背景
-  dot: string;         // アクセントカラー（ドットなど）
+  badge: string;
+  bgHover: string;
+  dot: string;
   emoji: string;
-  lucideIcon?: LucideIcon; // Lucideアイコン（必要に応じて）
+  lucideIcon?: LucideIcon;
 };
 
 export const RELATION_STYLES: Record<string, RelationStyle> = {
@@ -83,14 +77,9 @@ export const RELATION_STYLES: Record<string, RelationStyle> = {
   },
 };
 
-/** 関係性スタイルを取得（未定義の場合はその他を返す） */
 export const getRelationStyle = (relation: string): RelationStyle =>
   RELATION_STYLES[relation] ?? RELATION_STYLES['その他'];
 
-/**
- * 相手の反応を色付けする
- * returns Tailwind text + bg クラス
- */
 export type ReactionStyle = { text: string; bg: string };
 
 export const getReactionStyle = (reaction: string): ReactionStyle => {
