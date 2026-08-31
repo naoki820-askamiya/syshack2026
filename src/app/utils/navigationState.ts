@@ -1,4 +1,4 @@
-/** ページ遷移をまたいで展開状態を保持するシングルトンストア */
+// Navigationは画面ごとに再マウントされるため、展開状態だけをモジュールスコープで共有します。
 let expandedPerson: string | null = null;
 const listeners = new Set<() => void>();
 
@@ -8,7 +8,7 @@ export function getExpandedPerson(): string | null {
 
 export function setExpandedPerson(person: string | null): void {
   expandedPerson = person;
-  listeners.forEach((l) => l());
+  listeners.forEach((listener) => listener());
 }
 
 export function subscribeExpandedPerson(listener: () => void): () => void {

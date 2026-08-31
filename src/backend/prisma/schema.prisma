@@ -1,0 +1,256 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum RelationshipType {
+  boss
+  coworker
+  subordinate
+  lover
+  spouse
+  friend
+  family
+  customer
+  classmate
+  other
+
+  @@map("relationship_type")
+}
+
+enum AnalysisCaseStatus {
+  draft
+  analyzing
+  analyzed
+  failed
+
+  @@map("analysis_case_status")
+}
+
+model Person {
+  id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId           String           @map("user_id") @db.Uuid
+  displayName      String           @map("display_name") @db.VarChar(50)
+  relationshipType RelationshipType @map("relationship_type")
+  notes            String?
+  archivedAt       DateTime?        @map("archived_at") @db.Timestamptz(6)
+  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  analysisCases AnalysisCase[]
+  profile       PersonProfile?
+
+  @@unique([userId, id])
+  @@index([userId, updatedAt])
+  @@index([userId, archivedAt])
+  @@map("persons")
+}
+
+model AnalysisCase {
+  id                       String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId                   String             @map("user_id") @db.Uuid
+  personId                 String             @map("person_id") @db.Uuid
+  status                   AnalysisCaseStatus @default(draft)
+  userAgeRange             String             @map("user_age_range") @db.VarChar(20)
+  userGender               String             @map("user_gender") @db.VarChar(20)
+  perceivedPartnerReaction String             @map("perceived_partner_reaction") @db.VarChar(30)
+  elapsedTimeType          String             @map("elapsed_time_type") @db.VarChar(30)
+  eventFacts               String             @map("event_facts")
+  userResponseType         String             @map("user_response_type") @db.VarChar(20)
+  userResponseText         String?            @map("user_response_text")
+  personSnapshot           Json               @map("person_snapshot") @db.JsonB
+  analyzeRunId             String?            @map("analyze_run_id") @db.Uuid
+  analyzeStartedAt         DateTime?          @map("analyze_started_at") @db.Timestamptz(6)
+  analyzeAttemptCount      Int                @default(0) @map("analyze_attempt_count")
+  lastAnalyzedAt           DateTime?          @map("last_analyzed_at") @db.Timestamptz(6)
+  failureCode              String?            @map("failure_code") @db.VarChar(100)
+  failureMessage           String?            @map("failure_message")
+  createdAt                DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  person    Person             @relation(fields: [userId, personId], references: [userId, id], onDelete: NoAction)
+  results   AnalysisResult[]
+  feedbacks AnalysisFeedback[]
+
+  @@unique([userId, id])
+  @@index([userId, createdAt])
+  @@index([userId, personId, createdAt])
+  @@index([userId, personId, status, createdAt])
+  @@index([userId, status])
+  @@map("analysis_cases")
+}
+
+model AnalysisResult {
+  id                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId               String   @map("user_id") @db.Uuid
+  analysisCaseId       String   @map("analysis_case_id") @db.Uuid
+  analyzeRunId         String   @map("analyze_run_id") @db.Uuid
+  version              Int
+  promptVersion        String   @map("prompt_version") @db.VarChar(50)
+  resultSchemaVersion  String   @map("result_schema_version") @db.VarChar(50)
+  model                String   @db.VarChar(100)
+  resultJson           Json     @map("result_json") @db.JsonB
+  personProfileId      String?  @map("person_profile_id") @db.Uuid
+  userPatternSummaryId String?  @map("user_pattern_summary_id") @db.Uuid
+  usedCaseIds          String[] @default([]) @map("used_case_ids") @db.Uuid
+  usedFeedbackIds      String[] @default([]) @map("used_feedback_ids") @db.Uuid
+  contextJson          Json?    @map("context_json") @db.JsonB
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  analysisCase AnalysisCase      @relation(fields: [userId, analysisCaseId], references: [userId, id], onDelete: Cascade)
+  feedback     AnalysisFeedback?
+
+  @@unique([userId, id])
+  @@unique([analysisCaseId, version])
+  @@unique([analysisCaseId, analyzeRunId])
+  @@index([userId, analysisCaseId, version(sort: Desc)])
+  @@map("analysis_results")
+}
+
+model AnalysisFeedback {
+  id                      String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId                  String   @map("user_id") @db.Uuid
+  analysisCaseId          String   @map("analysis_case_id") @db.Uuid
+  analysisResultId        String   @unique @map("analysis_result_id") @db.Uuid
+  actualOutcome           String?  @map("actual_outcome") @db.VarChar(50)
+  helpfulnessScore        Int?     @map("helpfulness_score")
+  overreadScore           Int?     @map("overread_score")
+  usedRecommendedAction   Boolean? @map("used_recommended_action")
+  outcomeNote             String?  @map("outcome_note")
+  allowPersonalizationUse Boolean  @default(false) @map("allow_personalization_use")
+  createdAt               DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt               DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  analysisCase   AnalysisCase   @relation(fields: [userId, analysisCaseId], references: [userId, id], onDelete: Cascade)
+  analysisResult AnalysisResult @relation(fields: [userId, analysisResultId], references: [userId, id], onDelete: Cascade)
+
+  @@unique([userId, analysisResultId])
+  @@index([userId, analysisCaseId])
+  @@map("analysis_feedbacks")
+}
+
+model PersonProfile {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId               String    @map("user_id") @db.Uuid
+  personId             String    @unique @map("person_id") @db.Uuid
+  profileSchemaVersion String    @map("profile_schema_version") @db.VarChar(50)
+  profileJson          Json      @map("profile_json") @db.JsonB
+  sourceCaseCount      Int       @default(0) @map("source_case_count")
+  sourceFeedbackCount  Int       @default(0) @map("source_feedback_count")
+  sourceLatestCaseId   String?   @map("source_latest_case_id") @db.Uuid
+  needsRefresh         Boolean   @default(false) @map("needs_refresh")
+  staleSince           DateTime? @map("stale_since") @db.Timestamptz(6)
+  generatedByModel     String?   @map("generated_by_model") @db.VarChar(100)
+  generatedAt          DateTime  @default(now()) @map("generated_at") @db.Timestamptz(6)
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  person Person @relation(fields: [userId, personId], references: [userId, id], onDelete: Cascade)
+
+  @@unique([userId, personId])
+  @@index([userId])
+  @@map("person_profiles")
+}
+
+model UserPatternSummary {
+  id                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId               String   @unique @map("user_id") @db.Uuid
+  summarySchemaVersion String   @map("summary_schema_version") @db.VarChar(50)
+  summaryJson          Json     @map("summary_json") @db.JsonB
+  sourceCaseCount      Int      @default(0) @map("source_case_count")
+  sourceFeedbackCount  Int      @default(0) @map("source_feedback_count")
+  generatedByModel     String?  @map("generated_by_model") @db.VarChar(100)
+  generatedAt          DateTime @default(now()) @map("generated_at") @db.Timestamptz(6)
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("user_pattern_summaries")
+}
+
+model UserPrivacySetting {
+  id                     String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId                 String   @unique @map("user_id") @db.Uuid
+  personalizationEnabled Boolean  @default(true) @map("personalization_enabled")
+  usePersonProfile       Boolean  @default(true) @map("use_person_profile")
+  useUserPatternSummary  Boolean  @default(false) @map("use_user_pattern_summary")
+  useFeedbackForContext  Boolean  @default(true) @map("use_feedback_for_context")
+  createdAt              DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("user_privacy_settings")
+}
+
+model UserConsentRecord {
+  id                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId               String   @map("user_id") @db.Uuid
+  termsVersion         String   @map("terms_version") @db.VarChar(50)
+  privacyPolicyVersion String   @map("privacy_policy_version") @db.VarChar(50)
+  consentedAt          DateTime @default(now()) @map("consented_at") @db.Timestamptz(6)
+  ipAddressHash        String?  @map("ip_address_hash") @db.VarChar(128)
+  userAgentHash        String?  @map("user_agent_hash") @db.VarChar(128)
+
+  @@index([userId, consentedAt])
+  @@map("user_consent_records")
+}
+
+model GuestTrialAttempt {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  trialTokenHash String    @unique @map("trial_token_hash") @db.VarChar(128)
+  ipHash         String?   @map("ip_hash") @db.VarChar(128)
+  userAgentHash  String?   @map("user_agent_hash") @db.VarChar(128)
+  deviceHintHash String?   @map("device_hint_hash") @db.VarChar(128)
+  status         String    @db.VarChar(20)
+  consumedAt     DateTime? @map("consumed_at") @db.Timestamptz(6)
+  blockedReason  String?   @map("blocked_reason") @db.VarChar(100)
+  expiresAt      DateTime  @map("expires_at") @db.Timestamptz(6)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  usageEvents ApiUsageEvent[]
+
+  @@index([status, expiresAt])
+  @@map("guest_trial_attempts")
+}
+
+model ApiUsageEvent {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId              String?  @map("user_id") @db.Uuid
+  guestTrialAttemptId String?  @map("guest_trial_attempt_id") @db.Uuid
+  routeKey            String   @map("route_key") @db.VarChar(100)
+  ipHash              String?  @map("ip_hash") @db.VarChar(128)
+  userAgentHash       String?  @map("user_agent_hash") @db.VarChar(128)
+  costUnits           Int      @map("cost_units")
+  status              String   @db.VarChar(30)
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  guestTrialAttempt GuestTrialAttempt? @relation(fields: [guestTrialAttemptId], references: [id], onDelete: SetNull)
+
+  @@index([routeKey, userId, createdAt])
+  @@index([routeKey, ipHash, createdAt])
+  @@index([routeKey, ipHash, userAgentHash, createdAt])
+  @@map("api_usage_events")
+}
+
+model RateLimitPolicy {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  policyKey     String   @unique @map("policy_key") @db.VarChar(100)
+  subjectType   String   @map("subject_type") @db.VarChar(30)
+  routeKey      String   @map("route_key") @db.VarChar(100)
+  windowType    String   @map("window_type") @db.VarChar(30)
+  windowSeconds Int?     @map("window_seconds")
+  resetTimezone String?  @map("reset_timezone") @db.VarChar(50)
+  maxRequests   Int?     @map("max_requests")
+  maxCostUnits  Int?     @map("max_cost_units")
+  planType      String?  @map("plan_type") @db.VarChar(30)
+  isEnabled     Boolean  @default(true) @map("is_enabled")
+  priority      Int      @default(100)
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([routeKey, isEnabled, priority])
+  @@map("rate_limit_policies")
+}

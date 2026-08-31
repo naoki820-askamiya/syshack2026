@@ -1,66 +1,32 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { ArrowLeft, Send, MessageSquare, PenLine, X, ChevronDown, AlertCircle, UserCheck } from 'lucide-react';
-import { ConsultationData, RelationType, Reaction, Timing } from '../types';
-import { createPerson, createAnalysisCase, analyze } from '../api/session';
+import type { ConsultationData, RelationType } from '../types';
+import { createPerson, createAnalysisCase, analyze } from '../api/sessionV17';
 import { saveConsultation, getConsultations } from '../utils/storage';
 import { getRelationStyle } from '../utils/relationStyles';
 import { Navigation } from '../components/Navigation';
-
-type ChatMessage = { sender: '自分' | '相手'; text: string };
-type ActionMode = 'text' | 'chat';
-type ChatPlatform = 'LINE' | 'other';
-
-const BUSINESS_RELATIONS: RelationType[] = ['上司', '同僚', '部下'];
-const PRIVATE_RELATIONS: RelationType[] = ['恋人', '配偶者', '友人', '家族', 'その他'];
-const REACTIONS: Reaction[] = [
-  '怒っていそう', '冷たい', '悲しそう', '不満そう',
-  'つまらなそう', '嫌そう', '嬉しそう', '楽しそう', '分からない', 'その他',
-];
-
-const REACTION_EMOJI: Record<Reaction, string> = {
-  '怒っていそう': '😡',
-  '冷たい':       '🥶',
-  '悲しそう':     '😢',
-  '不満そう':     '😤',
-  'つまらなそう': '😑',
-  '嫌そう':       '😒',
-  '嬉しそう':     '😊',
-  '楽しそう':     '😄',
-  '分からない':   '🤷',
-  'その他':       '✏️',
-};
-
-const EMPTY_FORM = {
-  personName: '',
-  relation: '上司' as RelationType,
-  relationOther: '',
-  event: '',
-  reaction: '怒っていそう' as Reaction,
-  reactionOther: '',
-  timing: '直後' as Timing,
-  userAction: '',
-  ageGroup: '20代',
-  gender: '回答しない',
-};
-
-/** personName ごとに最新の相談1件を返す */
-function getLatestByName(name: string): ConsultationData | undefined {
-  return getConsultations()
-    .filter(c => c.personName === name)
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
-}
-
-/** 名前ごとに最新1件にまとめた候補一覧 */
-function getPersonCandidates(): ConsultationData[] {
-  const map = new Map<string, ConsultationData>();
-  [...getConsultations()]
-    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-    .forEach(c => map.set(c.personName, c));
-  return Array.from(map.values()).sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
-}
+import {
+  findLatestConsultationByPersonName,
+  getLatestConsultationsByPerson,
+} from '../utils/consultationHistory';
+import {
+  AGE_GROUPS,
+  BUSINESS_RELATIONS,
+  EMPTY_CONSULTATION_FORM,
+  GENDERS,
+  PRIVATE_RELATIONS,
+  REACTIONS,
+  REACTION_EMOJI,
+  TIMINGS,
+  getConsultationFormErrors,
+  resolveReaction,
+  resolveRelation,
+  resolveUserAction,
+  type ActionMode,
+  type ChatMessage,
+  type ChatPlatform,
+} from './newConsultationModel';
 
 export function NewConsultation() {
   const navigate = useNavigate();
@@ -68,32 +34,31 @@ export function NewConsultation() {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
 
-  // ── URL パラメータ ?person=xxx から初期値を解決 ──
   const resolveInitialData = () => {
     const nameParam = searchParams.get('person');
     if (nameParam) {
-      const past = getLatestByName(nameParam);
+      const past = findLatestConsultationByPersonName(getConsultations(), nameParam);
       if (past) {
         return {
-          ...EMPTY_FORM,
+          ...EMPTY_CONSULTATION_FORM,
+          personId: past.personId ?? '',
           personName: past.personName,
           relation: past.relation as RelationType,
-          ageGroup: past.ageGroup ?? EMPTY_FORM.ageGroup,
-          gender: past.gender ?? EMPTY_FORM.gender,
+          ageGroup: past.ageGroup ?? EMPTY_CONSULTATION_FORM.ageGroup,
+          gender: past.gender ?? EMPTY_CONSULTATION_FORM.gender,
         };
       }
-      return { ...EMPTY_FORM, personName: nameParam };
+      return { ...EMPTY_CONSULTATION_FORM, personName: nameParam };
     }
-    return { ...EMPTY_FORM };
+    return { ...EMPTY_CONSULTATION_FORM };
   };
 
   const [formData, setFormData] = useState(resolveInitialData);
   const [prefilled, setPrefilled] = useState(() => {
     const name = searchParams.get('person');
-    return !!name && !!getLatestByName(name);
+    return !!name && !!findLatestConsultationByPersonName(getConsultations(), name);
   });
 
-  // チャット関連
   const [actionMode, setActionMode] = useState<ActionMode>('text');
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
@@ -104,24 +69,19 @@ export function NewConsultation() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [apiError, setApiError] = useState("");
 
-  // オートコンプリート
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestions, setSuggestions] = useState<ConsultationData[]>([]);
-
-  const timings: Timing[] = ['直後', '数時間後', '翌日', '数日後'];
-  const ageGroups = ['10代', '20代', '30代', '40代', '50代', '60代以上'];
-  const genders = ['男性', '女性', 'その他', '回答しない'];
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);
 
-  // ニックネーム変更 → オートコンプリート候補更新
   const handleNameChange = (value: string) => {
-    setFormData(prev => ({ ...prev, personName: value }));
+    // 手入力で名前を変えた場合、別人に以前のpersonIdを流用しない。
+    setFormData(prev => ({ ...prev, personId: '', personName: value }));
     setPrefilled(false);
     if (value.trim().length > 0) {
-      const matched = getPersonCandidates().filter(c =>
+      const matched = getLatestConsultationsByPerson(getConsultations()).filter(c =>
         c.personName.toLowerCase().includes(value.toLowerCase())
       );
       setSuggestions(matched);
@@ -132,10 +92,10 @@ export function NewConsultation() {
     }
   };
 
-  // 候補選択 → 自動入力
   const applyPerson = (person: ConsultationData) => {
     setFormData(prev => ({
       ...prev,
+      personId: person.personId ?? '',
       personName: person.personName,
       relation: person.relation as RelationType,
       ageGroup: person.ageGroup ?? prev.ageGroup,
@@ -157,21 +117,14 @@ export function NewConsultation() {
     setChatMessages(prev => prev.filter((_, i) => i !== index));
   };
 
-  const getChatSummary = () =>
-    chatMessages.map(m => `${m.sender}: ${m.text}`).join('\n');
+  const getErrors = () => getConsultationFormErrors(
+    formData,
+    actionMode,
+    chatPlatform,
+    chatMessages,
+    otherChatText,
+  );
 
-  const getErrors = () => ({
-    personName: !formData.personName.trim(),
-    event: !formData.event.trim(),
-    relationOther: formData.relation === 'その他' && !formData.relationOther.trim(),
-    reactionOther: formData.reaction === 'その他' && !formData.reactionOther.trim(),
-    userAction: actionMode === 'text' && !formData.userAction.trim(),
-    chatContent:
-      actionMode === 'chat' &&
-      (chatPlatform === 'LINE' ? chatMessages.length === 0 : !otherChatText.trim()),
-  });
-
-// フォーム送信・画面遷移
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitted(true);
@@ -179,49 +132,50 @@ export function NewConsultation() {
     const errors = getErrors();
     if (Object.values(errors).some(Boolean)) return;
 
-    const effectiveRelation = (formData.relation === 'その他' && formData.relationOther.trim()
-      ? formData.relationOther.trim()
-      : formData.relation) as RelationType;
+    const effectiveRelation = resolveRelation(formData);
+    const effectiveReaction = resolveReaction(formData);
+    const effectiveUserAction = resolveUserAction(
+      formData,
+      actionMode,
+      chatPlatform,
+      chatMessages,
+      otherChatText,
+    );
 
-    const effectiveReaction = (formData.reaction === 'その他' && formData.reactionOther.trim()
-      ? formData.reactionOther.trim()
-      : formData.reaction) as Reaction;
-
-    const effectiveUserAction = actionMode === 'chat'
-      ? (chatPlatform === 'LINE' ? getChatSummary() : otherChatText)
-      : formData.userAction;
-
-    // --- ここからAPI連携の実装 ---
     setIsAnalyzing(true);
     
     try {
-      // 1. 相手（Person）の作成+API呼び出し+保存
-      const personRes = await createPerson({
-        displayName: formData.personName,
-        relationshipType: effectiveRelation,
-        ageRange: formData.ageGroup,
-        genderHint: formData.gender,
-      });
-      const personId = personRes.person.id;
+      // 履歴から選んだ相手は所有中のPersonを再利用し、新規入力時だけ作成します。
+      let personId = formData.personId;
+      if (!personId) {
+        const personRes = await createPerson({
+          displayName: formData.personName,
+          relationshipType: effectiveRelation,
+        });
+        personId = personRes.person.id;
+      }
 
-      // 2. 相談ケース（AnalysisCase）の作成+API呼び出し+保存
       const caseRes = await createAnalysisCase({
         personId,
+        userAgeRange: formData.ageGroup,
+        userGender: formData.gender,
+        perceivedPartnerReaction: effectiveReaction,
+        elapsedTimeType: formData.timing,
         eventFacts: formData.event,
-        selfMessage: effectiveUserAction,
-        partnerMessage: effectiveReaction, // APIの必須項目に合わせてマッピング
-        assumedPartnerEmotion: effectiveReaction,
+        userResponseType: actionMode === 'text' ? 'action' : actionMode === 'chat' ? 'conversation' : 'none',
+        userResponseText: effectiveUserAction,
       });
       const caseId = caseRes.analysisCase.id;
 
-      // ローカルに相談内容を保存
+      // DBが正本であり、このキャッシュは直後の画面遷移を滑らかにする目的に限定します。
       const consultation: ConsultationData = {
         id: caseId,
+        personId,
         personName: formData.personName,
         relation: effectiveRelation,
         event: formData.event,
         reaction: effectiveReaction,
-        userAction: effectiveUserAction,
+        userAction: effectiveUserAction ?? '',
         timing: formData.timing,
         createdAt: new Date().toISOString(),
         ageGroup: formData.ageGroup,
@@ -229,15 +183,12 @@ export function NewConsultation() {
       };
       saveConsultation(consultation);
 
-      // 3. 分析の実行 (分析終了まで待機)
       await analyze(caseId);
 
-      // 4. 結果画面へ遷移
       navigate(`/analysis/${caseId}`);
 
-    } catch (err: any) {
-      console.error(err);
-      setApiError(err.message || "サーバーとの通信に失敗しました。時間をおいて再試行してください。");
+    } catch (error: unknown) {
+      setApiError(error instanceof Error ? error.message : "サーバーとの通信に失敗しました。時間をおいて再試行してください。");
     } finally {
       setIsAnalyzing(false);
     }
@@ -272,7 +223,6 @@ export function NewConsultation() {
       <Navigation />
 
       <div className="lg:ml-64 pb-24 lg:pb-8">
-        {/* ヘッダー */}
         <div className="bg-white border-b border-[#D9E1EA] p-4 lg:px-8 sticky top-0 z-10">
           <div className="max-w-4xl mx-auto flex items-center gap-3">
             <button onClick={() => navigate('/')} className="text-[#5B6573] hover:text-[#1F2A37]">
@@ -283,7 +233,6 @@ export function NewConsultation() {
         </div>
 
         <div className="max-w-4xl mx-auto p-4 lg:p-8">
-          {/* 自動入力バナー */}
           {prefilled && (
             <div className="mb-6 flex items-center gap-2 bg-[#E8F1F8] border border-[#D9E1EA] text-[#0F4C81] rounded-lg px-4 py-3 text-sm">
               <UserCheck className="w-4 h-4 flex-shrink-0" />
@@ -293,7 +242,6 @@ export function NewConsultation() {
             </div>
           )}
 
-          {/* 未入力エラーバナー */}
           {submitted && Object.values(errors).some(Boolean) && (
             <div className="mb-6 flex items-center gap-2 bg-red-50 border border-red-300 text-red-700 rounded-lg px-4 py-3 text-sm">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -304,10 +252,8 @@ export function NewConsultation() {
           <form onSubmit={handleSubmit} className="space-y-6 lg:space-y-8" noValidate>
             <div className="lg:grid lg:grid-cols-2 lg:gap-8 space-y-6 lg:space-y-0">
 
-              {/* ── 左カラム ── */}
               <div className="space-y-6">
 
-                {/* ① ニックネーム */}
                 <div>
                   <label className="block text-sm font-medium text-[#5B6573] mb-1">
                     ニックネーム<span className="text-red-500 ml-0.5">*</span>
@@ -326,7 +272,6 @@ export function NewConsultation() {
                       className={inputClass(errors.personName)}
                       placeholder="例：田中さん、彼女、友人A"
                     />
-                    {/* オートコンプリートドロップダウン */}
                     {showSuggestions && (
                       <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-[#D9E1EA] rounded-xl shadow-lg z-20 overflow-hidden">
                         <p className="px-3 pt-2 pb-1 text-[10px] text-[#8A94A6] font-semibold uppercase tracking-wide">
@@ -364,7 +309,6 @@ export function NewConsultation() {
                   )}
                 </div>
 
-                {/* ② 年代・性別 */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-[#5B6573] mb-2">
@@ -376,7 +320,7 @@ export function NewConsultation() {
                         onChange={(e) => setFormData({ ...formData, ageGroup: e.target.value })}
                         className={`${inputClass()} appearance-none pr-10 cursor-pointer`}
                       >
-                        {ageGroups.map((age) => (
+                        {AGE_GROUPS.map((age) => (
                           <option key={age} value={age}>{age}</option>
                         ))}
                       </select>
@@ -393,7 +337,7 @@ export function NewConsultation() {
                         onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
                         className={`${inputClass()} appearance-none pr-10 cursor-pointer`}
                       >
-                        {genders.map((g) => (
+                        {GENDERS.map((g) => (
                           <option key={g} value={g}>{g}</option>
                         ))}
                       </select>
@@ -402,7 +346,6 @@ export function NewConsultation() {
                   </div>
                 </div>
 
-                {/* ③ 相手との関係 */}
                 <div>
                   <label className="block text-sm font-medium text-[#5B6573] mb-2">
                     相手との関係<span className="text-red-500 ml-0.5">*</span>
@@ -447,7 +390,6 @@ export function NewConsultation() {
                   )}
                 </div>
 
-                {/* ④ 起きた出来事 */}
                 <div>
                   <label className="block text-sm font-medium text-[#5B6573] mb-2">
                     起きた出来事<span className="text-red-500 ml-0.5">*</span>
@@ -467,10 +409,8 @@ export function NewConsultation() {
                 </div>
               </div>
 
-              {/* ── 右カラム ── */}
               <div className="space-y-6">
 
-                {/* ⑤ 相手の反応 */}
                 <div>
                   <label className="block text-sm font-medium text-[#5B6573] mb-2">
                     相手の反応<span className="text-red-500 ml-0.5">*</span>
@@ -508,13 +448,12 @@ export function NewConsultation() {
                   )}
                 </div>
 
-                {/* ⑥ 出来事からの経過時間 */}
                 <div>
                   <label className="block text-sm font-medium text-[#5B6573] mb-2">
                     出来事からの経過時間<span className="text-red-500 ml-0.5">*</span>
                   </label>
                   <div className="grid grid-cols-4 lg:grid-cols-2 gap-2">
-                    {timings.map((timing) => (
+                    {TIMINGS.map((timing) => (
                       <button
                         key={timing}
                         type="button"
@@ -529,13 +468,11 @@ export function NewConsultation() {
                   </div>
                 </div>
 
-                {/* ⑦ 自分の行動 */}
                 <div>
                   <label className="block text-sm font-medium text-[#5B6573] mb-2">
                     自分の行動（その後どうしたか）<span className="text-red-500 ml-0.5">*</span>
                   </label>
 
-                  {/* 入力モード切替 */}
                   <div className="flex gap-2 mb-3">
                     <button
                       type="button"
@@ -557,9 +494,15 @@ export function NewConsultation() {
                       <MessageSquare className="w-4 h-4" />
                       会話を入力
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => setActionMode('none')}
+                      className={'flex-1 py-2.5 px-2 rounded-lg border-2 text-sm transition-colors ' + (actionMode === 'none' ? selectedBtn : unselectedBtn)}
+                    >
+                      何もしていない
+                    </button>
                   </div>
 
-                  {/* テキスト入力モード */}
                   {actionMode === 'text' && (
                     <>
                       <textarea
@@ -577,7 +520,6 @@ export function NewConsultation() {
                     </>
                   )}
 
-                  {/* チャット形式モード */}
                   {actionMode === 'chat' && (
                     <div className="space-y-3">
                       <div className="flex gap-2">
@@ -725,7 +667,6 @@ export function NewConsultation() {
               </div>
             </div>
 
-            {/* APIエラー時の表示 */}
             {apiError && (
               <div className="mb-6 flex items-center gap-2 bg-red-50 border border-red-300 text-red-700 rounded-lg px-4 py-3 text-sm">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -733,7 +674,6 @@ export function NewConsultation() {
               </div>
             )}
 
-            {/* 送信ボタン */}
             <button
               type="submit"
               disabled={isAnalyzing}

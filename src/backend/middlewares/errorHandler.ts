@@ -1,13 +1,3 @@
-/**
- * このファイルは共通エラーハンドリング用の middleware です。
- *
- * 役割:
- * - 途中で起きたエラーを最後にまとめて受け取る
- * - API の返却形式をそろえる
- *
- * ここがあることで、どの場所でエラーが起きても
- * クライアント側は同じ形の JSON を受け取れます。
- */
 import type {
     ErrorRequestHandler,
     NextFunction,
@@ -16,18 +6,21 @@ import type {
 } from "express";
 import { normalizeError, toErrorResponse } from "../utils/index.js";
 
-// どの層で起きたエラーでも、最後は同じ JSON 形式で返すための middleware です。
-// 返却形式をここで統一しておくと、AI 層・service 層・middleware 層で投げ方が違っても、
-// クライアント側は常に { error: { code, message, status } } を前提に扱えます。
 export const errorHandler: ErrorRequestHandler = (
     error: unknown,
     _req: Request,
     res: Response,
     _next: NextFunction,
 ): unknown => {
-    // まず、どんな種類の error でも扱いやすい共通 shape にそろえます。
     const normalized = normalizeError(error);
     const body = toErrorResponse(normalized);
 
-    return res.status(normalized.status).json(body);
+    // 内部例外を公開せず、サーバーログと利用者の問い合わせをrequestIdで対応付けます。
+    return res.status(normalized.status).json({
+        ...body,
+        error: {
+            ...body.error,
+            requestId: String(res.locals.requestId ?? ""),
+        },
+    });
 };
