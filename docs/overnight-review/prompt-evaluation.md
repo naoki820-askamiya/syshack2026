@@ -50,9 +50,9 @@ No second or third mutation was made. No runtime instruction modification.
 | --- | --- | --- | --- |
 | currentCase | Summary, evidence, scores, alternatives, next actions | User account; not verified observation | Up to 3,000 chars each for event and response; current case editable contract is limited; potential injection. |
 | personSnapshot | Relationship interpretation | Frozen user-provided snapshot | Small name/relationship; avoids later Person edits rewriting historical context; no independent confirmation. |
-| personProfile | usual/current comparison | AI summary; B03 records ID/model source metadata and ignores explicit stale/unknown-source profile | JSON size not newly capped; duplication and inherited consent require review; usePersonProfile gate. |
+| personProfile | usual/current comparison | AI summary; B03 records ID/date/kind; checks model metadata for eligibility and ignores explicit stale/unknown-source profile | JSON size not newly capped; duplication and inherited consent require review; usePersonProfile gate. |
 | recentCaseSummaries | Continuity / comparison | Up to 3 prior AI summaries with result ID/date metadata | 500 chars each; model inference may be mistaken; source kinds do not certify each sentence. |
-| recentFeedbacks | Correction / usual interpretation | User feedback with ID/date; not an objective label | Up to 3 x 1,000 chars; item consent AND global toggle; revocation excludes next input but retained old snapshot is separate. |
+| recentFeedbacks | Correction / usual interpretation | User feedback with ID/kind; generatedAt=null; not an objective label | Up to 3 x 1,000 chars; item consent AND global toggle; revocation excludes next input but retained old snapshot is separate. |
 | userPatternSummary | Unimplemented | Always null | No AI input benefit; A06 removes misleading available toggle. |
 
 Provenance context version v5 is additive, not a provider/model migration. Unknown
@@ -68,7 +68,7 @@ source-chain withdrawal and user correction.
 | summary | One-line orientation | 20–180 chars; content safety needed | Candidate first; retain. |
 | evidence + unknowns | Reasons for/against concern and missing information | Source enum is checked; actual support requires human review | Candidate early; unknowns is nested, not a new top-level key. |
 | alternatives | Multiple plausible explanations | Up to 4; no deterministic truth oracle | Early candidate; retain. |
-| emotionScoreAnalysis + confidence | Six fixed evidence-strength scores/reasons | Most output text; contradictions still possible | After evidence; no probability claim. |
+| emotionScoreAnalysis + confidence | Six fixed evidence-strength scores/reasons | Six bounded reasons add output text; contradictions still possible | After evidence; no probability claim. |
 | textImpression / situationReading | Text vs situation interpretation; both displayed | Overlap possible but not proven redundant | Retain for legacy/UI continuity. |
 | cognitiveReframe | Balanced interpretation and possible bias | Blame/diagnosis semantics require review | Not safe to expose unvalidated partial advice. |
 | usualVsCurrent | Optional history-based comparison | Source-kind normalization; no-history arrays cleared | Requires provenance and consent. |
