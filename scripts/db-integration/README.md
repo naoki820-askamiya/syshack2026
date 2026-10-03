@@ -27,7 +27,8 @@ releasing the gate; both operations use the unchanged production repository.
 
 Covered behavior: user ownership/composite foreign key, concurrent case start, stale result/failure
 rejection, version uniqueness/latest order, result-write rollback, quota concurrency, and Feedback
-POST/PATCH rollback with a synthetic failing profile trigger followed by successful retry.
+POST/PATCH rollback with a synthetic failing profile trigger followed by successful retry,
+revoked-Feedback exclusion from the next context, and explicit stale-run recovery identity/concurrency.
 Every fixture is synthetic. No user consultation contents or credentials are logged.
 
 Cleanup verifies the created container ID and run label before removal. Normal failure and handled

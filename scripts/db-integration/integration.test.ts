@@ -267,3 +267,41 @@ test('Feedback API rolls back real writes and retry succeeds after auxiliary fai
   }
 });
 
+
+test('stale recovery locks the exact owned run and old responses cannot overwrite a replacement', { timeout: 15_000 }, async () => {
+  const analysisCase = await createCase();
+  const oldRun = await repository.startAnalysis(USER_A, analysisCase.id);
+  if (oldRun.kind !== 'started') throw new Error('No stale fixture run.');
+  const syntheticStart = new Date('2020-01-01T00:00:00Z');
+  const syntheticCutoff = new Date('2021-01-01T00:00:00Z');
+  await prisma.analysisCase.update({ where: { id: analysisCase.id }, data: { analyzeStartedAt: syntheticStart } });
+  const recovery = { userId: USER_A, caseId: analysisCase.id, analyzeRunId: oldRun.analyzeRunId, cutoff: syntheticCutoff };
+  assert.equal((await repository.recoverStaleAnalysis({ ...recovery, userId: USER_B })).count, 0);
+  assert.equal((await repository.recoverStaleAnalysis({ ...recovery, cutoff: syntheticStart })).count, 0);
+  const results = await concurrentlyBehindLock('analysis-case:' + analysisCase.id, [
+    () => repository.recoverStaleAnalysis(recovery),
+    () => repository.recoverStaleAnalysis(recovery),
+  ]);
+  assert.ok(results.every(result => result.status === 'fulfilled'));
+  assert.deepEqual(results.map(result => (result as PromiseFulfilledResult<{ count: number }>).value.count).sort(), [0, 1]);
+  const recovered = await repository.findOwnedCase(USER_A, analysisCase.id);
+  assert.equal(recovered?.status, 'failed');
+  assert.equal(recovered?.failureCode, 'ANALYSIS_STALE');
+  assert.equal(recovered?.analyzeRunId, oldRun.analyzeRunId);
+  assert.equal(await repository.completeAnalysis(completion(analysisCase.id, oldRun.analyzeRunId)), null);
+  const newRun = await repository.startAnalysis(USER_A, analysisCase.id);
+  if (newRun.kind !== 'started') throw new Error('No replacement after recovery.');
+  assert.notEqual(newRun.analyzeRunId, oldRun.analyzeRunId);
+  // Make the replacement equally old to isolate run identity from timestamp protection.
+  await prisma.analysisCase.update({ where: { id: analysisCase.id }, data: { analyzeStartedAt: syntheticStart } });
+  assert.equal((await repository.recoverStaleAnalysis(recovery)).count, 0);
+  assert.equal((await repository.findOwnedCase(USER_A, analysisCase.id))?.status, 'analyzing');
+  assert.equal((await repository.findOwnedCase(USER_A, analysisCase.id))?.analyzeRunId, newRun.analyzeRunId);
+  assert.equal(await repository.completeAnalysis(completion(analysisCase.id, oldRun.analyzeRunId)), null);
+  assert.equal((await repository.failAnalysis({ userId: USER_A, caseId: analysisCase.id,
+    analyzeRunId: oldRun.analyzeRunId, failureCode: 'SYNTHETIC', failureMessage: 'Old fixture failure.' })).count, 0);
+  assert.equal((await repository.completeAnalysis(completion(analysisCase.id, newRun.analyzeRunId)))?.version, 1);
+  assert.equal((await repository.recoverStaleAnalysis({ ...recovery, analyzeRunId: newRun.analyzeRunId })).count, 0);
+  assert.equal((await repository.findOwnedCase(USER_A, analysisCase.id))?.status, 'analyzed');
+  assert.equal(await prisma.analysisResult.count({ where: { analysisCaseId: analysisCase.id } }), 1);
+});

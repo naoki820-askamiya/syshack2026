@@ -1,7 +1,7 @@
 # B05 Local PostgreSQL Integration Results
 
 Date: 2026-10-04 JST.
-Status: implemented and run; independent/skeptical review pending before commit.
+Status: B05 reviewed and committed as `f3f620b`; B02 recovery extension verified, root and backend reviews approved.
 Application base: `406fc8581a471cedfe4a030845c820b03a4c4f2f`.
 Successful application revision during run: `4213a0ffa04dc03ada38d296f1642d87a34f4e4c`
 plus concurrent uncommitted improvements in the isolated worktree.
@@ -19,7 +19,9 @@ Production/shared DB access, paid API calls, real user data and migration deploy
 ## Verified result
 
 `node --test scripts/db-integration/safety.test.mjs`: 1 passed, 0 failed.
-`node scripts/db-integration/run.mjs`: 6 passed, 0 failed, 0 skipped (final rerun test duration 3364 ms).
+
+`node scripts/db-integration/run.mjs`: latest rerun 7 passed, 0 failed, 0 skipped (test duration 2901 ms).
+B02 implementation was frozen at `94aca4e`; successful-run test blob: `9a956c24a78b1e1fb7c95ee7c54a53bfa4b902dd`.
 Docker label-filter inventory after completion returned no remaining harness containers.
 
 | Scenario | Actual PostgreSQL evidence |
@@ -30,7 +32,9 @@ Docker label-filter inventory after completion returned no remaining harness con
 | Version / rollback | Empty prompt violates DB check; case remains analyzing with result count 0. Valid retry succeeds. Duplicate case/version rejects P2002. Version 2 is latest even with a 2020 timestamp. |
 | Quota concurrency | Two different cases wait on the real policy lock; one starts, the other is AI_RATE_LIMITED; one reservation and one unchanged draft/attempt 0. |
 | Feedback transaction | DB trigger fails profile update: POST returns safe 500 and Feedback count = 0; removal of failure permits retry 201. PATCH failure preserves note/consent; successful withdrawal marks profile stale even when privacy is OFF; re-enabling global personalization/Feedback while Profile is OFF still excludes revoked Feedback from next real AI context and usedFeedbackIds. |
+| B02 explicit recovery | Wrong owner/equal timestamp do not recover; two real locked connections recover the same run exactly once. Old completion is rejected; replacement made equally old stays analyzing against old run recovery/failure; current result alone saves version 1, and analyzed state cannot be recovered. Synthetic 2020/2021 dates are fixtures, not a product threshold. |
 
+The previous six-scenario run completed in 3364 ms before the recovery extension.
 An initial harness run had 5 passes/1 failing observation: joining pg_locks with
 transaction-cached pg_stat_activity missed a newly created connection. The observation was
 corrected to use live pg_locks and database OID; the two-connection assertion was preserved.
