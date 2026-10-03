@@ -9,7 +9,7 @@ const MINOR_REPLACEMENTS: ReadonlyArray<[RegExp, string]> = [
     [/相手はあなたを嫌っています/g, "相手が距離を置いている可能性もあります"],
 ];
 
-const UNSAFE_PATTERNS = [
+const UNSAFE_ASSERTION_PATTERNS = [
     /絶対に.{0,12}(怒|嫌)/u,
     /間違いなく.{0,12}(嫌|怒)/u,
     /あなたは認知が歪んで/u,
@@ -17,7 +17,6 @@ const UNSAFE_PATTERNS = [
     /嫌われ度/u,
     /脈なし度/u,
     /危険度/u,
-    /(殴る|蹴る|脅す|晒す|仕返し|復讐|追い詰める)/u,
     /(うつ病|人格障害|サイコパス).{0,12}(です|だ|確定)/u,
 ] as const;
 
@@ -54,10 +53,7 @@ export function validateAiOutput(
         ? normalizeReferenceComparison(parsed.data, referenceContext)
         : parsed.data;
 
-    const serialized = JSON.stringify(validated);
-    if (UNSAFE_PATTERNS.some((pattern) => pattern.test(serialized))) {
-        throw new AiOutputValidationError("unsafe", "AI出力に禁止表現が含まれています。");
-    }
+    validateFieldSafety(validated);
 
     validateConcernScore("anger", validated);
     validateConcernScore("coldness", validated);
@@ -72,6 +68,55 @@ export function validateAiOutput(
     }
 
     return validated;
+}
+
+// These field/phrase checks cover known regressions, not a complete Japanese safety policy.
+const AGGRESSIVE_ACTION_PATTERN = /(殴(?:る|って|り|れ)|蹴(?:る|って|り|れ)|脅(?:す|して|し|せ)|晒(?:す|して|し|せ)|仕返し|復讐|追い詰め(?:る|て|ろ))/gu;
+const DIRECT_INSTRUCTION_PATTERN = /(ましょう|してください|しよう|べき|おすすめ|お勧め|しなさい|してよい|してもよい|必要があります)/u;
+
+function validateFieldSafety(result: KigenAnalysisResultV2): void {
+    visitStrings(result, [], (text, path) => {
+        const field = path.join(".");
+        const assertionText = maskDiscussedQuotes(text);
+        if (UNSAFE_ASSERTION_PATTERNS.some(pattern => pattern.test(assertionText))) {
+            rejectUnsafeField(field);
+        }
+
+        const avoidedLabel = path[0] === "avoidActions" && path[2] === "label";
+        for (const match of text.matchAll(AGGRESSIVE_ACTION_PATTERN)) {
+            const end = match.index! + match[0].length;
+            if (isExplicitAvoidance(text.slice(end))) continue;
+            // An avoidActions label names what to avoid; it must not explicitly urge the action.
+            if (avoidedLabel && !DIRECT_INSTRUCTION_PATTERN.test(text)) continue;
+            // Preserve the existing deny behavior outside the specific avoided/negated cases.
+            rejectUnsafeField(field);
+        }
+    });
+}
+
+function rejectUnsafeField(field: string): never {
+    throw new AiOutputValidationError(
+        "unsafe", "AI出力に禁止表現または危険な直接指示が含まれています。", { field },
+    );
+}
+
+function visitStrings(value: unknown, path: string[], visit: (text: string, path: string[]) => void): void {
+    if (typeof value === "string") { visit(value, path); return; }
+    if (!value || typeof value !== "object") return;
+    for (const [key, child] of Object.entries(value)) visitStrings(child, [...path, key], visit);
+}
+
+function isExplicitAvoidance(suffix: string): boolean {
+    // Only complete affirmative avoidance endings are allowed. Unknown continuations stay denied.
+    return /^(?:こと|の)?(?:は|を)?(?:避ける|避けましょう|控える|控えましょう|やめる|やめましょう|しない|ない)[。.!！？?]?\s*$/u.test(suffix);
+}
+
+function maskDiscussedQuotes(text: string): string {
+    return text.replace(/[「『]([^」』]*)[」』]/gu, (quote, _content: string, offset: number) => {
+        const suffix = text.slice(offset + quote.length);
+        const explicitDisclaimer = /^と(?:は(?:言え|断定でき)ません|断定(?:する)?(?:ことは)?(?:できません|しません)|決めつけ(?:る)?(?:ことは)?(?:できません|ません))/u.test(suffix);
+        return explicitDisclaimer ? "引用内容" : quote;
+    });
 }
 
 function getAvailableSources(referenceContext: ReferenceContext): Set<string> {
