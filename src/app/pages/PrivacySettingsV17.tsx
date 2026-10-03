@@ -81,13 +81,9 @@ export function PrivacySettingsV17() {
                 disabled={loading || saving || !settings.personalizationEnabled}
                 onChange={(checked) => setSettings((current) => (current ? { ...current, useFeedbackForContext: checked } : current))}
               />
-              <Toggle
-                label="自分全体の傾向要約を利用する"
-                description="MVPでは既定でOFFです。"
-                checked={settings.useUserPatternSummary}
-                disabled={loading || saving || !settings.personalizationEnabled}
-                onChange={(checked) => setSettings((current) => (current ? { ...current, useUserPatternSummary: checked } : current))}
-              />
+              <div className="rounded-xl border border-[#D9E1EA] bg-[#F7F9FC] p-4 text-sm text-[#5B6573]">
+                自分全体の傾向要約は、現在の分析には利用しません。
+              </div>
             </div>}
           </section>
           {message && <p role="status" className="rounded-xl border border-[#D9E1EA] bg-white p-3 text-sm text-[#5B6573]">{message}</p>}

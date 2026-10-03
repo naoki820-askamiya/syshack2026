@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
-import { MessageCircle, History, ChevronRight, ChevronDown, House, LogIn, LogOut, UserPlus } from 'lucide-react';
+import { MessageCircle, History, ChevronRight, ChevronDown, House, LogIn, LogOut, UserPlus, Settings } from 'lucide-react';
 import { getCacheRevision, getConsultations, subscribeCache } from '../utils/storage';
 import { getRelationStyle } from '../utils/relationStyles';
 import { useAuth } from '../auth/AuthContext';
@@ -31,6 +31,7 @@ export function Navigation() {
   const sideNavItems = [
     { path: '/new', icon: MessageCircle, label: '新しい相談を作成' },
     { path: '/history', icon: History, label: '履歴' },
+    { path: '/privacy-settings', icon: Settings, label: 'プライバシー設定' },
   ];
   const guestSideNavItems = [
     { path: '/login', icon: LogIn, label: 'ログイン' },
@@ -41,6 +42,7 @@ export function Navigation() {
     { path: '/', icon: House, label: 'ホーム' },
     { path: '/new', icon: MessageCircle, label: '新しい相談を作成' },
     { path: '/history', icon: History, label: '履歴' },
+    { path: '/privacy-settings', icon: Settings, label: '設定' },
   ];
   const guestBottomNavItems = [
     { path: '/', icon: House, label: 'ホーム' },
@@ -50,7 +52,7 @@ export function Navigation() {
 
   return (
     <>
-      <nav className="hidden lg:flex lg:fixed lg:left-0 lg:top-0 lg:h-screen lg:w-64 lg:flex-col lg:bg-white lg:border-r lg:border-[#D9E1EA] lg:z-50">
+      <nav aria-label="メインナビゲーション" className="hidden lg:flex lg:fixed lg:left-0 lg:top-0 lg:h-screen lg:w-64 lg:flex-col lg:bg-white lg:border-r lg:border-[#D9E1EA] lg:z-50">
         <div className="flex items-center justify-center h-32 border-b border-[#D9E1EA] bg-[#F7F9FC]">
           <Link to="/">
             <img src="/kigen404_title_b_transparent.png" alt="KIGEN404" className="h-20" />
@@ -84,6 +86,8 @@ export function Navigation() {
               <Link
                 key={item.path}
                 to={item.path}
+                aria-label={item.path === '/privacy-settings' ? 'プライバシー設定' : item.label}
+                aria-current={isActive ? 'page' : undefined}
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                   isActive
                     ? 'bg-[#0F4C81] text-white'
@@ -159,7 +163,7 @@ export function Navigation() {
         </div>
       </nav>
 
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[#D9E1EA] p-4 z-50">
+      <nav aria-label="モバイルナビゲーション" className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[#D9E1EA] p-4 z-50">
         <div className="max-w-2xl mx-auto flex justify-around">
           {(user ? bottomNavItems : guestBottomNavItems).map((item) => {
             const Icon = item.icon;
@@ -168,6 +172,8 @@ export function Navigation() {
               <Link
                 key={item.path}
                 to={item.path}
+                aria-label={item.path === '/privacy-settings' ? 'プライバシー設定' : item.label}
+                aria-current={isActive ? 'page' : undefined}
                 className={`flex flex-col items-center gap-1 transition-colors ${
                   isActive ? 'text-[#0F4C81]' : 'text-[#8A94A6] hover:text-[#5B6573]'
                 }`}
