@@ -343,3 +343,28 @@ test("another user's resultId returns 404", async (t) => {
     assert.equal(feedback.status, 404);
     assert.equal(findResult.mock.callCount(), 1);
 });
+
+test("Feedback API preserves the 500, 501, and 1000 character contract", async (t) => {
+    authenticateAs(t);
+    replaceMethod(t, prisma.analysisResult, "findFirst", async () => ({
+        id: RESULT_ID, analysisCaseId: CASE_ID, analysisCase: { personId: PERSON_ID },
+    }));
+    replaceMethod(t, prisma.userPrivacySetting, "findUnique", async () => null);
+    const create = replaceMethod(t, prisma.analysisFeedback, "create", async (args) => ({
+        id: "88888888-8888-4888-8888-888888888888", allowPersonalizationUse: false, ...args.data,
+    }));
+    for (const length of [500, 501, 1000]) {
+        const outcomeNote = "記".repeat(length);
+        const response = await request("/api/analysis-results/" + RESULT_ID + "/feedback", authorizedJson("POST", {
+            outcomeNote, allowPersonalizationUse: false,
+        }));
+        assert.equal(response.status, 201);
+        assert.equal((response.body.feedback as { outcomeNote: string }).outcomeNote, outcomeNote);
+    }
+    const tooLong = await request("/api/analysis-results/" + RESULT_ID + "/feedback", authorizedJson("POST", {
+        outcomeNote: "記".repeat(1001),
+    }));
+    assert.equal(tooLong.status, 400);
+    assert.equal(create.mock.callCount(), 3);
+});
+

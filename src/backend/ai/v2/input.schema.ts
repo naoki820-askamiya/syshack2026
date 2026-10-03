@@ -51,7 +51,7 @@ const recentFeedbackSchema = z
         feedbackId: z.string().uuid(),
         actualOutcome: z.string().trim().max(50).nullable(),
         overreadScore: z.number().int().min(1).max(5).nullable(),
-        outcomeNote: z.string().trim().max(500).nullable(),
+        outcomeNote: z.string().trim().max(1000).nullable(),
     })
     .strict();
 
@@ -80,3 +80,4 @@ export type AiCurrentCase = z.infer<typeof aiCurrentCaseSchema>;
 export type AiPersonContext = z.infer<typeof aiPersonContextSchema>;
 export type ReferenceContext = z.infer<typeof referenceContextSchema>;
 export type AiAnalysisInput = z.infer<typeof aiAnalysisInputSchema>;
+
