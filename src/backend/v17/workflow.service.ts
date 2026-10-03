@@ -26,78 +26,122 @@ export async function getAnalysisCase(userId: string, caseId: string) {
     return { analysisCase };
 }
 
-export async function analyzeCase(userId: string, caseId: string) {
-    const started = await repository.startAnalysis(userId, caseId);
-    if (started.kind === "not_found") throw resourceNotFound();
-    if (started.kind === "analyzing") {
-        throw conflict("CASE_ALREADY_ANALYZING", "この相談は現在分析中です。");
-    }
-    if (started.kind === "analyzed") {
-        throw conflict("CASE_ALREADY_ANALYZED", "この相談はすでに分析済みです。");
-    }
-
+export async function analyzeCase(
+    userId: string,
+    caseId: string,
+    options: { requestId?: string; generate?: typeof analyzeMoodV2 } = {},
+) {
+    const totalStartedAt = performance.now();
+    const duration: Record<string, number | null> = {
+        db_start_ms: null, db_context_ms: null, ai_generation_ms: null, db_save_ms: null,
+        // Non-streaming generation combines prompt/provider/validation; these are not separately observed.
+        prompt_build_ms: null, provider_first_event_ms: null, provider_complete_ms: null, validation_ms: null,
+        total_analysis_ms: null,
+    };
+    const counts = { recentCases: 0, feedbacks: 0, personProfiles: 0 };
+    let stage = "db_start";
+    let runId: string | null = null;
+    let model: string | null = null;
     let actualAttempts = 0;
+    let status = "failed";
+    let failureCode: string | null = null;
     try {
-        const context = await buildAiContext(userId, caseId);
-        if (!context) throw resourceNotFound();
-
-        const generated = await analyzeMoodV2(context.aiInput);
-        actualAttempts = generated.attempts;
-        const saved = await repository.completeAnalysis({
-            userId,
-            caseId,
-            analyzeRunId: started.analyzeRunId,
-            promptVersion: PROMPT_VERSION,
-            resultSchemaVersion: RESULT_SCHEMA_VERSION,
-            model: generated.model,
-            result: generated.analysis,
-            context: context.contextSnapshot,
-            usedCaseIds: context.usedCaseIds,
-            usedFeedbackIds: context.usedFeedbackIds,
-            personProfileId: context.personProfileId,
-            userPatternSummaryId: context.userPatternSummaryId,
+        const startAt = performance.now();
+        const started = await repository.startAnalysis(userId, caseId).finally(() => {
+            duration.db_start_ms = elapsedMs(startAt);
         });
+        if (started.kind === "not_found") throw resourceNotFound();
+        if (started.kind === "analyzing") throw conflict("CASE_ALREADY_ANALYZING", "この相談は現在分析中です。");
+        if (started.kind === "analyzed") throw conflict("CASE_ALREADY_ANALYZED", "この相談はすでに分析済みです。");
+        runId = started.analyzeRunId;
 
-        if (!saved) {
-            // run idが更新済みなら、遅れて返ったAI結果は現在のcaseを変更できません。
-            throw new AppError({
-                code: "ANALYSIS_STALE",
-                message: "分析状態が更新されたため、古い結果は保存されませんでした。",
-                status: 409,
+        try {
+            stage = "db_context";
+            const contextAt = performance.now();
+            const context = await buildAiContext(userId, caseId).finally(() => {
+                duration.db_context_ms = elapsedMs(contextAt);
             });
+            if (!context) throw resourceNotFound();
+            counts.recentCases = context.usedCaseIds.length;
+            counts.feedbacks = context.usedFeedbackIds.length;
+            counts.personProfiles = context.personProfileId ? 1 : 0;
+
+            stage = "ai_generation";
+            const generationAt = performance.now();
+            const generated = await (options.generate ?? analyzeMoodV2)(context.aiInput).finally(() => {
+                duration.ai_generation_ms = elapsedMs(generationAt);
+            });
+            actualAttempts = generated.attempts;
+            model = generated.model;
+            stage = "db_save";
+            const saveAt = performance.now();
+            const saved = await repository.completeAnalysis({
+                userId, caseId, analyzeRunId: started.analyzeRunId,
+                promptVersion: PROMPT_VERSION, resultSchemaVersion: RESULT_SCHEMA_VERSION,
+                model: generated.model, result: generated.analysis,
+                context: context.contextSnapshot, usedCaseIds: context.usedCaseIds,
+                usedFeedbackIds: context.usedFeedbackIds, personProfileId: context.personProfileId,
+                userPatternSummaryId: context.userPatternSummaryId,
+            }).finally(() => { duration.db_save_ms = elapsedMs(saveAt); });
+            if (!saved) {
+                throw new AppError({
+                    code: "ANALYSIS_STALE",
+                    message: "分析状態が更新されたため、古い結果は保存されませんでした。", status: 409,
+                });
+            }
+
+            stage = "usage_settlement";
+            await settleUsageOrLog(started.usageEventId, "succeeded", actualAttempts);
+            status = "succeeded";
+            return {
+                status: "analyzed",
+                result: {
+                    id: saved.id, analysisCaseId: caseId, version: saved.version,
+                    promptVersion: PROMPT_VERSION, resultSchemaVersion: RESULT_SCHEMA_VERSION,
+                    model: generated.model, generatedAt: saved.created_at.toISOString(), analysis: generated.analysis,
+                },
+            };
+        } catch (error) {
+            if (error instanceof AnalyzeMoodV2Error) actualAttempts = error.attempts;
+            const normalized = normalizeAnalysisError(error);
+            // Compensation and usage settlement stay independent; rejected state recovery is observable.
+            const compensation = await Promise.allSettled([
+                repository.failAnalysis({
+                    userId, caseId, analyzeRunId: started.analyzeRunId,
+                    failureCode: normalized.code, failureMessage: normalized.message,
+                }),
+                settleUsageOrLog(started.usageEventId, "failed", actualAttempts),
+            ]);
+            if (compensation[0].status === "rejected") {
+                safeWorkflowLog("error", "analysis_compensation_required", {
+                    caseId, runId, usageEventId: started.usageEventId, errorStage: "state_compensation",
+                    errorName: compensation[0].reason instanceof Error ? compensation[0].reason.constructor.name : "UnknownError",
+                });
+            }
+            throw normalized;
         }
-
-        await settleUsageOrLog(started.usageEventId, "succeeded", actualAttempts);
-        return {
-            status: "analyzed",
-            result: {
-                id: saved.id,
-                analysisCaseId: caseId,
-                version: saved.version,
-                promptVersion: PROMPT_VERSION,
-                resultSchemaVersion: RESULT_SCHEMA_VERSION,
-                model: generated.model,
-                generatedAt: saved.created_at.toISOString(),
-                analysis: generated.analysis,
-            },
-        };
     } catch (error) {
-        if (error instanceof AnalyzeMoodV2Error) actualAttempts = error.attempts;
-        const normalized = normalizeAnalysisError(error);
-
-        // case状態の復旧と利用量精算は、一方の失敗で他方を中断しないよう独立して試みます。
-        await Promise.allSettled([
-            repository.failAnalysis({
-                userId,
-                caseId,
-                analyzeRunId: started.analyzeRunId,
-                failureCode: normalized.code,
-                failureMessage: normalized.message,
-            }),
-            settleUsageOrLog(started.usageEventId, "failed", actualAttempts),
-        ]);
-        throw normalized;
+        failureCode = error instanceof AppError ? error.code : "AI_PROVIDER_ERROR";
+        throw error;
+    } finally {
+        duration.total_analysis_ms = elapsedMs(totalStartedAt);
+        safeWorkflowLog("info", "analysis_timing", {
+            // Only UUID-shaped correlation IDs are logged; arbitrary client header text is not copied.
+            requestId: options.requestId && /^(?:req_)?[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/iu.test(options.requestId)
+                ? options.requestId : null,
+            caseId, runId, model, promptVersion: PROMPT_VERSION, schemaVersion: RESULT_SCHEMA_VERSION,
+            attempt: actualAttempts, status, errorStage: status === "succeeded" ? null : stage,
+            failureCode, counts, duration,
+        });
     }
+}
+
+function elapsedMs(startedAt: number): number {
+    return Math.round(Math.max(0, performance.now() - startedAt) * 100) / 100;
+}
+
+function safeWorkflowLog(level: "info" | "error", event: string, metadata: Record<string, unknown>): void {
+    try { console[level](event, metadata); } catch { /* Monitoring must not change a business result. */ }
 }
 
 export async function getLatestResult(userId: string, caseId: string) {
@@ -164,7 +208,7 @@ async function settleUsageOrLog(
         await settleUsage(repository.prisma, usageEventId, status, actualAttempts);
     } catch (error) {
         // 利用量集計は運用上補正できるため、分析結果やcase復旧の成否を巻き戻しません。
-        console.error("usage_reconciliation_required", {
+        safeWorkflowLog("error", "usage_reconciliation_required", {
             usageEventId,
             status,
             errorName: error instanceof Error ? error.name : "UnknownError",

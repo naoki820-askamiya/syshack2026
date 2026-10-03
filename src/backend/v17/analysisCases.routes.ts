@@ -15,7 +15,7 @@ router.get("/:caseId", asyncHandler(async (req, res) => {
 }));
 
 router.post("/:caseId/analyze", asyncHandler(async (req, res) => {
-    res.json(await service.analyzeCase(requireUserId(req), getUuidParam(req.params.caseId)));
+    res.json(await service.analyzeCase(requireUserId(req), getUuidParam(req.params.caseId), { requestId: res.locals.requestId }));
 }));
 
 router.get("/:caseId/results/latest", asyncHandler(async (req, res) => {
