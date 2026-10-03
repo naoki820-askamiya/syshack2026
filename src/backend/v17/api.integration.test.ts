@@ -353,6 +353,9 @@ test("Feedback API preserves the 500, 501, and 1000 character contract", async (
     const create = replaceMethod(t, prisma.analysisFeedback, "create", async (args) => ({
         id: "88888888-8888-4888-8888-888888888888", allowPersonalizationUse: false, ...args.data,
     }));
+    replaceMethod(t, prisma, "$transaction", async (callback) => callback({
+        analysisFeedback: { create },
+    }));
     for (const length of [500, 501, 1000]) {
         const outcomeNote = "記".repeat(length);
         const response = await request("/api/analysis-results/" + RESULT_ID + "/feedback", authorizedJson("POST", {
@@ -368,3 +371,105 @@ test("Feedback API preserves the 500, 501, and 1000 character contract", async (
     assert.equal(create.mock.callCount(), 3);
 });
 
+
+function mockFeedbackStorage(t: test.TestContext, initialFeedback: Record<string, unknown> | null = null, privacyEnabled = true) {
+    let stored = initialFeedback ? { ...initialFeedback } : null;
+    let auxiliaryFails = true;
+    let staleWrites = 0;
+    const create = async (args: { data: Record<string, unknown> }) => {
+        if (stored) throw Object.assign(new Error("unique feedback"), { code: "P2002" });
+        stored = { id: "88888888-8888-4888-8888-888888888888", allowPersonalizationUse: true, ...args.data };
+        return { ...stored };
+    };
+    const update = async (args: { data: Record<string, unknown> }) => {
+        stored = { ...stored, ...args.data };
+        return { ...stored };
+    };
+    const privacy = async () => ({ personalizationEnabled: privacyEnabled, useFeedbackForContext: privacyEnabled });
+    const invalidate = async (_sql: TemplateStringsArray, userId: string, personId: string) => {
+        assert.equal(userId, USER_ID);
+        assert.equal(personId, PERSON_ID);
+        staleWrites += 1;
+        if (auxiliaryFails) throw new Error("private internal failure");
+        return 1;
+    };
+    replaceMethod(t, prisma.analysisResult, "findFirst", async () => ({
+        id: RESULT_ID, analysisCaseId: CASE_ID, analysisCase: { personId: PERSON_ID },
+    }));
+    replaceMethod(t, prisma.analysisFeedback, "findFirst", async () => stored ? {
+        ...stored, analysisCase: { personId: PERSON_ID },
+    } : null);
+    replaceMethod(t, prisma.analysisFeedback, "create", create);
+    replaceMethod(t, prisma.analysisFeedback, "update", update);
+    replaceMethod(t, prisma.userPrivacySetting, "findUnique", privacy);
+    replaceMethod(t, prisma, "$executeRaw", invalidate);
+    const transaction = replaceMethod(t, prisma, "$transaction", async (callback) => {
+        const before = stored ? { ...stored } : null;
+        try {
+            return await callback({
+                analysisFeedback: { create, update },
+                userPrivacySetting: { findUnique: privacy },
+                $executeRaw: invalidate,
+            });
+        } catch (error) {
+            stored = before;
+            throw error;
+        }
+    });
+    return {
+        get stored() { return stored; },
+        get staleWrites() { return staleWrites; },
+        transaction,
+        allowAuxiliarySuccess() { auxiliaryFails = false; },
+    };
+}
+
+test("Feedback POST auxiliary failure rolls back so a retry can create feedback", async (t) => {
+    authenticateAs(t);
+    const storage = mockFeedbackStorage(t);
+    const path = "/api/analysis-results/" + RESULT_ID + "/feedback";
+    const body = { outcomeNote: "翌日は通常どおりでした。", allowPersonalizationUse: true };
+    const failed = await request(path, authorizedJson("POST", body));
+    assert.equal(failed.status, 500);
+    assert.equal(storage.stored, null);
+    assert.equal(JSON.stringify(failed.body).includes("private internal failure"), false);
+    storage.allowAuxiliarySuccess();
+    const retried = await request(path, authorizedJson("POST", body));
+    assert.equal(retried.status, 201);
+    const savedAfterRetry = storage.stored as Record<string, unknown> | null;
+    assert.equal(savedAfterRetry?.outcomeNote, body.outcomeNote);
+    assert.equal(storage.transaction.mock.callCount(), 2);
+    const duplicate = await request(path, authorizedJson("POST", body));
+    assert.equal(duplicate.status, 409);
+    assert.equal((duplicate.body.error as { code: string }).code, "FEEDBACK_ALREADY_EXISTS");
+});
+
+test("Feedback PATCH auxiliary failure preserves old values and consent", async (t) => {
+    authenticateAs(t);
+    const feedbackId = "88888888-8888-4888-8888-888888888888";
+    const storage = mockFeedbackStorage(t, { id: feedbackId, outcomeNote: "以前の記録", allowPersonalizationUse: true });
+    const path = "/api/analysis-feedbacks/" + feedbackId;
+    const failed = await request(path, authorizedJson("PATCH", { outcomeNote: "訂正した記録" }));
+    assert.equal(failed.status, 500);
+    assert.equal(storage.stored?.outcomeNote, "以前の記録");
+    storage.allowAuxiliarySuccess();
+    const retried = await request(path, authorizedJson("PATCH", { outcomeNote: "訂正した記録", allowPersonalizationUse: false }));
+    assert.equal(retried.status, 200);
+    assert.equal(storage.stored?.outcomeNote, "訂正した記録");
+    assert.equal(storage.stored?.allowPersonalizationUse, false);
+    assert.equal(storage.staleWrites, 2);
+    assert.equal(storage.transaction.mock.callCount(), 2);
+});
+
+
+
+test("withdrawing previously allowed Feedback invalidates its Profile even when privacy is OFF", async (t) => {
+    authenticateAs(t);
+    const feedbackId = "88888888-8888-4888-8888-888888888888";
+    const storage = mockFeedbackStorage(t, { id: feedbackId, outcomeNote: "以前の記録", allowPersonalizationUse: true }, false);
+    storage.allowAuxiliarySuccess();
+    const response = await request("/api/analysis-feedbacks/" + feedbackId, authorizedJson("PATCH", { allowPersonalizationUse: false }));
+    assert.equal(response.status, 200);
+    assert.equal(storage.stored?.allowPersonalizationUse, false);
+    assert.equal(storage.staleWrites, 1);
+});
