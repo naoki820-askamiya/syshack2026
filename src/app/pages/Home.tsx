@@ -1,7 +1,9 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { History, Users, PlusCircle, ChevronRight, UserRoundSearch, MessageSquareDashed } from 'lucide-react';
-import { getConsultations } from '../utils/storage';
+import { loadConsultationHistory } from '../api/sessionV17';
+import { captureAuthBoundary, isCurrentAuthBoundary } from '../utils/authBoundary';
+import { recentConsultations as selectRecentConsultations, visibleHomeHistory, type HomeHistoryState } from '../utils/homeHistoryModel';
 import { getLatestConsultationsByPerson } from '../utils/consultationHistory';
 import { Navigation } from '../components/Navigation';
 import { getRelationStyle, getReactionStyle } from '../utils/relationStyles';
@@ -9,10 +11,32 @@ import { getRandomSubtitle } from '../utils/randomSubtitle';
 import { useAuth } from '../auth/AuthContext';
 
 export function Home() {
-  const { user } = useAuth();
-  const consultations = getConsultations();
+  const { user, authEpoch, loading: authLoading } = useAuth();
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  const [historyState, setHistoryState] = useState<HomeHistoryState>(() => ({
+    boundary: captureAuthBoundary(), status: 'loading', consultations: [], error: '',
+  }));
+  const visible = visibleHomeHistory(historyState, captureAuthBoundary());
+  const consultations = visible.consultations;
   const persons = getLatestConsultationsByPerson(consultations);
-  const recentConsultations = consultations.slice(-5).reverse();
+  const recentConsultations = selectRecentConsultations(consultations);
+
+  useEffect(() => {
+    if (authLoading) return;
+    let active = true;
+    const boundary = captureAuthBoundary();
+    setHistoryState({ boundary, status: user ? 'loading' : 'loaded', consultations: [], error: '' });
+    if (user) {
+      void loadConsultationHistory()
+        .then((loaded) => {
+          if (active && isCurrentAuthBoundary(boundary)) setHistoryState({ boundary, status: 'loaded', consultations: loaded, error: '' });
+        })
+        .catch((cause: unknown) => {
+          if (active && isCurrentAuthBoundary(boundary)) setHistoryState({ boundary, status: 'error', consultations: [], error: cause instanceof Error ? cause.message : '履歴を取得できませんでした。' });
+        });
+    }
+    return () => { active = false; };
+  }, [user?.id, authEpoch, authLoading, loadAttempt]);
 
   const randomMessage = useMemo(() => getRandomSubtitle(), []);
 
@@ -25,11 +49,11 @@ export function Home() {
           <div className="text-center py-8 lg:py-8 relative">
             <div className="mx-auto mb-4 h-5 lg:h-5" />
             <img src="/kigen404_title_b_transparent.png" alt="KIGEN404" className="mx-auto mb-4 h-28 lg:h-44" />
-            <p className="text-[#5B6573] lg:text-lg">{randomMessage}<br/>相手の反応から「本音」をAIが予測、最適な返しまで提案</p>
+            <p className="text-[#5B6573] lg:text-lg">{randomMessage}<br/>出来事や反応をもとに、複数の見方と次に取れる行動を整理</p>
           </div>
 
           <Link to={user ? '/new' : '/login?returnTo=%2Fnew'} className="block mb-6">
-            <button className="w-full bg-[#0F4C81] text-white rounded-2xl p-5 lg:p-7 shadow-sm hover:bg-[#0C3E69] transition-colors hover:scale-[1.01] active:scale-[0.99]">
+            <div className="w-full bg-[#0F4C81] text-white rounded-2xl p-5 lg:p-7 shadow-sm hover:bg-[#0C3E69] transition-colors hover:scale-[1.01] active:scale-[0.99]">
               <div className="flex items-center justify-center gap-3">
                 <PlusCircle className="w-7 h-7 lg:w-9 lg:h-9" />
                 <span className="text-xl lg:text-2xl font-semibold">
@@ -37,9 +61,9 @@ export function Home() {
                 </span>
               </div>
               <p className="text-[#E8F1F8] text-sm mt-1">
-                {user ? 'Find their invisible emotion.' : 'ログイン後、この画面に戻ります。'}
+                {user ? '入力と根拠から、次の一歩を考える。' : 'ログイン後、この画面に戻ります。'}
               </p>
-            </button>
+            </div>
           </Link>
 
           <div className="lg:grid lg:grid-cols-3 lg:gap-6 space-y-6 lg:space-y-0">
@@ -57,7 +81,7 @@ export function Home() {
                   )}
                 </div>
 
-                {persons.length > 0 ? (
+                {authLoading || visible.status === 'loading' ? <p role="status" className="py-6 text-sm text-[#5B6573]">相談対象を読み込んでいます…</p> : visible.status === 'error' ? <HistoryLoadError message={visible.error} onRetry={() => setLoadAttempt((value) => value + 1)} /> : persons.length > 0 ? (
                   <div className="space-y-2">
                     {persons.map((person) => {
                       const personConsultations = consultations.filter(c => person.personId ? c.personId === person.personId : c.id === person.id);
@@ -116,7 +140,7 @@ export function Home() {
                   )}
                 </div>
 
-                {recentConsultations.length > 0 ? (
+                {authLoading || visible.status === 'loading' ? <p role="status" className="py-6 text-sm text-[#5B6573]">最近の相談履歴を読み込んでいます…</p> : visible.status === 'error' ? <HistoryLoadError message={visible.error} onRetry={() => setLoadAttempt((value) => value + 1)} /> : recentConsultations.length > 0 ? (
                   <div className="space-y-3">
                     {recentConsultations.map((consultation) => {
                       const style = getRelationStyle(consultation.relation);
@@ -125,7 +149,7 @@ export function Home() {
                       return (
                         <Link
                           key={consultation.id}
-                          to={`/action/${consultation.id}`}
+                          to={`/analysis/${consultation.id}`}
                           className={`flex items-start gap-4 bg-[#F1F4F8] ${style.bgHover} rounded-xl p-4 transition-colors group`}
                         >
                           <div className={`w-7 h-7 rounded-full flex items-center justify-center text-sm flex-shrink-0 mt-0.5 ${style.badge}`}>
@@ -174,4 +198,9 @@ export function Home() {
       </div>
     </div>
   );
+}
+
+
+function HistoryLoadError({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return <div role="alert" className="py-6 text-sm text-red-700"><p>{message}</p><button type="button" onClick={onRetry} className="mt-2 font-medium underline">履歴を再取得</button></div>;
 }
