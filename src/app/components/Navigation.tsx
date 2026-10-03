@@ -1,9 +1,8 @@
-import { useState, useEffect, useSyncExternalStore } from 'react';
+import { useSyncExternalStore } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { MessageCircle, History, ChevronRight, ChevronDown, House, LogIn, LogOut, UserPlus } from 'lucide-react';
-import { clearCachedConsultations, getConsultations } from '../utils/storage';
+import { getCacheRevision, getConsultations, subscribeCache } from '../utils/storage';
 import { getRelationStyle } from '../utils/relationStyles';
-import { ConsultationData } from '../types';
 import { useAuth } from '../auth/AuthContext';
 import { getLatestConsultationsByPerson } from '../utils/consultationHistory';
 import {
@@ -16,20 +15,16 @@ export function Navigation() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const [persons, setPersons] = useState<ConsultationData[]>([]);
+  useSyncExternalStore(subscribeCache, getCacheRevision);
+  const persons = user ? getLatestConsultationsByPerson(getConsultations()) : [];
 
   const expandedPerson = useSyncExternalStore(
     subscribeExpandedPerson,
     getExpandedPerson
   );
 
-  useEffect(() => {
-    setPersons(user ? getLatestConsultationsByPerson(getConsultations()) : []);
-  }, [location.pathname, user]);
-
   const handleSignOut = async () => {
     await signOut();
-    clearCachedConsultations();
     navigate('/');
   };
 
@@ -110,13 +105,14 @@ export function Navigation() {
                 {persons.map((person) => {
                   const style = getRelationStyle(person.relation);
                   const RelationIcon = style.lucideIcon;
-                  const isExpanded = expandedPerson === person.personName;
+                  const isExpanded = expandedPerson === (person.personId ?? person.id);
                   return (
                     <div key={person.id}>
                       <button
                         onClick={() =>
-                          setExpandedPerson(isExpanded ? null : person.personName)
+                          setExpandedPerson(isExpanded ? null : (person.personId ?? person.id))
                         }
+                        aria-expanded={isExpanded}
                         className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors group text-[#5B6573] hover:bg-[#F1F4F8]"
                       >
                         <div className={`w-7 h-7 rounded-full flex items-center justify-center text-sm flex-shrink-0 ${style.badge}`}>
@@ -139,14 +135,14 @@ export function Navigation() {
                       {isExpanded && (
                         <div className="ml-10 mt-0.5 mb-1 space-y-0.5">
                           <Link
-                            to={`/new?person=${encodeURIComponent(person.personName)}`}
+                            to={person.personId ? `/new?personId=${encodeURIComponent(person.personId)}` : '/new'}
                             className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm text-[#E67300] hover:bg-[#E8F1F8] transition-colors font-medium"
                           >
                             <MessageCircle className="w-3.5 h-3.5" />
                             その人について相談
                           </Link>
                           <Link
-                            to={`/history?person=${encodeURIComponent(person.personName)}`}
+                            to={person.personId ? `/history?personId=${encodeURIComponent(person.personId)}` : '/history'}
                             className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm text-[#004D99] hover:bg-[#E8F1F8] transition-colors font-medium"
                           >
                             <History className="w-3.5 h-3.5" />

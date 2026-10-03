@@ -1,3 +1,4 @@
+import { assertCurrentAuthBoundary, captureAuthBoundary } from '../utils/authBoundary';
 import { saveAnalysis, saveConsultation, replaceConsultations } from '../utils/storage';
 import type { ConsultationData } from '../types';
 import { fetchApiJson } from './client';
@@ -43,31 +44,38 @@ async function listAllCases(personId: string): Promise<ApiAnalysisCase[]> {
 }
 
 export async function loadConsultationHistory(): Promise<ConsultationData[]> {
+  const boundary = captureAuthBoundary();
+  assertCurrentAuthBoundary(boundary);
   const persons = await listAllPersons();
+  assertCurrentAuthBoundary(boundary);
   const casesByPerson = await Promise.all(
     persons.map(async (person) => ({ person, cases: await listAllCases(person.id) })),
   );
   const consultations = casesByPerson
     .flatMap(({ person, cases }) => cases.map((analysisCase) => toConsultation(analysisCase, person)))
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  replaceConsultations(consultations);
+  replaceConsultations(consultations, boundary);
   return consultations;
 }
 
 export async function hydrateAnalysis(caseId: string): Promise<boolean> {
+  const boundary = captureAuthBoundary();
+  assertCurrentAuthBoundary(boundary);
   const { analysisCase } = await fetchApiJson<{ analysisCase: ApiAnalysisCase }>(
     `/api/analysis-cases/${caseId}`,
   );
+  assertCurrentAuthBoundary(boundary);
   const { person } = await fetchApiJson<{ person: ApiPerson }>(
     `/api/persons/${analysisCase.personId}`,
   );
-  saveConsultation(toConsultation(analysisCase, person));
+  saveConsultation(toConsultation(analysisCase, person), boundary);
 
   const { result } = await fetchApiJson<{ result: Record<string, unknown> | null }>(
     `/api/analysis-cases/${caseId}/results/latest`,
   );
   if (!result) return false;
-  saveAnalysis(caseId, { status: 'analyzed', result });
+  assertCurrentAuthBoundary(boundary);
+  saveAnalysis(caseId, { status: 'analyzed', result }, boundary);
   return true;
 }
 
@@ -100,6 +108,7 @@ export async function createAnalysisCase(params: CreateAnalysisCaseRequest) {
 }
 
 export async function analyze(caseId: string): Promise<unknown> {
+  const boundary = captureAuthBoundary();
   const result: unknown = await fetchApiJson(`/api/analysis-cases/${caseId}/analyze`, {
     method: 'POST',
   });
@@ -107,6 +116,6 @@ export async function analyze(caseId: string): Promise<unknown> {
     throw new Error("分析APIから不正な形式の応答が返されました。");
   }
   // 画面遷移中だけ保持し、localStorage等へ永続化しません。
-  saveAnalysis(caseId, result as Record<string, unknown>);
+  saveAnalysis(caseId, result as Record<string, unknown>, boundary);
   return result;
 }
