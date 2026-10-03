@@ -1,11 +1,7 @@
 import { fetchApiJson } from './client';
 
-export interface PrivacySettings {
-  personalizationEnabled: boolean;
-  usePersonProfile: boolean;
-  useUserPatternSummary: boolean;
-  useFeedbackForContext: boolean;
-}
+import type { PrivacySettings } from '../utils/privacySettingsModel';
+export type { PrivacySettings } from '../utils/privacySettingsModel';
 
 export async function getPrivacySettings() {
   return fetchApiJson<{ settings: PrivacySettings }>('/api/privacy-settings');
