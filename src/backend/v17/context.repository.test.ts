@@ -61,3 +61,79 @@ for (const length of [500, 501, 1000]) {
     }
 }
 
+
+const PROFILE_ID = "99999999-9999-4999-8999-999999999999";
+const RESULT_ID = "77777777-7777-4777-8777-777777777777";
+const GENERATED_AT = new Date("2026-10-01T12:00:00Z");
+
+function mockProfile(t: test.TestContext, overrides: Record<string, unknown> = {}) {
+    mockContext(t, true, "観察後の振り返り");
+    replace(t, prisma.userPrivacySetting, "upsert", async () => ({
+        personalizationEnabled: true, usePersonProfile: true, useFeedbackForContext: false,
+    }));
+    replace(t, prisma.personProfile, "findFirst", async (args) => {
+        assert.deepEqual(args.where, { userId: USER_ID, personId: PERSON_ID });
+        return {
+            id: PROFILE_ID, profileJson: { summary: "AIによる過去の解釈" },
+            needsRefresh: false, staleSince: null, generatedAt: GENERATED_AT,
+            generatedByModel: "synthetic-model", profileSchemaVersion: "synthetic-v1",
+            sourceLatestCaseId: CASE_ID, sourceCaseCount: 1, sourceFeedbackCount: 0,
+            ...overrides,
+        };
+    });
+}
+
+for (const [name, overrides] of [
+    ["needs refresh", { needsRefresh: true }],
+    ["stale", { staleSince: GENERATED_AT }],
+    ["unknown model", { generatedByModel: null }],
+    ["unknown source", { sourceLatestCaseId: null }],
+    ["no source count", { sourceCaseCount: 0 }],
+]) {
+    test("Profile with " + name + " falls back to current input when other references are absent", async (t) => {
+        mockProfile(t, overrides as Record<string, unknown>);
+        const context = await buildAiContext(USER_ID, CASE_ID);
+        assert.ok(context);
+        assert.equal(context.aiInput.referenceContext.personProfile, null);
+        assert.equal(context.personProfileId, null);
+        assert.equal(context.contextSnapshot.personalizationUsed, false);
+    });
+}
+
+test("known non-stale Profile keeps source metadata without claiming user confirmation", async (t) => {
+    mockProfile(t);
+    const context = await buildAiContext(USER_ID, CASE_ID);
+    assert.ok(context);
+    assert.equal(context.personProfileId, PROFILE_ID);
+    const reference = context.aiInput.referenceContext as unknown as { provenance?: { personProfile: Record<string, unknown> } };
+    assert.deepEqual(reference.provenance?.personProfile, {
+        sourceType: "person_profile", sourceId: PROFILE_ID, kind: "ai_generated_summary",
+        generatedAt: GENERATED_AT.toISOString(), observedAt: null, userConfirmed: false,
+    });
+    assert.deepEqual((context.contextSnapshot.referenceContextSnapshot as unknown as { provenance: unknown }).provenance, reference.provenance);
+});
+
+test("past AI summaries and user Feedback retain different provenance kinds", async (t) => {
+    mockContext(t, true, "翌日は普段どおりだった");
+    replace(t, prisma.analysisCase, "findMany", async (args) => {
+        assert.deepEqual(args.select.results.orderBy, { version: "desc" });
+        return [{ id: CASE_ID, results: [{ id: RESULT_ID, createdAt: GENERATED_AT,
+            resultJson: { summary: { oneLine: "忙しかった可能性があります。" } } }] }];
+    });
+    const context = await buildAiContext(USER_ID, CASE_ID);
+    assert.ok(context);
+    const reference = context.aiInput.referenceContext as unknown as {
+        recentCaseSummaries: Array<{ provenance: Record<string, unknown> }>;
+        recentFeedbacks: Array<{ provenance: Record<string, unknown> }>;
+        provenance: { currentCase: Record<string, unknown>; personSnapshot: Record<string, unknown> };
+    };
+    assert.equal(reference.recentCaseSummaries[0]?.provenance.kind, "ai_generated_summary");
+    assert.equal(reference.recentCaseSummaries[0]?.provenance.sourceId, RESULT_ID);
+    assert.equal(reference.recentCaseSummaries[0]?.provenance.userConfirmed, false);
+    assert.equal(reference.recentFeedbacks[0]?.provenance.kind, "user_feedback");
+    assert.equal(reference.recentFeedbacks[0]?.provenance.sourceId, FEEDBACK_ID);
+    assert.equal(reference.provenance.currentCase.kind, "user_provided_fact");
+    assert.equal(reference.provenance.personSnapshot.kind, "user_provided_fact");
+    aiAnalysisInputSchema.parse(context.aiInput);
+});
+

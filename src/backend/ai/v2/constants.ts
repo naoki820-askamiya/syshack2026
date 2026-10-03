@@ -1,6 +1,6 @@
 export const PROMPT_VERSION = "kigen-prompt-v2";
 export const RESULT_SCHEMA_VERSION = "kigen-analysis-result-v2";
-export const CONTEXT_SCHEMA_VERSION = "analysis-context-snapshot-v4";
+export const CONTEXT_SCHEMA_VERSION = "analysis-context-snapshot-v5";
 export const PERSON_SNAPSHOT_SCHEMA_VERSION = "person-snapshot-v2";
 export const MAX_INTERNAL_AI_ATTEMPTS = 3;
 export const DEFAULT_AI_TIMEOUT_MS = 30_000;

@@ -1,6 +1,6 @@
 import { prisma } from "../prisma/client.js";
 import { Prisma } from "../generated/prisma/client.js";
-import type { ReferenceContext } from "../ai/v2/input.schema.js";
+import type { ReferenceContext, SourceProvenance } from "../ai/v2/input.schema.js";
 import { buildContextSnapshot } from "../ai/v2/context.js";
 
 export async function buildAiContext(userId: string, caseId: string) {
@@ -25,6 +25,11 @@ export async function buildAiContext(userId: string, caseId: string) {
         userPatternSummary: null,
         recentCaseSummaries: [],
         recentFeedbacks: [],
+        provenance: {
+            currentCase: sourceProvenance("analysis_case", caseId, "user_provided_fact"),
+            personSnapshot: sourceProvenance("person_snapshot", caseId, "user_provided_fact"),
+            personProfile: null,
+        },
     };
     let personProfileId: string | null = null;
 
@@ -33,6 +38,9 @@ export async function buildAiContext(userId: string, caseId: string) {
             const profile = await findPersonProfile(userId, analysisCase.personId);
             personProfileId = profile?.id ?? null;
             referenceContext.personProfile = profile?.profileJson ?? null;
+            referenceContext.provenance!.personProfile = profile
+                ? sourceProvenance("person_profile", profile.id, "ai_generated_summary", profile.generatedAt)
+                : null;
         }
 
         referenceContext.recentCaseSummaries = await findRecentCaseSummaries(
@@ -74,11 +82,21 @@ export async function buildAiContext(userId: string, caseId: string) {
     };
 }
 
-function findPersonProfile(userId: string, personId: string) {
-    return prisma.personProfile.findFirst({
+async function findPersonProfile(userId: string, personId: string) {
+    const profile = await prisma.personProfile.findFirst({
         where: { userId, personId },
-        select: { id: true, profileJson: true },
+        select: {
+            id: true, profileJson: true, needsRefresh: true, staleSince: true,
+            generatedAt: true, generatedByModel: true, profileSchemaVersion: true,
+            sourceLatestCaseId: true, sourceCaseCount: true, sourceFeedbackCount: true,
+        },
     });
+    // Source absence is different from a human-selected minimum data count or age threshold.
+    if (!profile || profile.needsRefresh || profile.staleSince !== null ||
+        !profile.generatedByModel?.trim() || !profile.profileSchemaVersion.trim() ||
+        !profile.sourceLatestCaseId || profile.sourceCaseCount + profile.sourceFeedbackCount === 0 ||
+        !Number.isFinite(profile.generatedAt.getTime())) return null;
+    return profile;
 }
 
 async function findRecentCaseSummaries(
@@ -101,7 +119,7 @@ async function findRecentCaseSummaries(
                 // 同一case内の最新性は生成時刻ではなくversionで決まります。
                 orderBy: { version: "desc" },
                 take: 1,
-                select: { resultJson: true },
+                select: { id: true, resultJson: true, createdAt: true },
             },
         },
     });
@@ -109,7 +127,10 @@ async function findRecentCaseSummaries(
     return recentCases.flatMap((recentCase) => {
         const latestResult = recentCase.results[0];
         const summary = latestResult ? readSummary(latestResult.resultJson) : null;
-        return summary ? [{ analysisCaseId: recentCase.id, summary }] : [];
+        return summary && latestResult ? [{
+            analysisCaseId: recentCase.id, summary,
+            provenance: sourceProvenance("analysis_result", latestResult.id, "ai_generated_summary", latestResult.createdAt),
+        }] : [];
     });
 }
 
@@ -138,6 +159,7 @@ async function findAllowedFeedbacks(
         actualOutcome: feedback.actualOutcome,
         overreadScore: feedback.overreadScore,
         outcomeNote: feedback.outcomeNote,
+        provenance: sourceProvenance("analysis_feedback", feedback.id, "user_feedback"),
     }));
 }
 
@@ -162,4 +184,15 @@ function readSummary(value: Prisma.JsonValue): string | null {
     const summary = value.summary;
     if (!summary || typeof summary !== "object" || Array.isArray(summary)) return null;
     return typeof summary.oneLine === "string" ? summary.oneLine.slice(0, 500) : null;
+}
+
+function sourceProvenance(
+    sourceType: SourceProvenance["sourceType"], sourceId: string,
+    kind: SourceProvenance["kind"], generatedAt: Date | null = null,
+): SourceProvenance {
+    return {
+        sourceType, sourceId, kind,
+        generatedAt: generatedAt?.toISOString() ?? null,
+        observedAt: null, userConfirmed: false,
+    };
 }

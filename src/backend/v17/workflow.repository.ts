@@ -1,7 +1,7 @@
 import { Prisma } from "../generated/prisma/client.js";
 import { prisma } from "../prisma/client.js";
 import type { KigenAnalysisResultV2 } from "../ai/v2/output.schema.js";
-import type { AnalysisContextSnapshotV4 } from "../ai/v2/context.js";
+import type { AnalysisContextSnapshotV5 } from "../ai/v2/context.js";
 import { reserveAnalyzeUsageAndStartCase } from "./rateLimit.js";
 
 export async function createCase(
@@ -54,7 +54,7 @@ export async function completeAnalysis(input: {
     resultSchemaVersion: string;
     model: string;
     result: KigenAnalysisResultV2;
-    context: AnalysisContextSnapshotV4;
+    context: AnalysisContextSnapshotV5;
     usedCaseIds: string[];
     usedFeedbackIds: string[];
     personProfileId: string | null;
