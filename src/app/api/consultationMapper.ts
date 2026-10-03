@@ -38,6 +38,10 @@ export interface ApiAnalysisCase {
   createdAt: string;
 }
 
+export function relationshipLabel(value: string): RelationType {
+  return RELATIONSHIP_TYPES_FROM_API[value] ?? 'その他';
+}
+
 export function toConsultation(
   analysisCase: ApiAnalysisCase,
   person: ApiPerson,
@@ -46,7 +50,7 @@ export function toConsultation(
     id: analysisCase.id,
     personId: analysisCase.personId,
     personName: person.displayName,
-    relation: RELATIONSHIP_TYPES_FROM_API[person.relationshipType] ?? 'その他',
+    relation: relationshipLabel(person.relationshipType),
     event: analysisCase.eventFacts,
     reaction: REACTIONS.has(analysisCase.perceivedPartnerReaction as Reaction)
       ? analysisCase.perceivedPartnerReaction as Reaction

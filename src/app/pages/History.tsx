@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router';
+import { Link, useNavigate, useSearchParams, useParams } from 'react-router';
 import { ArrowLeft, Calendar, User, PlusCircle } from 'lucide-react';
 import type { ConsultationData } from '../types';
 import { getConsultations } from '../utils/storage';
 import { loadConsultationHistory } from '../api/sessionV17';
+import { getLatestConsultationsByPerson } from '../utils/consultationHistory';
 import { Navigation } from '../components/Navigation';
 import { getRelationStyle, getReactionStyle } from '../utils/relationStyles';
 
 export function History() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const initialPerson = searchParams.get('person') ?? 'すべて';
+  const { personId: routePersonId } = useParams<{ personId?: string }>();
+  const initialPerson = routePersonId ?? searchParams.get('personId') ?? '';
   const [filterPerson, setFilterPerson] = useState<string>(initialPerson);
   const [allConsultations, setAllConsultations] = useState<ConsultationData[]>(getConsultations);
   const [isLoading, setIsLoading] = useState(true);
@@ -32,14 +34,19 @@ export function History() {
   }, []);
 
   useEffect(() => {
-    setFilterPerson(searchParams.get('person') ?? 'すべて');
-  }, [searchParams]);
+    setFilterPerson(routePersonId ?? searchParams.get('personId') ?? '');
+  }, [searchParams, routePersonId]);
 
-  const persons = ['すべて', ...Array.from(new Set(allConsultations.map(c => c.personName)))];
+  const latestPersons = getLatestConsultationsByPerson(allConsultations).filter(c => c.personId);
+  const persons = [{ id: '', label: 'すべて' }, ...latestPersons.map((c, index) => ({
+    id: c.personId!,
+    label: latestPersons.filter(p => p.personName === c.personName).length > 1 ? `${c.personName}（${c.relation}・${index + 1}）` : c.personName,
+  }))];
+  const selectedPerson = persons.find(p => p.id === filterPerson);
   
-  const filteredConsultations = filterPerson === 'すべて'
+  const filteredConsultations = filterPerson === ''
     ? allConsultations
-    : allConsultations.filter(c => c.personName === filterPerson);
+    : allConsultations.filter(c => c.personId === filterPerson);
 
   const sortedConsultations = [...filteredConsultations].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -68,18 +75,18 @@ export function History() {
               </div>
               <div className="flex gap-2 overflow-x-auto pb-2">
                 {persons.map((person) => {
-                  const isActive = filterPerson === person;
+                  const isActive = filterPerson === person.id;
                   return (
                     <button
-                      key={person}
-                      onClick={() => setFilterPerson(person)}
+                      key={person.id}
+                      onClick={() => setFilterPerson(person.id)}
                       className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
                         isActive
                           ? 'bg-[#0F4C81] text-white'
                           : 'bg-white text-[#5B6573] border border-[#D9E1EA] hover:border-[#0F4C81]'
                       }`}
                     >
-                      {person}
+                      {person.label}
                     </button>
                   );
                 })}
@@ -99,9 +106,9 @@ export function History() {
             <div className="bg-white rounded-2xl p-8 shadow-sm text-center border border-[#D9E1EA]">
               <Calendar className="w-12 h-12 mx-auto text-[#B8C2CF] mb-3" />
               <p className="text-[#5B6573] mb-4">
-                {filterPerson === 'すべて' 
+                {filterPerson === '' 
                   ? 'まだ相談履歴がありません'
-                  : `${filterPerson}さんの相談履歴がありません`}
+                  : `${selectedPerson?.label ?? '選択した相手'}さんの相談履歴がありません`}
               </p>
               <button
                 onClick={() => navigate('/new')}
@@ -116,9 +123,9 @@ export function History() {
                 <span className="text-sm text-[#5B6573]">
                   {sortedConsultations.length}件の相談
                 </span>
-                {filterPerson !== 'すべて' && (
+                {filterPerson !== '' && (
                   <Link
-                    to={`/new?person=${encodeURIComponent(filterPerson)}`}
+                    to={`/new?personId=${encodeURIComponent(filterPerson)}`}
                     className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#0F4C81] text-white rounded-xl text-sm font-medium shadow-sm hover:bg-[#0C3E69] transition-colors"
                   >
                     <PlusCircle className="w-4 h-4" />

@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router';
 import { History, Users, PlusCircle, ChevronRight, UserRoundSearch, MessageSquareDashed } from 'lucide-react';
-import { getRegisteredPersons, getConsultations } from '../utils/storage';
+import { getConsultations } from '../utils/storage';
+import { getLatestConsultationsByPerson } from '../utils/consultationHistory';
 import { Navigation } from '../components/Navigation';
 import { getRelationStyle, getReactionStyle } from '../utils/relationStyles';
 import { getRandomSubtitle } from '../utils/randomSubtitle';
@@ -10,7 +11,7 @@ import { useAuth } from '../auth/AuthContext';
 export function Home() {
   const { user } = useAuth();
   const consultations = getConsultations();
-  const persons = getRegisteredPersons(consultations);
+  const persons = getLatestConsultationsByPerson(consultations);
   const recentConsultations = consultations.slice(-5).reverse();
 
   const randomMessage = useMemo(() => getRandomSubtitle(), []);
@@ -59,14 +60,14 @@ export function Home() {
                 {persons.length > 0 ? (
                   <div className="space-y-2">
                     {persons.map((person) => {
-                      const personConsultations = consultations.filter(c => c.personName === person);
+                      const personConsultations = consultations.filter(c => person.personId ? c.personId === person.personId : c.id === person.id);
                       const latest = personConsultations.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
                       const style = getRelationStyle(latest?.relation ?? 'その他');
                       const RelationIcon = style.lucideIcon;
                       return (
                         <Link
-                          key={person}
-                          to={`/history?person=${encodeURIComponent(person)}`}
+                          key={person.personId ?? person.id}
+                          to={person.personId ? `/history?personId=${encodeURIComponent(person.personId)}` : '/history'}
                           className={`flex items-center justify-between bg-[#F1F4F8] ${style.bgHover} rounded-xl px-4 py-3 transition-colors group`}
                         >
                           <div className="flex items-center gap-3">
@@ -74,7 +75,7 @@ export function Home() {
                               {RelationIcon ? <RelationIcon className="w-4 h-4" /> : style.emoji}
                             </div>
                             <div>
-                              <p className="text-base font-semibold text-[#1F2A37] leading-tight">{person}</p>
+                              <p className="text-base font-semibold text-[#1F2A37] leading-tight">{person.personName}</p>
                               <div className="flex items-center gap-1.5 mt-1">
                                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${style.badge}`}>
                                   {latest?.relation ?? 'その他'}

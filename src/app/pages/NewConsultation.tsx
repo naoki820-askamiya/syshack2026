@@ -3,11 +3,14 @@ import { useNavigate, useSearchParams } from 'react-router';
 import { ArrowLeft, Send, MessageSquare, PenLine, X, ChevronDown, AlertCircle, UserCheck } from 'lucide-react';
 import type { ConsultationData, RelationType } from '../types';
 import { createPerson, createAnalysisCase, analyze } from '../api/sessionV17';
+import { fetchApiJson } from '../api/client';
+import { captureAuthBoundary, isCurrentAuthBoundary } from '../utils/authBoundary';
+import { relationshipLabel, type ApiPerson } from '../api/consultationMapper';
 import { saveConsultation, getConsultations } from '../utils/storage';
 import { getRelationStyle } from '../utils/relationStyles';
 import { Navigation } from '../components/Navigation';
 import {
-  findLatestConsultationByPersonName,
+  findLatestConsultationByPersonId,
   getLatestConsultationsByPerson,
 } from '../utils/consultationHistory';
 import {
@@ -35,9 +38,9 @@ export function NewConsultation() {
   const nameInputRef = useRef<HTMLInputElement>(null);
 
   const resolveInitialData = () => {
-    const nameParam = searchParams.get('person');
-    if (nameParam) {
-      const past = findLatestConsultationByPersonName(getConsultations(), nameParam);
+    const personIdParam = searchParams.get('personId');
+    if (personIdParam) {
+      const past = findLatestConsultationByPersonId(getConsultations(), personIdParam);
       if (past) {
         return {
           ...EMPTY_CONSULTATION_FORM,
@@ -48,15 +51,15 @@ export function NewConsultation() {
           gender: past.gender ?? EMPTY_CONSULTATION_FORM.gender,
         };
       }
-      return { ...EMPTY_CONSULTATION_FORM, personName: nameParam };
+      return { ...EMPTY_CONSULTATION_FORM };
     }
     return { ...EMPTY_CONSULTATION_FORM };
   };
 
   const [formData, setFormData] = useState(resolveInitialData);
   const [prefilled, setPrefilled] = useState(() => {
-    const name = searchParams.get('person');
-    return !!name && !!findLatestConsultationByPersonName(getConsultations(), name);
+    const personId = searchParams.get('personId');
+    return !!personId && !!findLatestConsultationByPersonId(getConsultations(), personId);
   });
 
   const [actionMode, setActionMode] = useState<ActionMode>('text');
@@ -68,6 +71,37 @@ export function NewConsultation() {
   const [submitted, setSubmitted] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [apiError, setApiError] = useState("");
+
+  const selectedPersonId = searchParams.get('personId');
+  const [personLoading, setPersonLoading] = useState(!!selectedPersonId && !formData.personId);
+  const [personLoadFailed, setPersonLoadFailed] = useState(false);
+  const [personLoadAttempt, setPersonLoadAttempt] = useState(0);
+
+  useEffect(() => {
+    setPersonLoadFailed(false);
+    if (!selectedPersonId) { setPersonLoading(false); return; }
+    const past = findLatestConsultationByPersonId(getConsultations(), selectedPersonId);
+    if (past) {
+      setFormData(prev => ({ ...prev, personId: past.personId!, personName: past.personName, relation: past.relation }));
+      setPrefilled(true);
+      setPersonLoading(false);
+      return;
+    }
+    let active = true;
+    const boundary = captureAuthBoundary();
+    setPersonLoading(true);
+    void fetchApiJson<{ person: ApiPerson }>(`/api/persons/${encodeURIComponent(selectedPersonId)}`)
+      .then(({ person }) => {
+        if (!active || !isCurrentAuthBoundary(boundary)) return;
+        setFormData(prev => ({ ...prev, personId: person.id, personName: person.displayName, relation: relationshipLabel(person.relationshipType) }));
+        setPrefilled(true);
+      })
+      .catch((error: unknown) => {
+        if (active && isCurrentAuthBoundary(boundary)) { setPersonLoadFailed(true); setApiError(error instanceof Error ? error.message : '相手の情報を取得できませんでした。'); }
+      })
+      .finally(() => { if (active && isCurrentAuthBoundary(boundary)) setPersonLoading(false); });
+    return () => { active = false; };
+  }, [selectedPersonId, personLoadAttempt]);
 
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestions, setSuggestions] = useState<ConsultationData[]>([]);
@@ -127,6 +161,7 @@ export function NewConsultation() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isAnalyzing || personLoading || personLoadFailed) return;
     setSubmitted(true);
     setApiError("");
     const errors = getErrors();
@@ -233,6 +268,8 @@ export function NewConsultation() {
         </div>
 
         <div className="max-w-4xl mx-auto p-4 lg:p-8">
+          {personLoading && <p role="status" className="mb-4">相手の情報を確認しています...</p>}
+          {personLoadFailed && <button type="button" className="mb-4 text-[#0F4C81]" onClick={() => setPersonLoadAttempt(v => v + 1)}>相手の情報を再取得</button>}
           {prefilled && (
             <div className="mb-6 flex items-center gap-2 bg-[#E8F1F8] border border-[#D9E1EA] text-[#0F4C81] rounded-lg px-4 py-3 text-sm">
               <UserCheck className="w-4 h-4 flex-shrink-0" />
@@ -259,13 +296,12 @@ export function NewConsultation() {
                     ニックネーム<span className="text-red-500 ml-0.5">*</span>
                   </label>
                   <p className="text-xs text-[#8A94A6] mb-2">本名は入力しないでください</p>
-                  <div className="relative">
+                  <div className="relative" onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setShowSuggestions(false); }}>
                     <input
                       ref={nameInputRef}
                       type="text"
                       value={formData.personName}
                       onChange={(e) => handleNameChange(e.target.value)}
-                      onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
                       onFocus={() => {
                         if (suggestions.length > 0) setShowSuggestions(true);
                       }}
@@ -283,7 +319,8 @@ export function NewConsultation() {
                             <button
                               key={person.id}
                               type="button"
-                              onMouseDown={() => applyPerson(person)}
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => applyPerson(person)}
                               className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-[#F1F4F8] transition-colors text-left"
                             >
                               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm flex-shrink-0 ${style.badge}`}>
@@ -676,7 +713,7 @@ export function NewConsultation() {
 
             <button
               type="submit"
-              disabled={isAnalyzing}
+              disabled={isAnalyzing || personLoading || personLoadFailed}
               className={`w-full text-white py-4 lg:py-5 rounded-xl font-semibold shadow-sm transition-colors lg:text-lg flex justify-center items-center gap-2 ${
                 isAnalyzing
                   ? "bg-[#B8C2CF] cursor-not-allowed"
