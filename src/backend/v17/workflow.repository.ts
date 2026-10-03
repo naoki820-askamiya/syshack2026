@@ -134,6 +134,61 @@ export async function failAnalysis(input: {
     });
 }
 
+type AnalysisRunState = {
+    status: string;
+    analyzeRunId: string | null;
+    analyzeStartedAt: Date | null;
+};
+
+export function isStaleAnalysis(state: AnalysisRunState, cutoff: Date): boolean {
+    if (!Number.isFinite(cutoff.getTime())) throw new RangeError("Invalid stale analysis cutoff");
+    return state.status === "analyzing" && state.analyzeRunId !== null &&
+        state.analyzeStartedAt !== null && state.analyzeStartedAt.getTime() < cutoff.getTime();
+}
+
+export async function recoverStaleAnalysis(input: {
+    userId: string;
+    caseId: string;
+    analyzeRunId: string;
+    cutoff: Date;
+}) {
+    // The caller chooses the cutoff; this helper does not install a scheduler or production threshold.
+    const cutoff = new Date(input.cutoff.getTime());
+    if (!Number.isFinite(cutoff.getTime()) || cutoff.getTime() > Date.now()) {
+        throw new RangeError("Invalid or future stale analysis cutoff");
+    }
+    const recovered = await prisma.$transaction(async (tx) => {
+        await tx.$queryRaw<Array<{ locked: number }>>`
+            SELECT 1 AS locked
+            FROM pg_advisory_xact_lock(hashtextextended(${`analysis-case:${input.caseId}`}, 0))
+        `;
+        const current = await tx.analysisCase.findFirst({
+            where: { id: input.caseId, userId: input.userId },
+            select: { status: true, analyzeRunId: true, analyzeStartedAt: true },
+        });
+        if (!current || current.analyzeRunId !== input.analyzeRunId || !isStaleAnalysis(current, cutoff)) {
+            return { count: 0 };
+        }
+        // Completion or a new run that wins the race also makes this compare-and-swap fail safely.
+        return tx.analysisCase.updateMany({
+            where: {
+                id: input.caseId, userId: input.userId, status: "analyzing",
+                analyzeRunId: input.analyzeRunId, analyzeStartedAt: { lt: cutoff },
+            },
+            data: {
+                status: "failed", failureCode: "ANALYSIS_STALE",
+                failureMessage: "分析処理が途中で停止した可能性があります。",
+            },
+        });
+    });
+    if (recovered.count > 0) {
+        try {
+            console.info("analysis_stale_recovered", { caseId: input.caseId, runId: input.analyzeRunId, status: "failed" });
+        } catch { /* Monitoring must not change an already committed recovery result. */ }
+    }
+    return recovered;
+}
+
 export async function findLatestResult(userId: string, caseId: string) {
     // 最新性の正本は生成時刻ではなくcase単位のversionです。
     return prisma.analysisResult.findFirst({

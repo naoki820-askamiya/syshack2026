@@ -238,3 +238,80 @@ test("latest AnalysisResult is selected by version DESC and user ownership", asy
         orderBy: { version: "desc" },
     });
 });
+
+
+test("stale detection requires analyzing status, a run ID, and a timestamp older than the caller cutoff", () => {
+    const detect = (repository as unknown as { isStaleAnalysis?: (state: unknown, cutoff: Date) => boolean }).isStaleAnalysis;
+    assert.equal(typeof detect, "function");
+    const cutoff = new Date("2026-10-01T12:00:00Z");
+    const stale = { status: "analyzing", analyzeRunId: RUN_ID, analyzeStartedAt: new Date("2026-10-01T11:59:59Z") };
+    assert.equal(detect!(stale, cutoff), true);
+    for (const state of [
+        { ...stale, status: "failed" },
+        { ...stale, analyzeRunId: null },
+        { ...stale, analyzeStartedAt: null },
+        { ...stale, analyzeStartedAt: cutoff },
+        { ...stale, analyzeStartedAt: new Date("2026-10-01T12:00:01Z") },
+    ]) assert.equal(detect!(state, cutoff), false);
+    assert.throws(() => detect!(stale, new Date("invalid")), /cutoff/);
+});
+
+test("stale recovery changes only the matched owned run and records no consultation contents", async (t) => {
+    const recover = (repository as unknown as { recoverStaleAnalysis?: (input: unknown) => Promise<{ count: number }> }).recoverStaleAnalysis;
+    assert.equal(typeof recover, "function");
+    const cutoff = new Date("2026-10-01T12:00:00Z");
+    const where: unknown[] = [];
+    const events: unknown[] = [];
+    replaceMethod(t, console, "info", (...args: unknown[]) => { events.push(args); });
+    replaceMethod(t, prisma, "$transaction", async (callback) => callback({
+        $queryRaw: async () => [{ locked: 1 }],
+        analysisCase: {
+            findFirst: async (args: { where: unknown }) => {
+                assert.deepEqual(args.where, { id: CASE_ID, userId: USER_ID });
+                return { status: "analyzing", analyzeRunId: RUN_ID, analyzeStartedAt: new Date("2026-10-01T11:59:59Z") };
+            },
+            updateMany: async (args: { where: unknown; data: unknown }) => {
+                where.push(args.where);
+                assert.deepEqual(args.data, {
+                    status: "failed", failureCode: "ANALYSIS_STALE",
+                    failureMessage: "分析処理が途中で停止した可能性があります。",
+                });
+                return { count: 1 };
+            },
+        },
+    }));
+    assert.deepEqual(await recover!({ userId: USER_ID, caseId: CASE_ID, analyzeRunId: RUN_ID, cutoff }), { count: 1 });
+    assert.deepEqual(where, [{
+        id: CASE_ID, userId: USER_ID, status: "analyzing", analyzeRunId: RUN_ID,
+        analyzeStartedAt: { lt: cutoff },
+    }]);
+    assert.deepEqual(events, [["analysis_stale_recovered", { caseId: CASE_ID, runId: RUN_ID, status: "failed" }]]);
+});
+
+test("recovery refuses a new run, a non-stale run, or another owner's missing case", async (t) => {
+    const recover = (repository as unknown as { recoverStaleAnalysis?: (input: unknown) => Promise<{ count: number }> }).recoverStaleAnalysis;
+    assert.equal(typeof recover, "function");
+    const cutoff = new Date("2026-10-01T12:00:00Z");
+    let writes = 0;
+    for (const current of [
+        null,
+        { status: "analyzing", analyzeRunId: "99999999-9999-4999-8999-999999999999", analyzeStartedAt: new Date("2026-10-01T11:59:59Z") },
+        { status: "analyzing", analyzeRunId: RUN_ID, analyzeStartedAt: cutoff },
+    ]) {
+        replaceMethod(t, prisma, "$transaction", async (callback) => callback({
+            $queryRaw: async () => [{ locked: 1 }],
+            analysisCase: { findFirst: async () => current, updateMany: async () => { writes += 1; return { count: 1 }; } },
+        }));
+        assert.deepEqual(await recover!({ userId: USER_ID, caseId: CASE_ID, analyzeRunId: RUN_ID, cutoff }), { count: 0 });
+    }
+    assert.equal(writes, 0);
+});
+
+
+test("recovery rejects invalid or future cutoffs before contacting the database", async (t) => {
+    const transaction = replaceMethod(t, prisma, "$transaction", async () => { throw new Error("database must not be contacted"); });
+    for (const cutoff of [new Date("invalid"), new Date(Date.now() + 60_000)]) {
+        await assert.rejects(repository.recoverStaleAnalysis({ userId: USER_ID, caseId: CASE_ID, analyzeRunId: RUN_ID, cutoff }), /cutoff/);
+    }
+    assert.equal(transaction.mock.callCount(), 0);
+});
