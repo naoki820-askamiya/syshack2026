@@ -1,0 +1,57 @@
+{
+  "mode": "LOCAL_PRODUCTION_BUILD_MEASUREMENT",
+  "chunks": [
+    {
+      "file": "assets/index-CLe5hPf5.js",
+      "isEntry": true,
+      "bytes": 921702,
+      "gzipBytes": 262133,
+      "imports": [],
+      "dynamicImports": []
+    }
+  ],
+  "renderedCharactersBeforeMinification": {
+    "application": 161452,
+    "react": 9585,
+    "react-dom": 134718,
+    "scheduler": 4962,
+    "react-router": 223553,
+    "tslib": 2162,
+    "@supabase/functions-js": 15671,
+    "@supabase/postgrest-js": 106076,
+    "@supabase/realtime-js": 94288,
+    "@supabase/phoenix": 54182,
+    "iceberg-js": 15836,
+    "@supabase/storage-js": 106070,
+    "@supabase/auth-js": 379855,
+    "@supabase/supabase-js": 34648,
+    "lucide-react": 19584,
+    "clsx": 362,
+    "lodash": 194364,
+    "react-is": 3234,
+    "recharts": 449182,
+    "d3-shape": 24430,
+    "d3-path": 4347,
+    "d3-array": 7617,
+    "internmap": 1111,
+    "d3-scale": 28712,
+    "d3-color": 11297,
+    "d3-interpolate": 5004,
+    "d3-format": 11837,
+    "d3-time": 10613,
+    "d3-time-format": 19138,
+    "victory-vendor": 0,
+    "decimal.js-light": 49577,
+    "recharts-scale": 16702,
+    "tiny-invariant": 112,
+    "prop-types": 2921,
+    "fast-equals": 23253,
+    "react-smooth": 38616,
+    "eventemitter3": 10065
+  },
+  "limitations": [
+    "Rendered characters attribute transformed module code before final minification; not each package compressed-byte share.",
+    "No browser parse, network, layout or perceived latency measured.",
+    "No route splitting, chart removal, cache or DB index was adopted."
+  ]
+}
