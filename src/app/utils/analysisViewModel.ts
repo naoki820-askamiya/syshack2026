@@ -1,4 +1,9 @@
 export type ConfidenceLevel = 'low' | 'medium' | 'high';
+export type ActionSafety = 'safe' | 'caution' | 'unknown';
+
+export function actionSafetyLabel(safety: ActionSafety): string {
+  return safety === 'safe' ? '比較的安全な候補' : safety === 'caution' ? '注意して検討' : '安全性の情報なし・慎重に検討';
+}
 
 export interface AnalysisScoreView {
   key: string;
@@ -24,7 +29,7 @@ export interface AnalysisView {
   alternatives: { label: string; reason: string }[];
   possibleBiases: { label: string; basis: string }[];
   balancedView: string;
-  recommendedActions: { label: string; reason: string }[];
+  recommendedActions: { label: string; reason: string; safety: ActionSafety }[];
   avoidActions: { label: string; reason: string }[];
   replyDrafts: { tone: 'formal' | 'normal' | 'light'; text: string }[];
   contactTiming: string;
@@ -109,6 +114,7 @@ function normalizeV2(root: JsonObject): AnalysisView | null {
     balancedView: text(reframe.balancedView),
     recommendedActions: objectArray(analysis.recommendedActions).map((item) => ({
       label: text(item.label), reason: text(item.reason),
+      safety: item.safety === 'safe' || item.safety === 'caution' ? item.safety : 'unknown',
     })),
     avoidActions: objectArray(analysis.avoidActions).map((item) => ({
       label: text(item.label), reason: text(item.reason),
@@ -152,7 +158,7 @@ function normalizeLegacy(root: JsonObject): AnalysisView | null {
     reassuringSignals: objectArray(legacy.goodSignals).map((item) => text(item.text)).filter(Boolean),
     unknowns: [], alternatives: [], possibleBiases: [],
     balancedView: text(legacy.contextImpression),
-    recommendedActions: objectArray(legacy.actions).map((item) => ({ label: text(item.text), reason: '' })),
+    recommendedActions: objectArray(legacy.actions).map((item) => ({ label: text(item.text), reason: '', safety: 'unknown' })),
     avoidActions: objectArray(legacy.avoidExpressions).map((item) => ({ label: text(item.text), reason: '' })),
     replyDrafts: objectArray(legacy.replyExamples).map((item) => ({
       tone: item.tone === 'formal' ? 'formal' : item.tone === 'casual' ? 'light' : 'normal',
