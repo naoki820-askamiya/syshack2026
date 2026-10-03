@@ -27,10 +27,22 @@ export function AnalysisV17() {
   const { id, caseId } = useParams<{ id?: string; caseId?: string }>();
   const navigate = useNavigate();
   const resolvedId = id ?? caseId;
-  const { consultation, view, loading, error } = useHydratedAnalysis(resolvedId);
+  const { consultation, view, loading, error, status, retry } = useHydratedAnalysis(resolvedId);
 
-  if (loading) return <MissingResult message="分析結果を読み込んでいます..." />;
-  if (!consultation || !view) return <MissingResult message={error || undefined} />;
+  if (!view) return (
+    <div className="min-h-screen bg-[#F7F9FC]">
+      <Navigation />
+      <main className="lg:ml-64 mx-auto max-w-3xl space-y-4 p-6 pb-24">
+        <h1 className="text-xl font-semibold">保存した相談の分析</h1>
+        <p role="status" aria-live="polite">{loading ? '相談の状態を確認し、状況を整理しています。結果は検証後に表示します。' : status === 'analyzing' ? '分析処理が続いています。画面を閉じても保存した相談から状態を確認できます。' : '相談の状態を確認して、同じ相談から分析を開始・再試行できます。'}</p>
+        {consultation && <p className="text-sm">相談を保存しました。</p>}
+        {error && <p role="alert" className="text-red-700">{error}</p>}
+        <button type="button" disabled={loading} onClick={retry} className="rounded-xl bg-[#0F4C81] px-4 py-3 text-white disabled:opacity-50">{status === 'analyzing' ? '分析状態を再取得' : '同じ相談で分析・再試行'}</button>
+        <button type="button" onClick={() => navigate('/history')} className="block text-[#0F4C81]">相談履歴へ戻る</button>
+      </main>
+    </div>
+  );
+  if (!consultation) return <MissingResult message={error || undefined} />;
   const conf = CONFIDENCE[view.confidenceLevel];
 
   return (

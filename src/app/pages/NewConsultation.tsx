@@ -2,9 +2,9 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { ArrowLeft, Send, MessageSquare, PenLine, X, ChevronDown, AlertCircle, UserCheck } from 'lucide-react';
 import type { ConsultationData, RelationType } from '../types';
-import { createPerson, createAnalysisCase, analyze } from '../api/sessionV17';
+import { createPerson, createAnalysisCase } from '../api/sessionV17';
 import { fetchApiJson } from '../api/client';
-import { captureAuthBoundary, isCurrentAuthBoundary } from '../utils/authBoundary';
+import { captureAuthBoundary, isCurrentAuthBoundary, assertCurrentAuthBoundary } from '../utils/authBoundary';
 import { relationshipLabel, type ApiPerson } from '../api/consultationMapper';
 import { saveConsultation, getConsultations } from '../utils/storage';
 import { getRelationStyle } from '../utils/relationStyles';
@@ -177,16 +177,19 @@ export function NewConsultation() {
       otherChatText,
     );
 
+    const boundary = captureAuthBoundary();
     setIsAnalyzing(true);
     
     try {
       // 履歴から選んだ相手は所有中のPersonを再利用し、新規入力時だけ作成します。
+      assertCurrentAuthBoundary(boundary);
       let personId = formData.personId;
       if (!personId) {
         const personRes = await createPerson({
           displayName: formData.personName,
           relationshipType: effectiveRelation,
         });
+        assertCurrentAuthBoundary(boundary);
         personId = personRes.person.id;
       }
 
@@ -200,6 +203,7 @@ export function NewConsultation() {
         userResponseType: actionMode === 'text' ? 'action' : actionMode === 'chat' ? 'conversation' : 'none',
         userResponseText: effectiveUserAction,
       });
+      assertCurrentAuthBoundary(boundary);
       const caseId = caseRes.analysisCase.id;
 
       // DBが正本であり、このキャッシュは直後の画面遷移を滑らかにする目的に限定します。
@@ -216,14 +220,11 @@ export function NewConsultation() {
         ageGroup: formData.ageGroup,
         gender: formData.gender,
       };
-      saveConsultation(consultation);
-
-      await analyze(caseId);
-
-      navigate(`/analysis/${caseId}`);
+      saveConsultation(consultation, boundary);
+      navigate(`/analysis/${caseId}`, { state: { startAnalysis: true } });
 
     } catch (error: unknown) {
-      setApiError(error instanceof Error ? error.message : "サーバーとの通信に失敗しました。時間をおいて再試行してください。");
+      if (isCurrentAuthBoundary(boundary)) setApiError(error instanceof Error ? error.message : "サーバーとの通信に失敗しました。時間をおいて再試行してください。");
     } finally {
       setIsAnalyzing(false);
     }
@@ -726,7 +727,7 @@ export function NewConsultation() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  分析中です...
+                  相談を保存しています...
                 </>
               ) : (
                 "分析する"
