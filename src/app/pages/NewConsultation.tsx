@@ -246,6 +246,7 @@ export function NewConsultation() {
     <button
       type="button"
       onClick={() => setFormData({ ...formData, relation, relationOther: '' })}
+      aria-pressed={formData.relation === relation}
       className={`py-2.5 px-3 rounded-lg border-2 transition-colors text-sm ${
         formData.relation === relation ? selectedBtn : unselectedBtn
       }`}
@@ -261,7 +262,7 @@ export function NewConsultation() {
       <div className="lg:ml-64 pb-24 lg:pb-8">
         <div className="bg-white border-b border-[#D9E1EA] p-4 lg:px-8 sticky top-0 z-10">
           <div className="max-w-4xl mx-auto flex items-center gap-3">
-            <button onClick={() => navigate('/')} className="text-[#5B6573] hover:text-[#1F2A37]">
+            <button aria-label="ホームに戻る" onClick={() => navigate('/')} className="text-[#5B6573] hover:text-[#1F2A37]">
               <ArrowLeft className="w-6 h-6" />
             </button>
             <h1 className="text-xl lg:text-2xl font-semibold">状況を入力</h1>
@@ -281,19 +282,19 @@ export function NewConsultation() {
           )}
 
           {submitted && Object.values(errors).some(Boolean) && (
-            <div className="mb-6 flex items-center gap-2 bg-red-50 border border-red-300 text-red-700 rounded-lg px-4 py-3 text-sm">
+            <div role="alert" className="mb-6 flex items-center gap-2 bg-red-50 border border-red-300 text-red-700 rounded-lg px-4 py-3 text-sm">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               <span>入力されていない必須項目があります。赤くなっている欄を確認してください。</span>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6 lg:space-y-8" noValidate>
+          <form aria-busy={isAnalyzing} onSubmit={handleSubmit} className="space-y-6 lg:space-y-8" noValidate>
             <div className="lg:grid lg:grid-cols-2 lg:gap-8 space-y-6 lg:space-y-0">
 
               <div className="space-y-6">
 
                 <div>
-                  <label className="block text-sm font-medium text-[#5B6573] mb-1">
+                  <label htmlFor="person-name" className="block text-sm font-medium text-[#5B6573] mb-1">
                     ニックネーム<span className="text-red-500 ml-0.5">*</span>
                   </label>
                   <p className="text-xs text-[#8A94A6] mb-2">本名は入力しないでください</p>
@@ -301,6 +302,7 @@ export function NewConsultation() {
                     <input
                       ref={nameInputRef}
                       type="text"
+                      id="person-name"
                       value={formData.personName}
                       onChange={(e) => handleNameChange(e.target.value)}
                       onFocus={() => {
@@ -349,11 +351,12 @@ export function NewConsultation() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-[#5B6573] mb-2">
+                    <label htmlFor="age-group" className="block text-sm font-medium text-[#5B6573] mb-2">
                       あなたの年代<span className="text-red-500 ml-0.5">*</span>
                     </label>
                     <div className="relative">
                       <select
+                        id="age-group"
                         value={formData.ageGroup}
                         onChange={(e) => setFormData({ ...formData, ageGroup: e.target.value })}
                         className={`${inputClass()} appearance-none pr-10 cursor-pointer`}
@@ -366,11 +369,12 @@ export function NewConsultation() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-[#5B6573] mb-2">
+                    <label htmlFor="gender" className="block text-sm font-medium text-[#5B6573] mb-2">
                       あなたの性別<span className="text-red-500 ml-0.5">*</span>
                     </label>
                     <div className="relative">
                       <select
+                        id="gender"
                         value={formData.gender}
                         onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
                         className={`${inputClass()} appearance-none pr-10 cursor-pointer`}
@@ -384,10 +388,10 @@ export function NewConsultation() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-[#5B6573] mb-2">
+                <fieldset>
+                  <legend className="block text-sm font-medium text-[#5B6573] mb-2">
                     相手との関係<span className="text-red-500 ml-0.5">*</span>
-                  </label>
+                  </legend>
                   <div className="mb-2">
                     <p className="text-xs text-[#8A94A6] mb-1.5 flex items-center gap-1">
                       <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#0F4C81]"></span>
@@ -412,8 +416,10 @@ export function NewConsultation() {
                   </div>
                   {formData.relation === 'その他' && (
                     <div className="mt-3">
+                      <label htmlFor="relation-other" className="sr-only">その他の関係性</label>
                       <input
                         type="text"
+                        id="relation-other"
                         value={formData.relationOther}
                         onChange={(e) => setFormData({ ...formData, relationOther: e.target.value })}
                         className={inputClass(errors.relationOther)}
@@ -426,13 +432,14 @@ export function NewConsultation() {
                       )}
                     </div>
                   )}
-                </div>
+                </fieldset>
 
                 <div>
-                  <label className="block text-sm font-medium text-[#5B6573] mb-2">
+                  <label htmlFor="event-facts" className="block text-sm font-medium text-[#5B6573] mb-2">
                     起きた出来事<span className="text-red-500 ml-0.5">*</span>
                   </label>
                   <textarea
+                    id="event-facts"
                     value={formData.event}
                     onChange={(e) => setFormData({ ...formData, event: e.target.value })}
                     className={inputClass(errors.event)}
@@ -449,16 +456,17 @@ export function NewConsultation() {
 
               <div className="space-y-6">
 
-                <div>
-                  <label className="block text-sm font-medium text-[#5B6573] mb-2">
+                <fieldset>
+                  <legend className="block text-sm font-medium text-[#5B6573] mb-2">
                     相手の反応<span className="text-red-500 ml-0.5">*</span>
-                  </label>
+                  </legend>
                   <div className="grid grid-cols-3 gap-2">
                     {REACTIONS.map((reaction) => (
                       <button
                         key={reaction}
                         type="button"
                         onClick={() => setFormData({ ...formData, reaction, reactionOther: '' })}
+                        aria-pressed={formData.reaction === reaction}
                         className={`py-2.5 px-2 rounded-lg border-2 transition-colors text-sm flex flex-col items-center gap-1 ${
                           formData.reaction === reaction ? selectedBtn : unselectedBtn
                         }`}
@@ -470,8 +478,10 @@ export function NewConsultation() {
                   </div>
                   {formData.reaction === 'その他' && (
                     <div className="mt-3">
+                      <label htmlFor="reaction-other" className="sr-only">その他の反応</label>
                       <input
                         type="text"
+                        id="reaction-other"
                         value={formData.reactionOther}
                         onChange={(e) => setFormData({ ...formData, reactionOther: e.target.value })}
                         className={inputClass(errors.reactionOther)}
@@ -484,18 +494,19 @@ export function NewConsultation() {
                       )}
                     </div>
                   )}
-                </div>
+                </fieldset>
 
-                <div>
-                  <label className="block text-sm font-medium text-[#5B6573] mb-2">
+                <fieldset>
+                  <legend className="block text-sm font-medium text-[#5B6573] mb-2">
                     出来事からの経過時間<span className="text-red-500 ml-0.5">*</span>
-                  </label>
+                  </legend>
                   <div className="grid grid-cols-4 lg:grid-cols-2 gap-2">
                     {TIMINGS.map((timing) => (
                       <button
                         key={timing}
                         type="button"
                         onClick={() => setFormData({ ...formData, timing })}
+                        aria-pressed={formData.timing === timing}
                         className={`py-3 px-2 rounded-lg border-2 transition-colors text-sm ${
                           formData.timing === timing ? selectedBtn : unselectedBtn
                         }`}
@@ -504,17 +515,18 @@ export function NewConsultation() {
                       </button>
                     ))}
                   </div>
-                </div>
+                </fieldset>
 
-                <div>
-                  <label className="block text-sm font-medium text-[#5B6573] mb-2">
+                <fieldset>
+                  <legend className="block text-sm font-medium text-[#5B6573] mb-2">
                     自分の行動（その後どうしたか）<span className="text-red-500 ml-0.5">*</span>
-                  </label>
+                  </legend>
 
                   <div className="flex gap-2 mb-3">
                     <button
                       type="button"
                       onClick={() => setActionMode('text')}
+                      aria-pressed={actionMode === 'text'}
                       className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border-2 text-sm transition-colors ${
                         actionMode === 'text' ? selectedBtn : unselectedBtn
                       }`}
@@ -525,6 +537,7 @@ export function NewConsultation() {
                     <button
                       type="button"
                       onClick={() => setActionMode('chat')}
+                      aria-pressed={actionMode === 'chat'}
                       className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border-2 text-sm transition-colors ${
                         actionMode === 'chat' ? selectedBtn : unselectedBtn
                       }`}
@@ -535,6 +548,7 @@ export function NewConsultation() {
                     <button
                       type="button"
                       onClick={() => setActionMode('none')}
+                      aria-pressed={actionMode === 'none'}
                       className={'flex-1 py-2.5 px-2 rounded-lg border-2 text-sm transition-colors ' + (actionMode === 'none' ? selectedBtn : unselectedBtn)}
                     >
                       何もしていない
@@ -543,7 +557,9 @@ export function NewConsultation() {
 
                   {actionMode === 'text' && (
                     <>
+                      <label htmlFor="user-action" className="sr-only">自分の行動の内容</label>
                       <textarea
+                        id="user-action"
                         value={formData.userAction}
                         onChange={(e) => setFormData({ ...formData, userAction: e.target.value })}
                         className={inputClass(errors.userAction)}
@@ -564,6 +580,7 @@ export function NewConsultation() {
                         <button
                           type="button"
                           onClick={() => setChatPlatform('LINE')}
+                          aria-pressed={chatPlatform === 'LINE'}
                           className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg border-2 text-sm transition-colors ${
                             chatPlatform === 'LINE' ? selectedBtn : unselectedBtn
                           }`}
@@ -573,6 +590,7 @@ export function NewConsultation() {
                         <button
                           type="button"
                           onClick={() => setChatPlatform('other')}
+                          aria-pressed={chatPlatform === 'other'}
                           className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg border-2 text-sm transition-colors ${
                             chatPlatform === 'other' ? selectedBtn : unselectedBtn
                           }`}
@@ -612,7 +630,8 @@ export function NewConsultation() {
                                     <button
                                       type="button"
                                       onClick={() => removeChatMessage(i)}
-                                      className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full hidden group-hover:flex items-center justify-center"
+                                      aria-label={`${i + 1}件目のメッセージを削除`}
+                                      className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center"
                                     >
                                       <X className="w-3 h-3" />
                                     </button>
@@ -627,6 +646,7 @@ export function NewConsultation() {
                               <button
                                 type="button"
                                 onClick={() => setChatSender('自分')}
+                                aria-pressed={chatSender === '自分'}
                                 className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-colors ${
                                   chatSender === '自分'
                                     ? 'bg-[#0F4C81] text-white'
@@ -638,6 +658,7 @@ export function NewConsultation() {
                               <button
                                 type="button"
                                 onClick={() => setChatSender('相手')}
+                                aria-pressed={chatSender === '相手'}
                                 className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-colors ${
                                   chatSender === '相手'
                                     ? 'bg-[#5B6573] text-white'
@@ -650,6 +671,8 @@ export function NewConsultation() {
                             <div className="flex gap-2">
                               <input
                                 type="text"
+                                id="chat-message"
+                                aria-label={`${chatSender}のメッセージ`}
                                 value={chatInput}
                                 onChange={(e) => setChatInput(e.target.value)}
                                 onKeyDown={(e) => {
@@ -664,6 +687,7 @@ export function NewConsultation() {
                               <button
                                 type="button"
                                 onClick={addChatMessage}
+                                aria-label="メッセージを追加"
                                 disabled={!chatInput.trim()}
                                 className="w-9 h-9 flex items-center justify-center rounded-lg bg-[#0F4C81] text-white hover:bg-[#0C3E69] disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex-shrink-0"
                               >
@@ -683,7 +707,9 @@ export function NewConsultation() {
                               <span className="text-[#0F4C81]">ユーザー名も含めてコピーするとより正確に分析できます。</span>
                             </p>
                           </div>
+                          <label htmlFor="chat-transcript" className="sr-only">貼り付ける会話の内容</label>
                           <textarea
+                            id="chat-transcript"
                             value={otherChatText}
                             onChange={(e) => setOtherChatText(e.target.value)}
                             className={inputClass(errors.chatContent)}
@@ -701,17 +727,18 @@ export function NewConsultation() {
                       )}
                     </div>
                   )}
-                </div>
+                </fieldset>
               </div>
             </div>
 
             {apiError && (
-              <div className="mb-6 flex items-center gap-2 bg-red-50 border border-red-300 text-red-700 rounded-lg px-4 py-3 text-sm">
+              <div role="alert" className="mb-6 flex items-center gap-2 bg-red-50 border border-red-300 text-red-700 rounded-lg px-4 py-3 text-sm">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 <span>{apiError}</span>
               </div>
             )}
 
+            {isAnalyzing && <p role="status" className="text-sm text-[#5B6573]">相談を保存しています…</p>}
             <button
               type="submit"
               disabled={isAnalyzing || personLoading || personLoadFailed}

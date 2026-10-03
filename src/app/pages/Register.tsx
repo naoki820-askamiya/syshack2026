@@ -71,14 +71,14 @@ export function Register() {
             <p className="text-[#5B6573] text-sm lg:text-base">感情ナビを始めましょう</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4 lg:space-y-5">
+          <form aria-busy={isSubmitting} onSubmit={handleSubmit} className="space-y-4 lg:space-y-5">
             {errorMessage && (
-              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                 {errorMessage}
               </div>
             )}
             {noticeMessage && (
-              <div className="rounded-lg border border-[#B9DDBB] bg-[#EAF6EF] px-4 py-3 text-sm text-[#1F7A4D]">
+              <div role="status" className="rounded-lg border border-[#B9DDBB] bg-[#EAF6EF] px-4 py-3 text-sm text-[#1F7A4D]">
                 {noticeMessage}
               </div>
             )}
@@ -89,6 +89,8 @@ export function Register() {
               </label>
               <input
                 id="name"
+                autoComplete="name"
+                disabled={isSubmitting}
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -104,6 +106,8 @@ export function Register() {
               </label>
               <input
                 id="email"
+                autoComplete="username"
+                disabled={isSubmitting}
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -119,6 +123,8 @@ export function Register() {
               </label>
               <input
                 id="password"
+                autoComplete="new-password"
+                disabled={isSubmitting}
                 type="password"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
@@ -135,6 +141,8 @@ export function Register() {
               </label>
               <input
                 id="confirmPassword"
+                autoComplete="new-password"
+                disabled={isSubmitting}
                 type="password"
                 value={formData.confirmPassword}
                 onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
@@ -144,6 +152,7 @@ export function Register() {
               />
             </div>
 
+            {isSubmitting && <p role="status" className="text-sm text-[#5B6573]">処理中です…</p>}
             <button
               type="submit"
               disabled={isSubmitting}
