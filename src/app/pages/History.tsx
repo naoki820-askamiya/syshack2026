@@ -43,7 +43,7 @@ export function History() {
     label: latestPersons.filter(p => p.personName === c.personName).length > 1 ? `${c.personName}（${c.relation}・${index + 1}）` : c.personName,
   }))];
   const selectedPerson = persons.find(p => p.id === filterPerson);
-  
+
   const filteredConsultations = filterPerson === ''
     ? allConsultations
     : allConsultations.filter(c => c.personId === filterPerson);
@@ -55,7 +55,7 @@ export function History() {
   return (
     <div className="min-h-screen bg-[#F7F9FC]">
       <Navigation />
-      
+
       <div className="lg:ml-64 pb-24 lg:pb-8">
         <div className="bg-white border-b border-[#D9E1EA] p-4 lg:px-8 sticky top-0 z-10">
           <div className="max-w-5xl mx-auto flex items-center gap-3">
@@ -106,7 +106,7 @@ export function History() {
             <div className="bg-white rounded-2xl p-8 shadow-sm text-center border border-[#D9E1EA]">
               <Calendar className="w-12 h-12 mx-auto text-[#B8C2CF] mb-3" />
               <p className="text-[#5B6573] mb-4">
-                {filterPerson === '' 
+                {filterPerson === ''
                   ? 'まだ相談履歴がありません'
                   : `${selectedPerson?.label ?? '選択した相手'}さんの相談履歴がありません`}
               </p>
@@ -174,7 +174,7 @@ export function History() {
                           </div>
                         </div>
                       </div>
-                      
+
                       <div className="mb-3">
                         <span className="text-xs text-[#5B6573]">出来事</span>
                         <p className="text-sm text-[#1F2A37] line-clamp-2 mt-0.5">

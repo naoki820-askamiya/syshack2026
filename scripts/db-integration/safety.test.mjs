@@ -14,4 +14,3 @@ test('only the runner-created loopback database is accepted', () => {
   assert.throws(() => assertDisposableUrl(safe, undefined));
   assert.throws(() => assertDisposableUrl(safe, 'b123456789abcdef'));
 });
-

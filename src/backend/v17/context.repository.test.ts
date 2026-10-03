@@ -136,4 +136,3 @@ test("past AI summaries and user Feedback retain different provenance kinds", as
     assert.equal(reference.provenance.personSnapshot.kind, "user_provided_fact");
     aiAnalysisInputSchema.parse(context.aiInput);
 });
-

@@ -217,4 +217,3 @@ test('an expired zero deadline sends no provider request', () => withEnv(async (
     error => error instanceof AnalyzeMoodV2Error && error.code === 'AI_TIMEOUT' && error.attempts === 0);
   assert.equal(calls, 0);
 }));
-

@@ -65,4 +65,3 @@ test("unexpected errors keep the generic internal error response", async () => {
     assert.equal(JSON.stringify(body).includes("not-allowed"), false);
     assert.equal(body.error.requestId, response.headers.get("x-request-id"));
 });
-

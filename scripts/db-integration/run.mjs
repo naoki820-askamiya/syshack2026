@@ -95,4 +95,3 @@ try {
     await rm(cleanupPath, { recursive: true });
   }
 }
-
