@@ -217,3 +217,28 @@ test('an expired zero deadline sends no provider request', () => withEnv(async (
     error => error instanceof AnalyzeMoodV2Error && error.code === 'AI_TIMEOUT' && error.attempts === 0);
   assert.equal(calls, 0);
 }));
+
+test('installed SDK accepts the remaining timeout and reaches injected fetch without real network', () => withEnv(async () => {
+  let fetchCalls = 0;
+  const sdk = new OpenAI({
+    apiKey: 'synthetic-no-network', baseURL: 'http://127.0.0.1:9/synthetic', maxRetries: 0,
+    fetch: (async (_url: unknown, init: { body?: unknown }) => {
+      fetchCalls += 1;
+      const body = JSON.parse(String(init.body));
+      assert.equal(body.store, false);
+      assert.equal(body.text.format.type, 'json_schema');
+      return new Response(JSON.stringify({
+        id: 'resp_synthetic', object: 'response', created_at: 0, model: 'test-model',
+        status: 'completed', output: [{
+          type: 'message', id: 'msg_synthetic', status: 'completed', role: 'assistant',
+          content: [{ type: 'output_text', annotations: [], text: JSON.stringify(makeValidV2Result()) }],
+        }],
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }) as never,
+  });
+  const result = await analyzeMoodV2(input, { client: sdk.responses, timeoutMs: 2_000.5 });
+  assert.equal(fetchCalls, 1);
+  assert.equal(result.attempts, 1);
+  assert.equal(result.model, 'test-model');
+  assert.equal(result.analysis.disclaimer.notDiagnosis, true);
+}));

@@ -89,7 +89,8 @@ export async function analyzeMoodV2(
                 },
                 {
                     signal,
-                    timeout: remainingMs,
+                    // SDK 4.x requires integer milliseconds; the outer timer keeps the precise deadline.
+                    timeout: Math.max(1, Math.floor(remainingMs)),
                     maxRetries: 0,
                 },
             ), remainingMs, options.signal);
