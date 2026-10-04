@@ -36,8 +36,8 @@ For P positive persons and C cases per person, observed HTTP requests match
 
 For P=100/C=100, 10,000 cases returned through 302 requests, maximum
 100 concurrent requests, 2.50 MiB synthetic response JSON and
-15.55 MiB highest sampled heap growth. Local mock completion
-was 69.501ms on Node v22.15.1. This is one synthetic run; timings/heap vary.
+15.41 MiB highest sampled heap growth. Local mock completion
+was 106.537ms on Node v22.15.1. This is one synthetic run; timings/heap vary.
 Every successful scenario writes the completed sorted cache once; no partial cache is written.
 
 ## Failure behavior

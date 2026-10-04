@@ -2,34 +2,69 @@
   "mode": "LOCAL_PRODUCTION_BUILD_MEASUREMENT",
   "chunks": [
     {
-      "file": "assets/index-BVpy8f7W.js",
+      "file": "assets/index-DEiKxMgG.js",
       "isEntry": true,
-      "bytes": 923124,
-      "gzipBytes": 262567,
+      "bytes": 530835,
+      "gzipBytes": 153241,
       "imports": [],
+      "dynamicImports": [
+        "assets/AnalysisV17-BuTh7EdG.js",
+        "assets/ActionSuggestionV17-CLE0H7J-.js"
+      ]
+    },
+    {
+      "file": "assets/AnalysisV17-BuTh7EdG.js",
+      "isEntry": false,
+      "bytes": 379576,
+      "gzipBytes": 106035,
+      "imports": [
+        "assets/index-DEiKxMgG.js",
+        "assets/useHydratedAnalysis-CKDK9DXG.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "file": "assets/ActionSuggestionV17-CLE0H7J-.js",
+      "isEntry": false,
+      "bytes": 7102,
+      "gzipBytes": 2427,
+      "imports": [
+        "assets/index-DEiKxMgG.js",
+        "assets/useHydratedAnalysis-CKDK9DXG.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "file": "assets/useHydratedAnalysis-CKDK9DXG.js",
+      "isEntry": false,
+      "bytes": 6390,
+      "gzipBytes": 2804,
+      "imports": [
+        "assets/index-DEiKxMgG.js"
+      ],
       "dynamicImports": []
     }
   ],
   "renderedCharactersBeforeMinification": {
-    "application": 163808,
+    "application": 166690,
     "react": 9585,
     "react-dom": 134728,
     "scheduler": 4962,
-    "react-router": 223553,
+    "react-router": 223471,
     "tslib": 2162,
     "@supabase/functions-js": 15671,
     "@supabase/postgrest-js": 106076,
-    "@supabase/realtime-js": 94288,
+    "@supabase/realtime-js": 94276,
     "@supabase/phoenix": 54182,
     "iceberg-js": 15836,
-    "@supabase/storage-js": 106070,
+    "@supabase/storage-js": 106053,
     "@supabase/auth-js": 379855,
-    "@supabase/supabase-js": 34648,
-    "lucide-react": 19584,
+    "@supabase/supabase-js": 34626,
+    "lucide-react": 19576,
     "clsx": 362,
-    "lodash": 194364,
+    "lodash": 194362,
     "react-is": 3234,
-    "recharts": 449182,
+    "recharts": 449170,
     "d3-shape": 24430,
     "d3-path": 4347,
     "d3-array": 7617,
