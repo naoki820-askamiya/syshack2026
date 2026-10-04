@@ -15,7 +15,16 @@ export class StaleAuthResponseError extends Error {
   }
 }
 
-// Response isolation only: not authentication, authorization, or a before-send gate.
+export class StaleAuthWriteIntentError extends Error {
+  readonly code = 'AUTH_WRITE_INTENT_STALE';
+
+  constructor() {
+    super('ログイン状態が変わりました。もう一度操作してください。');
+    this.name = 'StaleAuthWriteIntentError';
+  }
+}
+
+// These guards isolate client intent/results; the server still authenticates and checks ownership.
 function assertCurrentResponse(boundary: AuthBoundary): void {
   const current = captureAuthBoundary();
   if (boundary.userId !== current.userId || boundary.epoch !== current.epoch) {
@@ -34,7 +43,7 @@ async function buildApiError(response: Response): Promise<Error> {
 
 // The existing protected transport, with injectable I/O for response-race regressions.
 export function createApiClient({ getSession, send }: ApiTransport) {
-  async function request(endpoint: string, options: RequestInit): Promise<Response> {
+  async function request(endpoint: string, options: RequestInit, boundary: AuthBoundary): Promise<Response> {
     const { data } = await getSession();
     const accessToken = data.session?.access_token;
     if (!accessToken) throw new Error('ログインが必要です。');
@@ -45,21 +54,29 @@ export function createApiClient({ getSession, send }: ApiTransport) {
       headers.set('Content-Type', 'application/json');
     }
 
-    const response = await send(endpoint, { ...options, headers });
+    const requestOptions = { ...options, headers };
+    if (['POST', 'PATCH', 'PUT', 'DELETE'].includes((requestOptions.method ?? 'GET').toUpperCase())) {
+      requestOptions.signal?.throwIfAborted();
+      const current = captureAuthBoundary();
+      if (boundary.userId !== current.userId || boundary.epoch !== current.epoch) {
+        throw new StaleAuthWriteIntentError();
+      }
+    }
+    const response = await send(endpoint, requestOptions);
     if (!response.ok) throw await buildApiError(response);
     return response;
   }
 
   async function fetchApi(endpoint: string, options: RequestInit = {}): Promise<Response> {
     const boundary = captureAuthBoundary();
-    const response = await request(endpoint, options);
+    const response = await request(endpoint, options, boundary);
     assertCurrentResponse(boundary);
     return response;
   }
 
   async function fetchApiJson<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const boundary = captureAuthBoundary();
-    const response = await request(endpoint, options);
+    const response = await request(endpoint, options, boundary);
     assertCurrentResponse(boundary);
     const payload = await response.json() as T;
     assertCurrentResponse(boundary);
