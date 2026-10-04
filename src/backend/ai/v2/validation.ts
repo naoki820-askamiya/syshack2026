@@ -87,7 +87,8 @@ function validateFieldSafety(result: KigenAnalysisResultV2): void {
             const end = match.index! + match[0].length;
             if (isExplicitAvoidance(text.slice(end))) continue;
             // An avoidActions label names what to avoid; it must not explicitly urge the action.
-            if (avoidedLabel && !DIRECT_INSTRUCTION_PATTERN.test(text)) continue;
+            const bareAction = /^(?:(?:相手|他人)(?:を|に))?(?:殴る|蹴る|脅す|晒す|仕返し|復讐|追い詰める)[。.!！？?]?\s*$/u.test(text);
+            if (avoidedLabel && bareAction && !DIRECT_INSTRUCTION_PATTERN.test(text)) continue;
             // Preserve the existing deny behavior outside the specific avoided/negated cases.
             rejectUnsafeField(field);
         }

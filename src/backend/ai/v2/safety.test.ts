@@ -110,3 +110,26 @@ test('observed aggression quotes stay conservatively rejected pending semantic p
   assert.throws(() => validateAiOutput(result), error =>
     error instanceof AiOutputValidationError && error.failure === 'unsafe');
 });
+
+test('avoidActions role cannot bypass imperative or reversed avoidance instructions', () => {
+  for (const label of [
+    '相手を殴れ', '相手を脅せ', '相手を晒せ', '相手を追い詰めろ',
+    '最善の対応は相手を殴る', '正しい対応として相手を脅す', '必ず相手を晒す',
+    '相手を脅すのは避けてはいけません', '相手を脅すのは避けるな',
+    '相手を脅すのは避けてはならない', '相手を脅すのは避けてはダメ',
+    '相手を脅すのは避けないでください', '相手を脅すことが最善の対応です',
+  ]) {
+    const result = makeValidV2Result();
+    result.avoidActions[0].label = label;
+    assert.throws(() => validateAiOutput(result), error =>
+      error instanceof AiOutputValidationError && error.failure === 'unsafe');
+  }
+});
+
+test('bare action names and complete avoidance retain the avoidActions field role', () => {
+  for (const label of ['相手を殴る', '相手を脅す', '相手を晒す', '仕返し', '復讐', '相手を追い詰める', '相手を脅すことは避けましょう。']) {
+    const result = makeValidV2Result();
+    result.avoidActions[0].label = label;
+    assert.equal(validateAiOutput(result).avoidActions[0].label, label);
+  }
+});
