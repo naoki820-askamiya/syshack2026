@@ -148,3 +148,34 @@ test("logging and usage reconciliation failures cannot change a saved successful
     assert.equal(result.status, "analyzed");
     assert.equal(recovery.mock.callCount(), 0);
 });
+
+test("zero-row compensation reports unmatched outcome without treating it as successful recovery", async (t) => {
+    const { events, settlement } = startFixture(t);
+    replace(t, prisma.analysisCase, "findFirst", async () => { throw new Error(SECRET); });
+    replace(t, prisma.analysisCase, "updateMany", async () => ({ count: 0 }));
+    await assert.rejects(analyzeCase(USER_ID, CASE_ID));
+    const outcome = events.find(([name]) => name === "analysis_compensation_outcome")?.[1];
+    assert.ok(outcome);
+    assert.equal(outcome.outcome, "unmatched");
+    assert.equal(outcome.updatedCount, 0);
+    assert.equal(outcome.caseId, CASE_ID);
+    assert.equal(outcome.runId, RUN_ID);
+    assert.equal(settlement.mock.callCount(), 1);
+    assert.equal(JSON.stringify(events).includes(SECRET), false);
+});
+
+test("usage reconciliation reports known attempts and exact run correlation after provider failure", async (t) => {
+    const { events } = startFixture(t);
+    contextFixture(t);
+    replace(t, prisma.apiUsageEvent, "updateMany", async () => { throw new Error(SECRET); });
+    await assert.rejects(analyzeCase(USER_ID, CASE_ID, {
+        generate: async () => { throw new AnalyzeMoodV2Error("AI_PROVIDER_ERROR", SECRET, 2); },
+    }));
+    const usage = events.find(([name]) => name === "usage_reconciliation_required")?.[1];
+    assert.ok(usage);
+    assert.equal(usage.actualAttempts, 2);
+    assert.equal(usage.caseId, CASE_ID);
+    assert.equal(usage.runId, RUN_ID);
+    assert.equal(usage.status, "failed");
+    assert.equal(JSON.stringify(events).includes(SECRET), false);
+});

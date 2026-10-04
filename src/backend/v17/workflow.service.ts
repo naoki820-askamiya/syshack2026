@@ -91,7 +91,7 @@ export async function analyzeCase(
             }
 
             stage = "usage_settlement";
-            await settleUsageOrLog(started.usageEventId, "succeeded", actualAttempts);
+            await settleUsageOrLog(started.usageEventId, "succeeded", actualAttempts, { caseId, runId: started.analyzeRunId });
             status = "succeeded";
             return {
                 status: "analyzed",
@@ -110,12 +110,19 @@ export async function analyzeCase(
                     userId, caseId, analyzeRunId: started.analyzeRunId,
                     failureCode: normalized.code, failureMessage: normalized.message,
                 }),
-                settleUsageOrLog(started.usageEventId, "failed", actualAttempts),
+                settleUsageOrLog(started.usageEventId, "failed", actualAttempts, { caseId, runId: started.analyzeRunId }),
             ]);
             if (compensation[0].status === "rejected") {
                 safeWorkflowLog("error", "analysis_compensation_required", {
                     caseId, runId, usageEventId: started.usageEventId, errorStage: "state_compensation",
                     errorName: compensation[0].reason instanceof Error ? compensation[0].reason.constructor.name : "UnknownError",
+                });
+            }
+            if (compensation[0].status === "fulfilled") {
+                safeWorkflowLog("info", "analysis_compensation_outcome", {
+                    caseId, runId, usageEventId: started.usageEventId,
+                    updatedCount: compensation[0].value.count,
+                    outcome: compensation[0].value.count > 0 ? "recovered" : "unmatched",
                 });
             }
             throw normalized;
@@ -203,6 +210,7 @@ async function settleUsageOrLog(
     usageEventId: string,
     status: "succeeded" | "failed",
     actualAttempts: number,
+    correlation: { caseId: string; runId: string },
 ): Promise<void> {
     try {
         await settleUsage(repository.prisma, usageEventId, status, actualAttempts);
@@ -210,6 +218,8 @@ async function settleUsageOrLog(
         // 利用量集計は運用上補正できるため、分析結果やcase復旧の成否を巻き戻しません。
         safeWorkflowLog("error", "usage_reconciliation_required", {
             usageEventId,
+            ...correlation,
+            actualAttempts,
             status,
             errorName: error instanceof Error ? error.name : "UnknownError",
         });
