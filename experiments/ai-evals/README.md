@@ -7,7 +7,7 @@ Run from the dedicated worktree with the existing dependencies:
 npm.cmd test
 ```
 
-The runner creates `results/offline.json` for 25 synthetic inputs. Candidate outputs
+The runner creates `results/offline.json` for 30 synthetic inputs. Candidate outputs
 are deliberately constructed contract fixtures, **not model responses**. This does
 not compare quality, speed, tokens, or costs of any real model. Unknown measurements
 are null. Semantic flags are human-review hints; grader thresholds are not a product
@@ -18,7 +18,7 @@ safety policy. No production consultation, provider call, secret or dotenv read 
 No paid runner is provided or executed. `scripts/budget.ts` tests a planning gate:
 `ALLOW_PAID_MODEL_BENCHMARK=1` is necessary, plus a finite explicit budget cap, model,
 request count, input bound, output limit, retry count and current prices. The example
-uses 25 Luna requests, 3,000 maximum output tokens and zero retries. Input planning
+uses 30 Luna requests per variant, 3,000 maximum output tokens and zero retries. Input planning
 uses UTF-8 byte counts including instructions, actual serialized input and JSON Schema; this is not an
 exact tokenizer. Provider framing and price freshness also need to be budgeted before real
 execution. A production-ready runner still needs a aggregate reservation ledger,
@@ -36,7 +36,7 @@ Installed OpenAI 4.104.0 exposes `responses.stream()` and `finalResponse()` with
 Structured Outputs. `scripts/streamingPrototype.ts` constructs a schema-bound SDK
 request without sending, and consumes a mock async event stream. Raw deltas remain
 private. Only completed, fully validated JSON produces application section events;
-actions/replies appear only in `final_ready`. Failures emit nothing and retain the
+actions/replies appear only in `final_ready`. Transport/parsing/schema/safety failures emit nothing and retain the
 same case ID for reconciliation/retry. Nothing is persisted or wired into the UI.
 
 This conservative prototype emits sections at the same completion time. It provides
@@ -53,3 +53,14 @@ responses exist and a human reviews source fidelity, unsupported inference, cris
 handling and contradictions. Deterministic graders cannot prove those properties.
 
 Pricing example source (checked 2026-10-04): [official Luna model page](https://developers.openai.com/api/docs/models/gpt-6-luna), short-context standard input/output $0.10/$0.50 per million tokens. Recheck before paid use.
+
+Consumer callback failures are separate: a validated summary may already have
+been emitted when its consumer throws. The exact exception propagates, with no
+persistence. The fixture does not claim delivered events can be retracted.
+
+New fixtures include quoted injection, crisis-like input, excluded stale Profile,
+contradicting Feedback and AI-summary reification. Stale eligibility is covered by
+the actual context repository tests; its AI fixture contains no stale Profile.
+Repeated-input observations repeat constructed contract output, not model inference.
+High concern scores always invite axis-specific human review; field keywords are
+only diagnostic hints and no semantic support proof or calibrated FP/FN rate.

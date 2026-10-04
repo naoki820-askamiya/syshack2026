@@ -1,0 +1,62 @@
+{
+  "mode": "PREPARATION_ONLY",
+  "paidCalls": 0,
+  "gateEnabled": false,
+  "numericAggregateCapConfigured": false,
+  "currentModel": {
+    "source": [
+      "OPENAI_ANALYSIS_MODEL",
+      "OPENAI_MODEL"
+    ],
+    "deployedValue": "UNKNOWN",
+    "requests": 30,
+    "measuredCost": null,
+    "estimatedCost": null
+  },
+  "baseline": {
+    "baseSha": "406fc8581a471cedfe4a030845c820b03a4c4f2f",
+    "savedFilesUnchanged": true,
+    "instructionsLines": 17,
+    "instructionsUtf8Bytes": 1520,
+    "schema": "kigen-analysis-result-v2",
+    "fixtureCount": 30,
+    "offlineTestCount": 13
+  },
+  "candidate": {
+    "count": 1,
+    "adopted": false,
+    "additionalUtf8Bytes": 338,
+    "inputPlanningBound": 22644,
+    "exactTokenizerTokens": null
+  },
+  "lunaPlanning": {
+    "mandatoryVariants": [
+      "current prompt",
+      "candidate-1"
+    ],
+    "optionalVariants": [
+      "none",
+      "low"
+    ],
+    "fixturesPerVariant": 30,
+    "mandatoryCalls": 60,
+    "allLunaCalls": 120,
+    "retry": 0,
+    "maximumOutputTokensPerCall": 3000,
+    "planningCostMandatoryUsd": 0.225864,
+    "planningCostAllLunaUsd": 0.451728,
+    "inputUsdPerMillion": 0.1,
+    "outputUsdPerMillion": 0.5,
+    "providerFramingUnknown": true,
+    "reasoningBillableBudgetIncludedInOutputLimit": true,
+    "priceFreshness": "Recheck official model pricing before paid execution"
+  },
+  "adoption": "KEEP CURRENT MODEL / KEEP CURRENT PROMPT",
+  "limitations": [
+    "Constructed contract output is not model inference.",
+    "Current model quality/token/latency/cost and aggregate A/B/C charge cap remain unknown.",
+    "No paid runner or reservation ledger is implemented; these arithmetic plans cannot authorize sends.",
+    "Real semantic source support and safety FP/FN rates require model responses and human ratings.",
+    "The per-variant planning bound is UTF-8 bytes plus candidate delta, not exact tokenizer or provider framing."
+  ]
+}
