@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useLocation } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import { useAuth } from '../auth/AuthContext';
 import { analyze, hydrateAnalysis } from '../api/sessionV17';
 import { fetchApiJson } from '../api/client';
@@ -10,6 +10,7 @@ import { assertCurrentAuthBoundary, captureAuthBoundary, isCurrentAuthBoundary }
 
 export function useHydratedAnalysis(caseId: string | undefined) {
   const location = useLocation();
+  const navigate = useNavigate();
   const { authEpoch } = useAuth();
   const [, setRevision] = useState(0);
   const [attempt, setAttempt] = useState(0);
@@ -19,6 +20,17 @@ export function useHydratedAnalysis(caseId: string | undefined) {
   const [error, setError] = useState('');
   const consultation = caseId ? getConsultation(caseId) : undefined;
   const view = caseId ? normalizeAnalysis(getAnalysis(caseId)) : null;
+
+  // Consume the navigation intent separately so replace navigation does not restart the analysis effect.
+  useEffect(() => {
+    const state = location.state as Record<string, unknown> | null;
+    if (!state || typeof state !== 'object' || !state.startAnalysis) return;
+    const remaining = { ...state };
+    delete remaining.startAnalysis;
+    navigate({ pathname: location.pathname, search: location.search, hash: location.hash }, {
+      replace: true, state: Object.keys(remaining).length ? remaining : null,
+    });
+  }, [location.state, location.pathname, location.search, location.hash, navigate]);
 
   useEffect(() => {
     if (!caseId || (getConsultation(caseId) && normalizeAnalysis(getAnalysis(caseId)))) return;
