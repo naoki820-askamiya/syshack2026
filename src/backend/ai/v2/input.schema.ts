@@ -47,6 +47,14 @@ export const sourceProvenanceSchema = z.object({
     // Occurrence time and independent confirmation are not known from the current records.
     observedAt: z.null(),
     userConfirmed: z.literal(false),
+    profileFacts: z.object({
+        schemaVersion: boundedText(1, 100),
+        sourceCaseCount: z.number().int().min(0),
+        sourceFeedbackCount: z.number().int().min(0),
+        sourceLatestCaseId: z.string().uuid(),
+        needsRefresh: z.literal(false),
+        sourceCaseVerified: z.literal(true),
+    }).strict().optional(),
 }).strict();
 
 const recentCaseSummarySchema = z

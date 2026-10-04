@@ -109,6 +109,10 @@ test("known non-stale Profile keeps source metadata without claiming user confir
     assert.deepEqual(reference.provenance?.personProfile, {
         sourceType: "person_profile", sourceId: PROFILE_ID, kind: "ai_generated_summary",
         generatedAt: GENERATED_AT.toISOString(), observedAt: null, userConfirmed: false,
+        profileFacts: {
+            schemaVersion: "synthetic-v1", sourceCaseCount: 1, sourceFeedbackCount: 0,
+            sourceLatestCaseId: CASE_ID, needsRefresh: false, sourceCaseVerified: true,
+        },
     });
     assert.deepEqual((context.contextSnapshot.referenceContextSnapshot as unknown as { provenance: unknown }).provenance, reference.provenance);
 });
@@ -136,3 +140,25 @@ test("past AI summaries and user Feedback retain different provenance kinds", as
     assert.equal(reference.provenance.personSnapshot.kind, "user_provided_fact");
     aiAnalysisInputSchema.parse(context.aiInput);
 });
+
+for (const failure of ["missing", "wrong owner", "wrong person"]) {
+    test("Profile with " + failure + " source case is excluded rather than treated as verified", async (t) => {
+        mockProfile(t);
+        const currentCase = await prisma.analysisCase.findFirst({ where: { id: CASE_ID, userId: USER_ID } });
+        const lookup = replace(t, prisma.analysisCase, "findFirst", async (args) => {
+            if (args.select) {
+                assert.deepEqual(args.where, { id: CASE_ID, userId: USER_ID, personId: PERSON_ID });
+                assert.deepEqual(args.select, { id: true });
+                // A scoped DB query yields null for all three absence/ownership variants.
+                return null;
+            }
+            return currentCase;
+        });
+        const context = await buildAiContext(USER_ID, CASE_ID);
+        assert.ok(context);
+        assert.equal(context.personProfileId, null);
+        assert.equal(context.aiInput.referenceContext.personProfile, null);
+        assert.equal(context.contextSnapshot.personalizationUsed, false);
+        assert.equal(lookup.mock.callCount(), 2);
+    });
+}

@@ -39,7 +39,17 @@ export async function buildAiContext(userId: string, caseId: string) {
             personProfileId = profile?.id ?? null;
             referenceContext.personProfile = profile?.profileJson ?? null;
             referenceContext.provenance!.personProfile = profile
-                ? sourceProvenance("person_profile", profile.id, "ai_generated_summary", profile.generatedAt)
+                ? {
+                    ...sourceProvenance("person_profile", profile.id, "ai_generated_summary", profile.generatedAt),
+                    profileFacts: {
+                        schemaVersion: profile.profileSchemaVersion,
+                        sourceCaseCount: profile.sourceCaseCount,
+                        sourceFeedbackCount: profile.sourceFeedbackCount,
+                        sourceLatestCaseId: profile.sourceLatestCaseId!,
+                        needsRefresh: false as const,
+                        sourceCaseVerified: true as const,
+                    },
+                }
                 : null;
         }
 
@@ -96,6 +106,11 @@ async function findPersonProfile(userId: string, personId: string) {
         !profile.generatedByModel?.trim() || !profile.profileSchemaVersion.trim() ||
         !profile.sourceLatestCaseId || profile.sourceCaseCount + profile.sourceFeedbackCount === 0 ||
         !Number.isFinite(profile.generatedAt.getTime())) return null;
+    const source = await prisma.analysisCase.findFirst({
+        where: { id: profile.sourceLatestCaseId, userId, personId },
+        select: { id: true },
+    });
+    if (!source) return null;
     return profile;
 }
 
