@@ -3,11 +3,13 @@
 ## Executive Summary
 
 2026-10-04 JST、取得した `origin/develop` を基点に専用 worktree で実行した。
-Tier A 13件中12件を修正・回帰確認・独立 review・skeptical review・commitまで完了。
-A05はcache・表示境界の保護まででPARTIAL。Tier B/C、AI評価、性能は実装可能な部分と
+Tier A 13件を修正・回帰確認・独立 review・skeptical reviewまで完了。
+A05は後続の条件付き承認により、response反映防止の範囲でCompletedへ更新した。
+送信前の旧body/新token競合は別P1で未解決。[追補](a05-response-guard.md)参照。
+Tier B/C、AI評価、性能は実装可能な部分と
 人間判断の境界を分けて準備した。全体を止めるP0は観測されなかった。
 
-最終アプリ検証は131 tests passed、typecheck/build成功。別途、使い捨てPostgreSQLの
+A05追補後の最終アプリ検証は151 tests passed、typecheck/build成功。別途、使い捨てPostgreSQLの
 7シナリオが成功した。Production変更、DB操作、deploy、merge、push、有料API実行は0。
 文書の指摘は現行コードで確認し、未確認の主張をそのまま採用していない。
 
@@ -22,6 +24,7 @@ reviewとskeptical reviewの対象・限界は[reviews](reviews.md)に記録。
 | A02 | action safetyを保持しsafe/caution/unknownを表示 | normalizationで値が消え全actionが安全風表示 | ViewModel4件、旧形式unknown | `3fdfb7c` |
 | A03 / Case-first | 保存直後にCaseへ移動、状態確認後に同じCaseで再試行 | 旧再送フロー、応答喪失・実行中・draft reload | helper4件、実行中は再送せず2秒poll/120秒上限 | `39cb07a` |
 | A04 | 設定GET失敗時の保存を禁止、retryを表示 | ONのfallbackを保存できた | 2件、未読込PATCHなし・既存OFF保持 | `3c30dc4` |
+| A05 response isolation | 開始時user/epochで成功responseとJSON完了を照合 | guardなしnegative controlは8件失敗、cache/stateへの旧データ反映を再現 | 新規20件、HTTP401/403/409・並列・abort/networkも維持 | `50330f4`＋A05 follow-up HEAD |
 | A06 | desktop/mobileからprivacyへ遷移、未実装User Pattern操作を除去 | 導線なし・AI入力に使われないtoggle | source-contract2件 | `34e6b91` |
 | A07 | personIdで履歴group・選択・prefillを識別 | 同名Personの混同、名前一致の選択 | ID/mapper7件、同名・旧IDなしfixture | `8260033` |
 | A08 | 最新5件を選択、loading/error/retry/emptyを分離 | 7件fixtureで旧コードは古い5件を返した | model2件、session境界も確認 | `128ed38` |
@@ -45,7 +48,6 @@ B04/B06は表に記載したrepo fix/auditの完了であり、Production修復�
 
 | Issue | Done | Remaining Human Decision |
 | --- | --- | --- |
-| A05 | user/epoch cache同期clear、遅延応答guard、明示login境界、8回帰tests。中央client候補は未接続、5候補tests | A→B中にgetSession後のtokenで旧bodyを送るrace。自動承認レビューが共通clientへのguardを拒否。候補review/追加承認と実auth環境テスト |
 | B01 | field別の既知FP/FN修正、inverse-negation/quote counterexample封じ、17 safety/validation tests | 日本語間接表現・引用FP/FN、診断・危機を含む意味判定policy |
 | B02 | owner/run/status/time照合のcutoff明示回復helper、11unit/実DB contention proof | scheduler・担当者・stale threshold・未精算quota予約。API/cron未接続 |
 | B03 | context v5 provenance、明示stale/source不明profile除外、7追加tests | 最小証拠数・age・再生成・訂正・派生情報の撤回。metadataは内容の出典忠実性を証明しない |
@@ -74,7 +76,7 @@ B04/B06は表に記載したrepo fix/auditの完了であり、Production修復�
 
 ```text
 P0 Human decision: none observed
-P1 Human decision: A05 central auth guard; B01/C01 safety/crisis semantics;
+P1 Human decision: pre-send write-intent race (outside completed A05); B01/C01 safety/crisis semantics;
                    B02 scheduler/quota; B03 source-chain consent;
                    Supabase RLS/GRANT; C02 retention/delete
 P2 Later: dependency repair; real browser/performance; Luna/prompt paid gate;
@@ -110,15 +112,15 @@ minify前のrendered charactersでgzip占有率ではない。runtime性能改�
 ## Verification
 
 ```text
-npm test: PASS — 131 passed, 0 failed, 0 skipped (base 37; +94)
+npm test: PASS — 151 passed, 0 failed, 0 skipped (base 37; +114)
 npm run typecheck: PASS
 npm run build: PASS — Vite client + Prisma generate + server tsc
-npm run lint:md: PASS — 24 files, 0 issues; final report included
+npm run lint:md: PASS — 25 files, 0 issues; A05 follow-up included
 ```
 
 Windowsでは`npm.cmd`を使用。最終アプリgate後の変更は文書とdiff whitespaceだけ。
 追加: disposable PostgreSQL7/7、safety guard1/1、History23シナリオ、
-`git diff --check origin/develop`成功。client単一chunk警告は残る。
+`git diff --check origin/develop`成功。client単一chunk警告は残る。A05追補buildは922.40kB/gzip262.35kB。下記921702bytesの性能計測は追補前commit時点の記録。
 最終文書の独立review・skeptical reviewとlintは成功。clean commit後のclient metadata確認は引き渡しchatにも記載する。
 
 ## Git
@@ -126,10 +128,10 @@ Windowsでは`npm.cmd`を使用。最終アプリgate後の変更は文書とdif
 ```text
 branch: chore/portfolio-polish-overnight
 base SHA: 406fc8581a471cedfe4a030845c820b03a4c4f2f
-verified pre-report SHA: 3ef5784bebf16e8e6c969b9d243ff44c50f35649
+verified prior overnight SHA: 9567801ab8c2ace10a684857b45828fafd57e2e9
 final SHA: report-containing HEAD; obtain with git rev-parse HEAD (exact SHA in chat handoff)
-commit count: 29 local commits above base (including final report)
-changed files: 104 tracked paths relative to base
+commit count: 30 local commits above base (29 preserved + one A05 follow-up)
+changed files: 108 tracked paths relative to base
 ```
 
 `develop`/`origin/develop`はbase SHAのまま、元checkoutの未追跡作業は保存。
@@ -154,7 +156,7 @@ ProductionはGETによるread-only route確認だけ。
 
 ## Tomorrow First 5
 
-1. A05未接続central-client guard候補と5回帰testsをreviewし、共通clientへの適用と実auth raceテストの承認を判断。
+1. A05のresponse隔離Completedと別P1の送信前write-intent競合を分け、実auth lifecycle検証と次の責務範囲を判断。
 2. B01/C01の引用・間接的強要・危機fixtureをreviewし、安全意味判定/routingを決定。
 3. B02のstale threshold、scheduler担当者、quota予約精算を決める。実DB proofは既に準備済み。
 4. B03/C02のsource-chain撤回、snapshot保持、account delete、外部retention契約を確認。

@@ -128,3 +128,24 @@ completion overclaim.104 paths match actual diff/manifest;28 commits plus final 
 match29. A05 unwired/rejected guard, B01/B02/B03 partials, actual models NOT_RUN,
 missing client metrics, Production boundaries and all verification limits are explicit.
 Specification sync matches runtime implementation. No reviewer edited or committed files.
+
+## A05 conditionally approved response-isolation follow-up
+
+Prior29 commits remain immutable at `9567801ab8c2ace10a684857b45828fafd57e2e9`.
+The user explicitly approved response isolation with ten constraints and seven regression
+categories. Both reviewers independently inspected production binding/transport/tests:
+
+| Role | Final outcome |
+| --- | --- |
+| Independent frontend reviewer | APPROVE; independently reran corrected20 tests,0fail/0skip. Same original boundary through response/body, HTTP errors and ordinary failures preserved; auth/public/storage unchanged. |
+| Skeptical reviewer | APPROVE; independently reran corrected20 tests,0fail/0skip. No scope or completion overclaim; old body/new token remains separate P1, raw/post-delivery and live lifecycle limits explicit. |
+
+Reviewed runtime blobs: `clientRequest.ts` `be3b80968447984d0e7f21d60bf9f18b00fcc546`,
+`client.ts` `e5b0ce1e44d7b5807c2dfa3c6548a4cd829bdcdd`; corrected test blob
+`737b2d22aa7b8cca86675daba057023e0001582b`.
+Guard-free negative control:12pass/8fail. Final regression20pass; full151pass/0fail/0skip,
+typecheck/build pass, Markdown25files/0issues. Initial server-build TS2540 affected only
+mock json assignments; same deferred mocks corrected, all affected gates rerun.
+No auth/backend/storage, dependency, schema, Production or external write change.
+A05 is Completed only within the latest response-isolation authority; historical earlier
+PARTIAL review records above describe the prior29-commit state, not the current status.

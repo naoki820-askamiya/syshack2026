@@ -8,30 +8,27 @@ new safety/retention policy, model switch or paid benchmark was performed.
 No P0 requiring whole-run stop was observed. Tests/build were green at the fetched
 base. Original develop checkout and its unrelated untracked files were preserved.
 
-## P1 — A05 central request identity integration
+## P1 — Pre-send write-intent race (outside completed A05 response isolation)
 
-Problem: caches and pending UI callbacks now carry user/epoch, but the existing
-central client awaits Supabase getSession before sending. A request initiated for A
-could send A's prepared body with B's newer token. Post-response guards cannot undo
-a write already sent. Current boundary protection is therefore **PARTIAL**.
+A05 is Completed within the user's2026-10-04 approved responsibility: reject stale
+successful protected responses before caller cache/state delivery. The production
+transport has20 new regressions, both reviewers approved, and all four gates passed.
+See [A05 follow-up](a05-response-guard.md). Backend ownership, Supabase flow, token/session
+storage and public/auth routes are unchanged. Real Supabase/browser verification is NOT_RUN.
 
-Evidence: before-send mock candidate tests, 8 cache/auth lifecycle tests, independent
-and skeptical source review. No live Supabase/browser session race was verified.
-Concrete candidate: `src/backend/v17/frontend.authenticatedRequest.candidate.ts` and
-`experiments/auth-boundary/README.md`; candidate is unwired.
+The separate before-send race remains: the existing client awaits getSession. A body
+prepared for A could be sent with B's newer token if auth changes during that await.
+Response guards cannot undo a server write already sent. This run does not enforce
+write-intent at send time or claim the broader race is fixed.
 
-Automatic approval review rejected central-client integration repeatedly. Stated
-reason: despite helper tests, an untested guard in the client shared by all requests
-has a broad authentication/service-availability impact. A JWT-claim alternative was
-also rejected due to global auth lifecycle/privacy/session availability scope.
-Those changes were not applied and the rejection was not bypassed. Narrow cache
-protection and explicit-login completion guards were accepted; work continued.
+Historical context: automatic approval review rejected the earlier broad central guard
+and a JWT alternative for global auth/privacy/service-availability impact. That candidate
+remains unwired. The user's later conditional approval narrowed responsibility to response
+isolation; it was applied without those pre-send/session-user/token-claim checks.
 
-Human decision: review/approve the concrete central-client guard and authorize a
-separate real auth lifecycle test environment. Additional user approval may still
-require a compliant execution path; this run does not claim that approval overrides
-sandbox review. Revisit: test sign-out, A→B, expiry/relogin, refreshed sessions,
-getSession delay, failed auth and aborted requests through the actual central client.
+Human decision: separately scope a write-intent/pre-send policy and authorize a disposable
+real auth lifecycle test environment. Do not use a frontend response guard to replace
+backend authorization. Preserve A05 Completed for the approved scope and this P1 unresolved.
 
 ## P1 — Safety and crisis semantics (B01/C01)
 

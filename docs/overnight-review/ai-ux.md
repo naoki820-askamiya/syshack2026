@@ -38,5 +38,6 @@ reconciliation. Current request/result contract remains unchanged.
 
 Case creation with a lost response can still need a future idempotency contract.
 B02 helper is not a production scheduler; long-running server state is not silently
-recovered by the UI. Auth request-send race remains A05 PARTIAL. Poll/error/reload
+recovered by the UI. A05 response isolation is Completed; the pre-send write race remains
+a separate P1. See [follow-up](a05-response-guard.md). Poll/error/reload
 behavior was unit/source reviewed; live browser/provider UX remains unverified.

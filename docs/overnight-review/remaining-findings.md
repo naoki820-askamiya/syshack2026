@@ -2,7 +2,7 @@
 
 | Finding | Status / next evidence |
 | --- | --- |
-| Central auth send race | A05 PARTIAL; candidate unwired after automatic approval rejection; actual-client session tests needed. |
+| Pre-send write-intent race | Separate P1 outside Completed A05 response isolation.20 production-seam regressions/all gates/reviews passed; broader candidate remains unwired, old-body/new-token write prevention and live auth tests remain. |
 | Japanese safety FP/FN | B01 PARTIAL; quoted aggression deliberately still rejected; exact known regressions are not a comprehensive policy. |
 | Stale analyzing automation | B02 PARTIAL; safe helper/real DB proof exist, no runtime scheduler or quota reconciliation. |
 | Profile source-chain consent / aging | B03 PARTIAL; metadata and explicit stale fallback do not certify generated contents or transitive withdrawal. |

@@ -37,7 +37,8 @@ independent/skeptical review record: [reviews](reviews.md).
 | `8edd7a1` | test: measure client chunks and library attribution |
 | `770f631` | docs: audit advisory reachability and compatible fixes |
 | `3ef5784` | chore: clean whitespace in new regression files |
-| final report commit | summary, evidence/review logs, escalations and specification sync |
+| `9567801` | docs: summarize overnight changes and human decisions |
+| A05 follow-up HEAD | fix: isolate stale authenticated API responses — response-only guard,20 regressions, status/evidence sync |
 
 One additional B02 commit adds actual PostgreSQL recovery races; the closing whitespace
 commit only removes new trailing whitespace/extra EOF blank lines. No runtime refactor.
@@ -46,10 +47,11 @@ are retained rather than converted into full completion.
 
 ## Changed paths
 
-104 paths including this report. Generated dependency/runtime outputs,
+108 paths including the A05 follow-up. Generated dependency/runtime outputs,
 .env files and original checkout untracked work are excluded.
 
 ```text
+docs/overnight-review/a05-response-guard.md
 docs/overnight-review/ai-ux.md
 docs/overnight-review/changes.md
 docs/overnight-review/crisis-routing-proposal.md
@@ -96,6 +98,8 @@ scripts/db-integration/run.mjs
 scripts/db-integration/safety.mjs
 scripts/db-integration/safety.test.mjs
 scripts/history-performance.mjs
+src/app/api/client.ts
+src/app/api/clientRequest.ts
 src/app/api/consultationMapper.ts
 src/app/api/preferencesV17.ts
 src/app/api/sessionV17.ts
@@ -140,6 +144,7 @@ src/backend/v17/frontend.analysisRetry.test.ts
 src/backend/v17/frontend.analysisViewModel.test.ts
 src/backend/v17/frontend.authenticatedRequest.candidate.ts
 src/backend/v17/frontend.authenticatedRequest.test.ts
+src/backend/v17/frontend.clientRequest.test.ts
 src/backend/v17/frontend.consultationHistory.test.ts
 src/backend/v17/frontend.deployRoutes.test.ts
 src/backend/v17/frontend.feedbackModel.test.ts
@@ -156,6 +161,13 @@ vercel.json
 vite.config.ts
 ```
 
+## A05 approved follow-up
+
+[Response-isolation evidence](a05-response-guard.md):20 new regressions,8 baseline failures,
+all4 gates and independent/skeptical approvals. A05 Completed ONLY in the user's narrowed
+response responsibility. Before-send old-body/new-token write race remains a separate P1.
+No auth/session-storage/backend/public endpoint changes; broad historical candidate unwired.
+
 ## Result artifacts
 
 - `docs/overnight-review/summary.md`: requested final report sections and classifications.
@@ -169,14 +181,14 @@ vite.config.ts
 - `docs/overnight-review/ai-ux.md` and `performance-followups.md`: implemented waiting flow, measured/unknown timings.
 - `docs/overnight-review/crisis-routing-proposal.md`, `data-retention-delete-audit.md`, `score-ux.md`: C01–C03 preparation.
 - `experiments/ai-evals/`: saved baseline, synthetic inputs, graders, offline results, mock streaming and gate plan.
-- `experiments/auth-boundary/`: unwired central-client candidate documentation.
+- `experiments/auth-boundary/`: historical unwired broader candidate; response-only production follow-up is separately documented.
 - `experiments/performance/`: source hashes and synthetic History/bundle measurements.
 - `experiments/score-ux/index.html`: fixed synthetic A–F comparison, no product adoption.
 
 ## Verification and operational limits
 
-Final application gates:131 pass/0 fail/0 skip, typecheck/build pass; final Markdown
-check passed after report authoring (24 files, 0 issues). Actual DB7 pass/0 skip, cleanup inventory empty.
+A05 follow-up application gates:151 pass/0 fail/0 skip, typecheck/build pass; Markdown
+check passed (25 files, 0 issues). Previous29 commits preserved, one independent follow-up. Actual DB7 pass/0 skip, cleanup inventory empty.
 No browser, real Supabase policy, real model quality or end-to-end latency claim.
 No paid benchmark, production DB access, schema deployment, dependencies change,
 architecture migration, safety/crisis policy adoption, or retention/deletion operation.
