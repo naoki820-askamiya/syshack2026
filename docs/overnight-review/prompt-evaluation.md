@@ -1,5 +1,7 @@
 # Prompt and context evaluation
 
+Historical snapshot through 6879385. The final hardening run supersedes current status/counts; see [final summary](final-summary.md) and [final risk register](final-risk-register.md).
+
 Status: preparation completed; model-generated evaluation NOT_RUN.
 Decision: **KEEP CURRENT PROMPT**. `kigen-prompt-v2` and result schema v2 are unchanged.
 Pre-change files are saved in `experiments/ai-evals/baseline/`. SHA-256 of current

@@ -1,5 +1,7 @@
 # Change and commit manifest
 
+Historical snapshot through 6879385. The final hardening run supersedes current status/counts; see [final summary](final-summary.md) and [final risk register](final-risk-register.md).
+
 Scope: fetched `origin/develop` at `406fc8581a471cedfe4a030845c820b03a4c4f2f`, dedicated
 `chore/portfolio-polish-overnight`. No external Issue/PR/push/merge/deploy.
 Final classification and evidence: [summary](summary.md); decisions: [escalations](escalations.md);

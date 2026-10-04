@@ -1,5 +1,7 @@
 # A05 response isolation follow-up
 
+Historical snapshot through 6879385. The final hardening run supersedes current status/counts; see [final summary](final-summary.md) and [final risk register](final-risk-register.md).
+
 Date: 2026-10-04 JST. Prior immutable tip: `9567801ab8c2ace10a684857b45828fafd57e2e9`.
 Status: **Completed — user-approved response isolation only**. All four requested gates and both reviews passed.
 The user explicitly approved response isolation, with backend auth, session storage,

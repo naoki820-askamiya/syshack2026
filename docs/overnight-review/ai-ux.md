@@ -4,7 +4,8 @@ Before: submit → Person/Case creation → wait for complete AI → navigate.
 After: save Person/Case → immediately navigate to that saved Case analysis view →
 check latest/result status → start if intended → show actual analyzing status → validated
 saved result. Retry first reconciles latest/status and uses the same Case. Running
-analysis polls every2s, bounded120s, and does not resend. A draft reload does not auto-start.
+analysis polls every2s; scheduling stops after120s, but an in-flight request is not
+bounded by that scheduling check. It does not resend a running analysis. A draft reload does not auto-start.
 A failed/running screen exposes refresh/retry and History. No invented percent/time,
 raw model token, mind-reading copy or unvalidated action appears.
 
@@ -38,6 +39,9 @@ reconciliation. Current request/result contract remains unchanged.
 
 Case creation with a lost response can still need a future idempotency contract.
 B02 helper is not a production scheduler; long-running server state is not silently
-recovered by the UI. A05 response isolation is Completed; the pre-send write race remains
-a separate P1. See [follow-up](a05-response-guard.md). Poll/error/reload
+recovered by the UI. A05 response isolation and the separately authorized pre-send write-intent P1
+are Completed. See [write-intent evidence](p1-write-intent.md). Poll/error/reload
 behavior was unit/source reviewed; live browser/provider UX remains unverified.
+
+Final hardening also consumes the Case navigation start flag after one handoff;
+remount after failure no longer retries implicitly. See [regression](case-navigation-intent.md).

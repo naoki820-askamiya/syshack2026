@@ -1,5 +1,7 @@
 # Model evaluation
 
+Historical snapshot through 6879385. The final hardening run supersedes current status/counts; see [final summary](final-summary.md) and [final risk register](final-risk-register.md).
+
 Decision: **KEEP CURRENT MODEL**. Runtime reads `OPENAI_ANALYSIS_MODEL`, then
 `OPENAI_MODEL`; no hardcoded default was changed. Isolated worktree has no model
 configuration; deployed current model is **UNKNOWN**, not inferred from history.

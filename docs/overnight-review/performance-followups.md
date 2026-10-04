@@ -1,5 +1,7 @@
 # Performance follow-ups
 
+Historical snapshot through 6879385. The final hardening run supersedes current status/counts; see [final summary](final-summary.md) and [final risk register](final-risk-register.md).
+
 ## Measured
 
 Base client: one chunk909.22kB/gzip258.32kB. Current measurement-only build:

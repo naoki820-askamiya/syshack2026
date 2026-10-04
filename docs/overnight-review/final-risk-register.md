@@ -1,0 +1,25 @@
+# Final risk register
+
+These items remain explicit; no requested local gate is skipped. Blocks merge/demo
+are this review's recommended gates, not a claim of repository policy or permission.
+READY_AFTER_E2E means the PR package can be reviewed now, with live evidence pending.
+A synthetic/private demo must still honor the listed public-demo boundaries.
+
+| ID | Severity | Evidence | What remains | Why incomplete | Human decision | Next action | Blocks merge? | Blocks public demo? |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| R01 | P1 | FACT | Crisis-like input still uses normal analysis; complete Japanese safety FP/FN policy absent | Policy and expert review needed | Routing, copy, resources | Review synthetic crisis proposal and targeted semantic fixtures | no | yes |
+| R02 | P1 | FACT / UNMEASURED | Archive is not deletion; old result/context JSON and provider retention unknown | Retention/derived-copy/backup scope undecided | Retention period, deletion and operator access | Inventory copies then approve a deletion contract before real-data public use | no | yes |
+| R03 | P1 | UNMEASURED | Live Supabase Auth/RLS/GRANT behavior | Disposable PG uses owner role and shadow auth scaffold | Authorize isolated Supabase verification | Verify Auth identity, service role and direct Data API access | yes | yes |
+| R04 | P1 | UNMEASURED | Live browser auth switch/logout/expiry and mobile/keyboard lifecycle | Mock/source checks cannot prove SDK event timing and rendering | Select isolated accounts/devices | Run E2E auth matrix plus stale GET/body/write intent | yes | yes |
+| R05 | P1 | UNMEASURED | Production deep-route and exact deployed build identity | No deploy authorized/performed | Deployment and smoke window | Run post-deploy checklist only after separately authorized deployment | yes | yes |
+| R06 | P1 | UNMEASURED | Real model source fidelity, contradictions, refusal/crisis and quality incidence | No model-response baseline or paid gate | Human rubric and approved isolated evaluation | Collect capped synthetic outputs and blind grade before quality claims | yes | yes |
+| R07 | P2 | FACT | Crash reservation lacks durable event-case/run linkage; attempts may be unknown | No schema/refund/scheduler policy selected | Conservative charge or authoritative compensation; linkage | Use exact logged event reconciliation for known failures; retain unknown crash usage | no | no |
+| R08 | P2 | FACT / UNMEASURED | Profile minimum evidence/expiry/regeneration/derived consent and unbounded summary payload policy | Product thresholds and source-chain meaning undecided | Age/count/refresh/consent rules | Review source facts, revocation and fallback; no automatic writer added | no | yes |
+| R09 | P2 | UNMEASURED | Score/radar probability misunderstanding and format selection | Human comprehension study absent | Select A-F score format after observation | Use existing score comparison artifact on mobile/keyboard | no | yes |
+| R10 | P2 | FACT / UNMEASURED | 16 audit entries:11 high/5 moderate; precise production packaging unknown | Exploit prerequisites not established; compatible fixes need isolated lockfile checks | Prioritize scoped runtime patch; major/override require separate decision | Follow advisory reachability matrix; no audit fix force | no | no |
+| R11 | P2 | FACT / UNMEASURED | History fanout100 and continued peer requests; one923KB entry | Byte/mock evidence is not production capacity or browser latency | Partial-error/pagination/pool contract; lazy fallback UX | Browser baseline then assess bounded pool/lazy prototype | no | no |
+| R12 | P2 | FACT | Lost Case-create response may duplicate intent; poll scheduling is not an in-flight request deadline | Needs idempotency and request lifecycle contract | Retry semantics/deadlines | Reproduce uncertain-create and stalled network without inventing cutoff | no | no |
+| R13 | P2 | FACT | Existing Person relationship edit affects temporary cache, not DB Person snapshot | Inherited behavior; automatic PATCH would create an unrequested edit policy | Explicit Person-edit contract | Verify second consultation identity and edited relationship meaning | no | no |
+| R14 | P2 | FACT | Inherited password-reset button lacks handler; logout rejection has no inline error; History lacks inline retry | Outside bounded fixes; no new auth/product flow redesign | Error/reset UX scope | Create focused follow-ups after E2E confirmation | no | no |
+| R15 | P2 | UNMEASURED | Client/auth/substage/paint timings; stream early delivery | No cross-navigation/browser or real-provider timing evidence | Measurement correlation and eventual delivery policy | Use stage inventory; keep unknown/null; no early stream adoption | no | no |
+| R16 | P2 | UNMEASURED | Paid Luna comparison and current deployed model value | ALLOW_PAID_MODEL_BENCHMARK and numeric aggregate cap absent | Budget plus current-model price/semantic scoring/adoption | Use final-plan; implement reviewed aggregate runner only with gate | no | no |

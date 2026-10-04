@@ -1,5 +1,7 @@
 # Escalations
 
+Historical snapshot through 6879385. The final hardening run supersedes current status/counts; see [final summary](final-summary.md) and [final risk register](final-risk-register.md).
+
 All items below are deferred at the decision boundary. No production mutation,
 new safety/retention policy, model switch or paid benchmark was performed.
 

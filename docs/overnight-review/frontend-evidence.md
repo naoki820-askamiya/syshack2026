@@ -1,5 +1,7 @@
 # Frontend regression evidence
 
+Historical snapshot through 6879385. The final hardening run supersedes current status/counts; see [final summary](final-summary.md) and [final risk register](final-risk-register.md).
+
 All work applies only to the dedicated KIGEN404 overnight branch/worktree. No Production
 changes, provider calls, real consultation data, business-data browser persistence, new
 state library, or architecture migration were used in this frontend subset.

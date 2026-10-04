@@ -1,5 +1,7 @@
 # Overnight Review Log
 
+Historical snapshot through 6879385. The final hardening run supersedes current status/counts; see [final summary](final-summary.md) and [final risk register](final-risk-register.md).
+
 Date: 2026-10-04 JST. Comparison base: `406fc8581a471cedfe4a030845c820b03a4c4f2f`.
 Independent reviewer: root. Skeptical reviewer: separate skeptic agent.
 Implementer messages supplied pre-fix failures and targeted test output; reviewer conclusions below

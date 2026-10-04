@@ -1,5 +1,7 @@
 # Remaining findings
 
+Historical snapshot through 6879385. The final hardening run supersedes current status/counts; see [final summary](final-summary.md) and [final risk register](final-risk-register.md).
+
 | Finding | Status / next evidence |
 | --- | --- |
 | Pre-send write-intent race | Separate P1 outside Completed A05 response isolation.20 production-seam regressions/all gates/reviews passed; broader candidate remains unwired, old-body/new-token write prevention and live auth tests remain. |

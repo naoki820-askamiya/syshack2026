@@ -1,5 +1,7 @@
 # Overnight autonomous improvement result
 
+Historical snapshot through 6879385. The final hardening run supersedes current status/counts; see [final summary](final-summary.md) and [final risk register](final-risk-register.md).
+
 ## Executive Summary
 
 2026-10-04 JST、取得した `origin/develop` を基点に専用 worktree で実行した。
