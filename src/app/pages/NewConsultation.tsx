@@ -111,6 +111,7 @@ export function NewConsultation() {
   }, [chatMessages]);
 
   const handleNameChange = (value: string) => {
+    if (personLoading) return;
     // 手入力で名前を変えた場合、別人に以前のpersonIdを流用しない。
     setFormData(prev => ({ ...prev, personId: '', personName: value }));
     setPrefilled(false);
@@ -127,6 +128,7 @@ export function NewConsultation() {
   };
 
   const applyPerson = (person: ConsultationData) => {
+    if (personLoading) return;
     setFormData(prev => ({
       ...prev,
       personId: person.personId ?? '',
@@ -303,6 +305,7 @@ export function NewConsultation() {
                       ref={nameInputRef}
                       type="text"
                       id="person-name"
+                      disabled={personLoading}
                       value={formData.personName}
                       onChange={(e) => handleNameChange(e.target.value)}
                       onFocus={() => {
@@ -323,6 +326,7 @@ export function NewConsultation() {
                               key={person.id}
                               type="button"
                               onMouseDown={(e) => e.preventDefault()}
+                              disabled={personLoading}
                               onClick={() => applyPerson(person)}
                               className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-[#F1F4F8] transition-colors text-left"
                             >
@@ -388,7 +392,7 @@ export function NewConsultation() {
                   </div>
                 </div>
 
-                <fieldset>
+                <fieldset disabled={personLoading}>
                   <legend className="block text-sm font-medium text-[#5B6573] mb-2">
                     相手との関係<span className="text-red-500 ml-0.5">*</span>
                   </legend>
