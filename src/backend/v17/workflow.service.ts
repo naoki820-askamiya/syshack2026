@@ -34,8 +34,9 @@ export async function analyzeCase(
     const totalStartedAt = performance.now();
     const duration: Record<string, number | null> = {
         db_start_ms: null, db_context_ms: null, ai_generation_ms: null, db_save_ms: null,
-        // Non-streaming generation combines prompt/provider/validation; these are not separately observed.
-        prompt_build_ms: null, provider_first_event_ms: null, provider_complete_ms: null, validation_ms: null,
+        // First event remains unobserved without streaming; other AI substages sum observed attempts.
+        prompt_build_ms: null, provider_request_ms: null, provider_first_event_ms: null,
+        provider_complete_ms: null, validation_ms: null,
         total_analysis_ms: null,
     };
     const counts = { recentCases: 0, feedbacks: 0, personProfiles: 0 };
@@ -68,7 +69,20 @@ export async function analyzeCase(
 
             stage = "ai_generation";
             const generationAt = performance.now();
-            const generated = await (options.generate ?? analyzeMoodV2)(context.aiInput).finally(() => {
+            const generated = await (options.generate ?? analyzeMoodV2)(context.aiInput, {
+                onAttemptMetrics: (metrics) => {
+                    for (const key of ["prompt_build_ms", "provider_request_ms", "provider_complete_ms", "validation_ms"] as const) {
+                        const value = metrics.duration[key];
+                        if (value !== null) duration[key] = (duration[key] ?? 0) + value;
+                    }
+                    safeWorkflowLog("info", "analysis_ai_attempt", {
+                        caseId, runId, model: metrics.model, attempt: metrics.attempt,
+                        promptVersion: PROMPT_VERSION, schemaVersion: RESULT_SCHEMA_VERSION,
+                        outcome: metrics.outcome, failureCode: metrics.failureCode,
+                        duration: metrics.duration, usage: metrics.usage,
+                    });
+                },
+            }).finally(() => {
                 duration.ai_generation_ms = elapsedMs(generationAt);
             });
             actualAttempts = generated.attempts;

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import OpenAI from 'openai';
 import test from 'node:test';
-import { analyzeMoodV2, AnalyzeMoodV2Error } from './analyzeMood.js';
+import { analyzeMoodV2, AnalyzeMoodV2Error, type AiAttemptMetrics } from './analyzeMood.js';
 import { makeValidV2Result } from './testFixture.js';
 
 const input = {
@@ -241,4 +241,126 @@ test('installed SDK accepts the remaining timeout and reaches injected fetch wit
   assert.equal(result.attempts, 1);
   assert.equal(result.model, 'test-model');
   assert.equal(result.analysis.disclaimer.notDiagnosis, true);
+}));
+
+
+test('attempt metrics preserve actual SDK usage without input, output, or provider objects', () => withEnv(async () => {
+  const secret = 'SYNTHETIC_PRIVATE_METRICS_DO_NOT_LOG';
+  const metrics: AiAttemptMetrics[] = [];
+  const sdk = new OpenAI({
+    apiKey: 'synthetic-no-network', baseURL: 'http://127.0.0.1:9/synthetic', maxRetries: 0,
+    fetch: (async () => {
+      const analysis = makeValidV2Result();
+      analysis.summary.oneLine = secret;
+      return new Response(JSON.stringify({
+        id: secret, object: 'response', created_at: 0, model: 'test-model', status: 'completed',
+        usage: { input_tokens: 23, output_tokens: 17, total_tokens: 40,
+          input_tokens_details: { cached_tokens: 3 }, output_tokens_details: { reasoning_tokens: 5 } },
+        output: [{ type: 'message', id: secret, status: 'completed', role: 'assistant',
+          content: [{ type: 'output_text', annotations: [], text: JSON.stringify(analysis) }] }],
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }) as never,
+  });
+  const result = await analyzeMoodV2(input, { client: sdk.responses,
+    onAttemptMetrics: (metric) => { metrics.push(metric); } });
+  assert.equal(result.analysis.summary.oneLine, secret);
+  assert.equal(metrics.length, 1);
+  assert.equal(metrics[0].outcome, 'succeeded');
+  assert.equal(metrics[0].failureCode, null);
+  assert.deepEqual(metrics[0].usage, { input_tokens: 23, output_tokens: 17, total_tokens: 40,
+    cached_tokens: 3, reasoning_tokens: 5 });
+  for (const value of Object.values(metrics[0].duration)) assert.ok(Number.isFinite(value) && (value as number) >= 0);
+  assert.equal(JSON.stringify(metrics).includes(secret), false);
+  assert.equal(JSON.stringify(metrics).includes('test-key'), false);
+}));
+
+test('retry emits one metric per completed attempt and preserves rejected-output usage', () => withEnv(async () => {
+  const metrics: AiAttemptMetrics[] = [];
+  let sends = 0;
+  const client = { parse: async () => {
+    sends += 1;
+    return { status: 'completed', output: [], output_parsed: sends === 1 ? {} : makeValidV2Result(),
+      usage: { input_tokens: 10 * sends, output_tokens: 4, total_tokens: 10 * sends + 4,
+        input_tokens_details: { cached_tokens: 0 }, output_tokens_details: { reasoning_tokens: 0 } } };
+  } };
+  const result = await analyzeMoodV2(input, { client: client as never,
+    onAttemptMetrics: (metric) => { metrics.push(metric); } });
+  assert.equal(result.attempts, 2);
+  assert.deepEqual(metrics.map(metric => [metric.attempt, metric.outcome, metric.failureCode]),
+    [[1, 'failed', 'AI_OUTPUT_INVALID'], [2, 'succeeded', null]]);
+  assert.equal(metrics[0].usage.input_tokens, 10);
+  assert.equal(metrics[1].usage.input_tokens, 20);
+  assert.ok(metrics.every(metric => metric.duration.validation_ms !== null));
+}));
+
+test('refusal has observed completion but no local validation; missing or malformed usage remains unknown', () => withEnv(async () => {
+  for (const usage of [undefined, { input_tokens: -1, output_tokens: Infinity, total_tokens: '10',
+    input_tokens_details: { cached_tokens: 2.5 }, output_tokens_details: { reasoning_tokens: NaN } }]) {
+    const metrics: AiAttemptMetrics[] = [];
+    const client = { parse: async () => ({ status: 'completed', usage, output_parsed: null,
+      output: [{ type: 'message', content: [{ type: 'refusal', refusal: 'synthetic refusal' }] }] }) };
+    await assert.rejects(analyzeMoodV2(input, { client: client as never,
+      onAttemptMetrics: (metric) => { metrics.push(metric); } }),
+      error => error instanceof AnalyzeMoodV2Error && error.code === 'AI_REFUSED' && error.attempts === 1);
+    assert.equal(metrics.length, 1);
+    assert.equal(metrics[0].failureCode, 'AI_REFUSED');
+    assert.ok(metrics[0].duration.provider_complete_ms! >= 0);
+    assert.equal(metrics[0].duration.validation_ms, null);
+    assert.deepEqual(metrics[0].usage, { input_tokens: null, output_tokens: null, total_tokens: null,
+      cached_tokens: null, reasoning_tokens: null });
+  }
+}));
+
+test('timeout observes request lifetime without inventing provider completion or token usage', () => withEnv(async () => {
+  const metrics: AiAttemptMetrics[] = [];
+  const client = { parse: async () => new Promise(() => {}) };
+  await assert.rejects(analyzeMoodV2(input, { client: client as never, timeoutMs: 20,
+    onAttemptMetrics: (metric) => { metrics.push(metric); } }),
+    error => error instanceof AnalyzeMoodV2Error && error.code === 'AI_TIMEOUT' && error.attempts === 1);
+  assert.equal(metrics.length, 1);
+  assert.ok(metrics[0].duration.provider_request_ms! >= 0);
+  assert.equal(metrics[0].duration.provider_complete_ms, null);
+  assert.equal(metrics[0].duration.validation_ms, null);
+  assert.equal(metrics[0].usage.total_tokens, null);
+}));
+
+test('metrics observer exceptions cannot change retries, accepted result, or original failure', () => withEnv(async () => {
+  let sends = 0;
+  const observer = () => { throw new Error('SYNTHETIC_MONITOR_FAILURE'); };
+  const client = { parse: async () => {
+    sends += 1;
+    if (sends === 1) throw new OpenAI.APIError(503, {}, 'synthetic provider error', {});
+    return { status: 'completed', output: [], output_parsed: makeValidV2Result() };
+  } };
+  const result = await analyzeMoodV2(input, { client: client as never, onAttemptMetrics: observer });
+  assert.equal(sends, 2);
+  assert.equal(result.attempts, 2);
+  const permanent = { parse: async () => { throw new OpenAI.APIError(403, {}, 'synthetic denied', {}); } };
+  await assert.rejects(analyzeMoodV2(input, { client: permanent as never, onAttemptMetrics: observer }),
+    error => error instanceof AnalyzeMoodV2Error && error.code === 'AI_PROVIDER_ERROR' && error.attempts === 1);
+}));
+
+
+test('async metrics observer rejection is isolated without awaiting monitoring', () => withEnv(async () => {
+  const client = { parse: async () => ({ status: 'completed', output: [], output_parsed: makeValidV2Result() }) };
+  const result = await analyzeMoodV2(input, { client: client as never,
+    onAttemptMetrics: async () => { throw new Error('SYNTHETIC_ASYNC_MONITOR_FAILURE'); } });
+  assert.equal(result.attempts, 1);
+  await new Promise(resolve => setImmediate(resolve));
+}));
+
+
+test('late fulfillment after timeout cannot publish completion or usage retroactively', () => withEnv(async () => {
+  const metrics: AiAttemptMetrics[] = [];
+  let release!: (value: unknown) => void;
+  const client = { parse: async () => new Promise(resolve => { release = resolve; }) };
+  await assert.rejects(analyzeMoodV2(input, { client: client as never, timeoutMs: 20,
+    onAttemptMetrics: metric => { metrics.push(metric); } }),
+    error => error instanceof AnalyzeMoodV2Error && error.code === 'AI_TIMEOUT');
+  release({ status: 'completed', output: [], output_parsed: makeValidV2Result(),
+    usage: { input_tokens: 9, output_tokens: 9, total_tokens: 18 } });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(metrics.length, 1);
+  assert.equal(metrics[0].duration.provider_complete_ms, null);
+  assert.equal(metrics[0].usage.total_tokens, null);
 }));

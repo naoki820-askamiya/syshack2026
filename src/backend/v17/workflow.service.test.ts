@@ -179,3 +179,37 @@ test("usage reconciliation reports known attempts and exact run correlation afte
     assert.equal(usage.status, "failed");
     assert.equal(JSON.stringify(events).includes(SECRET), false);
 });
+
+
+test("workflow aggregates observed substages and correlates per-attempt token counts without persisting metrics", async (t) => {
+    const { events } = startFixture(t);
+    contextFixture(t);
+    const result = await analyzeCase(USER_ID, CASE_ID, {
+        generate: async (_input, options) => {
+            for (const attempt of [1, 2]) options?.onAttemptMetrics?.({
+                attempt, model: "synthetic-model", outcome: attempt === 1 ? "failed" : "succeeded",
+                failureCode: attempt === 1 ? "AI_OUTPUT_INVALID" : null,
+                duration: { prompt_build_ms: 2, provider_request_ms: 10, provider_complete_ms: 10,
+                    validation_ms: 1, total_attempt_ms: 13 },
+                usage: { input_tokens: 10, output_tokens: 4, total_tokens: 14, cached_tokens: 0, reasoning_tokens: 0 },
+            });
+            return { analysis: makeValidV2Result(), model: "synthetic-model", attempts: 2 };
+        },
+    });
+    assert.equal(result.status, "analyzed");
+    const attempts = events.filter(([name]) => name === "analysis_ai_attempt").map(([, data]) => data);
+    assert.equal(attempts.length, 2);
+    assert.equal(attempts[0].caseId, CASE_ID);
+    assert.equal(attempts[0].runId, RUN_ID);
+    assert.equal((attempts[0].usage as any).total_tokens, 14);
+    const timing = events.find(([name]) => name === "analysis_timing")![1];
+    const duration = timing.duration as any;
+    assert.equal(duration.prompt_build_ms, 4);
+    assert.equal(duration.provider_request_ms, 20);
+    assert.equal(duration.provider_complete_ms, 20);
+    assert.equal(duration.validation_ms, 2);
+    assert.equal(duration.provider_first_event_ms, null);
+    assert.equal("duration" in result.result, false);
+    assert.equal("usage" in result.result, false);
+    assert.equal(JSON.stringify(events).includes(SECRET), false);
+});
