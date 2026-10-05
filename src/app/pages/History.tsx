@@ -17,9 +17,12 @@ export function History() {
   const [allConsultations, setAllConsultations] = useState<ConsultationData[]>(getConsultations);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
+  const [loadAttempt, setLoadAttempt] = useState(0);
 
   useEffect(() => {
     let active = true;
+    setIsLoading(true);
+    setLoadError('');
     void loadConsultationHistory()
       .then((consultations) => {
         if (active) setAllConsultations(consultations);
@@ -31,7 +34,7 @@ export function History() {
         if (active) setIsLoading(false);
       });
     return () => { active = false; };
-  }, []);
+  }, [loadAttempt]);
 
   useEffect(() => {
     setFilterPerson(routePersonId ?? searchParams.get('personId') ?? '');
@@ -96,11 +99,12 @@ export function History() {
 
           {isLoading ? (
             <div className="bg-white rounded-2xl p-8 shadow-sm text-center border border-[#D9E1EA]">
-              <p className="text-[#5B6573]">相談履歴を読み込んでいます...</p>
+              <p role="status" className="text-[#5B6573]">相談履歴を読み込んでいます...</p>
             </div>
           ) : loadError ? (
-            <div className="bg-red-50 rounded-2xl p-8 text-center border border-red-200">
+            <div role="alert" className="bg-red-50 rounded-2xl p-8 text-center border border-red-200">
               <p className="text-red-700">{loadError}</p>
+              <button type="button" onClick={() => setLoadAttempt(value => value + 1)} className="mt-3 font-medium text-[#0F4C81] underline">履歴を再取得</button>
             </div>
           ) : sortedConsultations.length === 0 ? (
             <div className="bg-white rounded-2xl p-8 shadow-sm text-center border border-[#D9E1EA]">
