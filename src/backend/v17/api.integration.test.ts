@@ -65,6 +65,19 @@ function authenticateAs(t: test.TestContext, userId = USER_ID) {
     }) as never);
 }
 
+function mockPersonTransaction(t: test.TestContext) {
+    replaceMethod(t, prisma.personProfile, "updateMany", async () => ({ count: 0 }));
+    replaceMethod(t, prisma, "$transaction", async (operation) => {
+        if (typeof operation !== "function") return Promise.all(operation);
+        return operation({ person: prisma.person, personProfile: prisma.personProfile, analysisCase: prisma.analysisCase,
+            $queryRaw: async (sql: TemplateStringsArray, personId: string, userId: string) => {
+                assert.match(sql.join(""), /FOR SHARE/);
+                const owned = await prisma.person.findFirst({ where: { id: personId, userId, archivedAt: null } });
+                return owned ? [owned] : [];
+            } });
+    });
+}
+
 async function request(
     path: string,
     init: RequestInit = {},
@@ -172,7 +185,7 @@ test("Person list, detail, and update are scoped to authenticated userId", async
         assert.deepEqual(args.where, { userId: USER_ID, archivedAt: null });
         return 1;
     });
-    replaceMethod(t, prisma, "$transaction", async (operations) => Promise.all(operations) as never);
+    mockPersonTransaction(t);
 
     const listed = await request("/api/persons?limit=10&offset=0", authorizedJson("GET"));
     assert.equal(listed.status, 200);
@@ -206,6 +219,7 @@ test("Person list, detail, and update are scoped to authenticated userId", async
 
 test("another user's Person cannot be read or updated", async (t) => {
     authenticateAs(t);
+    mockPersonTransaction(t);
     const findFirst = replaceMethod(t, prisma.person, "findFirst", async (args) => {
         assert.equal(args.where.userId, USER_ID);
         return null;
@@ -227,6 +241,7 @@ test("another user's Person cannot be read or updated", async (t) => {
 
 test("AnalysisCase create saves authenticated userId and Person snapshot", async (t) => {
     authenticateAs(t);
+    mockPersonTransaction(t);
     replaceMethod(t, prisma.person, "findFirst", async (args) => {
         assert.deepEqual(args.where, { id: PERSON_ID, userId: USER_ID, archivedAt: null });
         return person() as never;
@@ -251,6 +266,7 @@ test("AnalysisCase create saves authenticated userId and Person snapshot", async
 
 test("AnalysisCase create rejects another user's Person and client user_id", async (t) => {
     authenticateAs(t);
+    mockPersonTransaction(t);
     replaceMethod(t, prisma.person, "findFirst", async (args) => {
         assert.equal(args.where.userId, USER_ID);
         return null;

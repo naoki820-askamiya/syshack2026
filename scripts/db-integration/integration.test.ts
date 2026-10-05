@@ -23,6 +23,7 @@ const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: data
 (globalThis as typeof globalThis & { prisma?: unknown }).prisma = prisma;
 const repository = await import('../../src/backend/v17/workflow.repository.js');
 const { settleUsage } = await import('../../src/backend/v17/rateLimit.js');
+const persons = await import('../../src/backend/v17/persons.repository.js');
 const setup = new pg.Client({ connectionString: databaseUrl });
 let personA: string;
 let personQuota: string;
@@ -108,7 +109,15 @@ test('owned repository reads and composite foreign keys reject user B', { timeou
   const analysisCase = await createCase();
   assert.equal(await repository.findOwnedCase(USER_B, analysisCase.id), null);
   assert.deepEqual(await repository.startAnalysis(USER_B, analysisCase.id), { kind: 'not_found' });
-  await assert.rejects(createCase(USER_B, personA), (error: any) => error.code === 'P2003');
+  await assert.rejects(createCase(USER_B, personA), (error: any) => error.code === 'RESOURCE_NOT_FOUND');
+  // The database owner/person composite FK remains a second independent boundary.
+  await assert.rejects(prisma.analysisCase.create({ data: { userId: USER_B, personId: personA,
+    userAgeRange: 'unknown', userGender: 'unknown', perceivedPartnerReaction: 'unknown', elapsedTimeType: 'unknown',
+    eventFacts: 'Synthetic foreign ownership', userResponseType: 'none', personSnapshot: {
+      schemaVersion: 'person-snapshot-v1', capturedAt: '2026-10-05T00:00:00Z',
+      person: { displayName: 'Synthetic person', relationshipType: 'coworker' },
+    } } }),
+  (error: any) => error.code === 'P2003');
   assert.equal(await prisma.apiUsageEvent.count({ where: { userId: USER_B } }), 0);
 });
 
@@ -357,4 +366,64 @@ test('usage linkage is atomic and settlement targets the immutable owned run', {
   await setup.query('DELETE FROM auth.users WHERE id = $1', [disposableUser]);
   assert.equal((await prisma.apiUsageEvent.findUnique({ where: { id: retained.id } }))?.userId, null);
   assert.equal(await settleUsage(prisma, { ...identity, userId: disposableUser, usageEventId: retained.id }, 'failed', 0), 'unmatched');
+});
+
+test('Person edit and Profile invalidation roll back together and leave old snapshots intact', { timeout: 15_000 }, async () => {
+  const person = await prisma.person.create({ data: { userId: USER_A, displayName: 'Original', relationshipType: 'coworker' } });
+  const oldCase = await createCase(USER_A, person.id);
+  await prisma.personProfile.create({ data: { userId: USER_A, personId: person.id, profileSchemaVersion: 'synthetic', profileJson: {} } });
+  await prisma.userPrivacySetting.upsert({ where: { userId: USER_A }, create: { userId: USER_A, personalizationEnabled: false }, update: { personalizationEnabled: false } });
+  await setup.query(`CREATE FUNCTION synthetic_person_edit_failure() RETURNS trigger LANGUAGE plpgsql
+    AS $$ BEGIN RAISE EXCEPTION 'synthetic edit invalidation failure'; END $$;
+    CREATE TRIGGER synthetic_fail_person_edit BEFORE UPDATE ON person_profiles
+    FOR EACH ROW EXECUTE FUNCTION synthetic_person_edit_failure();`);
+  try {
+    await assert.rejects(persons.updateOwnedPerson(USER_A, person.id, { displayName: 'Edited', relationshipType: 'friend' }));
+    assert.equal((await persons.findOwnedPerson(USER_A, person.id))?.displayName, 'Original');
+    assert.equal((await prisma.personProfile.findUnique({ where: { personId: person.id } }))?.needsRefresh, false);
+  } finally { await setup.query('DROP TRIGGER synthetic_fail_person_edit ON person_profiles; DROP FUNCTION synthetic_person_edit_failure()'); }
+  assert.equal(await persons.updateOwnedPerson(USER_B, person.id, { displayName: 'Foreign' }), null);
+  const edited = await persons.updateOwnedPerson(USER_A, person.id, { displayName: 'Edited', relationshipType: 'friend' });
+  assert.equal(edited?.displayName, 'Edited');
+  const profile = await prisma.personProfile.findUnique({ where: { personId: person.id } });
+  assert.equal(profile?.needsRefresh, true); assert.ok(profile?.staleSince);
+  assert.deepEqual((await repository.findOwnedCase(USER_A, oldCase.id))?.personSnapshot, oldCase.personSnapshot);
+  const nextCase = await createCase(USER_A, person.id);
+  assert.deepEqual((nextCase.personSnapshot as any).person, { displayName: 'Edited', relationshipType: 'friend' });
+  assert.deepEqual((oldCase.personSnapshot as any).person, { displayName: 'Original', relationshipType: 'coworker' });
+  await prisma.userPrivacySetting.update({ where: { userId: USER_A }, data: { personalizationEnabled: true, usePersonProfile: true } });
+  const { buildAiContext } = await import('../../src/backend/v17/context.repository.js');
+  assert.equal((await buildAiContext(USER_A, nextCase.id))?.personProfileId, null);
+});
+
+for (const archived of [false, true]) test('Case snapshot waits for concurrent Person ' + (archived ? 'archive' : 'edit'), { timeout: 15_000 }, async () => {
+  const person = await prisma.person.create({ data: { userId: USER_A, displayName: 'Before lock', relationshipType: 'coworker' } });
+  const blocker = new pg.Client({ connectionString: databaseUrl });
+  await blocker.connect(); await blocker.query('BEGIN');
+  await blocker.query(archived ? 'UPDATE persons SET archived_at = now() WHERE id = $1' :
+    "UPDATE persons SET display_name = 'Committed edit', relationship_type = 'friend' WHERE id = $1", [person.id]);
+  const pending = Promise.allSettled([createCase(USER_A, person.id)]);
+  let observed = false;
+  try {
+    const deadline = Date.now() + 2500;
+    while (Date.now() < deadline) {
+      // Fresh autocommit observer avoids a transaction-cached pg_stat_activity snapshot.
+      const waiting = await setup.query(`SELECT COUNT(DISTINCT l.pid)::int AS connections FROM pg_locks l
+        JOIN pg_stat_activity a ON a.pid = l.pid WHERE l.locktype = 'transactionid' AND NOT l.granted
+        AND a.datname = current_database()`);
+      if (waiting.rows[0].connections > 0) { observed = true; break; }
+      await new Promise(resolveWait => setTimeout(resolveWait, 20));
+    }
+  } finally { await blocker.query('COMMIT'); await blocker.end(); }
+  const [outcome] = await pending;
+  assert.equal(observed, true, 'production createCase must wait for the Person row change');
+  if (archived) {
+    assert.equal(outcome.status, 'rejected');
+    assert.equal((outcome as PromiseRejectedResult).reason.code, 'RESOURCE_NOT_FOUND');
+    assert.equal(await prisma.analysisCase.count({ where: { personId: person.id } }), 0);
+  } else {
+    assert.equal(outcome.status, 'fulfilled');
+    assert.deepEqual(((outcome as PromiseFulfilledResult<any>).value.personSnapshot as any).person,
+      { displayName: 'Committed edit', relationshipType: 'friend' });
+  }
 });

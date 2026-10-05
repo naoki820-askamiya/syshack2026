@@ -44,12 +44,20 @@ export async function updateOwnedPerson(
         notes: string | null;
     }>,
 ) {
-    // 読み取り後の更新に分けると競合できるため、所有権と未archive条件を更新自体に課します。
-    const result = await prisma.person.updateMany({
-        where: { id: personId, userId, archivedAt: null },
-        data,
+    return prisma.$transaction(async tx => {
+        // The UPDATE holds the Person row lock through invalidation and the response read.
+        const result = await tx.person.updateMany({
+            where: { id: personId, userId, archivedAt: null }, data,
+        });
+        if (result.count !== 1) return null;
+        if (data.displayName !== undefined || data.relationshipType !== undefined) {
+            // Independent of current privacy: a later ON must not reuse pre-edit derived context.
+            await tx.personProfile.updateMany({
+                where: { userId, personId }, data: { needsRefresh: true, staleSince: new Date() },
+            });
+        }
+        return tx.person.findFirst({ where: { id: personId, userId, archivedAt: null } });
     });
-    return result.count === 1 ? findOwnedPerson(userId, personId) : null;
 }
 
 export async function findOwnedPersonProfile(userId: string, personId: string) {

@@ -67,3 +67,13 @@ Frozen R07 tree: npm test268/0skip; typecheck/build PASS; Markdown51 files/0 iss
 focused33/0skip; real disposable PostgreSQL8/0skip with own container removed.
 Independent and skeptical reviews APPROVE. Logs: experiments/residual-r07-*.log.
 No Production migration, external Auth, paid API, push or merge.
+
+## Approved residual implementation: R13
+
+Cycle2 frozen source: npm test287/0skip; typecheck/build PASS; Markdown52 files/0
+issues; focused UI24/0skip; real disposable PostgreSQL11/0skip, container removed.
+Cycle1 independently found four UI defects; negative regression7/9 and2/5 failures
+plus A,B,A retry reproduction precede the fix. New Other validation is preserved.
+The PG FK fixture shape was corrected to reach the original P2003 assertion.
+Independent frontend APPROVE; final backend/skeptical review recorded in R13 doc.
+Logs: experiments/residual-r13-*.log. These fixtures do not prove real browser/Auth.

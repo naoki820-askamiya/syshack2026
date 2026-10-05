@@ -3,6 +3,8 @@ import { prisma } from "../prisma/client.js";
 import type { KigenAnalysisResultV2 } from "../ai/v2/output.schema.js";
 import type { AnalysisContextSnapshotV5 } from "../ai/v2/context.js";
 import { reserveAnalyzeUsageAndStartCase } from "./rateLimit.js";
+import { buildPersonSnapshot } from "./schemas.js";
+import { resourceNotFound } from "./http.js";
 
 export async function createCase(
     userId: string,
@@ -15,10 +17,21 @@ export async function createCase(
         eventFacts: string;
         userResponseType: string;
         userResponseText: string | null;
-        personSnapshot: Prisma.InputJsonValue;
+        personSnapshot?: Prisma.InputJsonValue;
     },
 ) {
-    return prisma.analysisCase.create({ data: { ...input, userId } });
+    return prisma.$transaction(async tx => {
+        // A short shared row lock orders snapshot+insert against Person UPDATE/archive.
+        // Caller-supplied snapshots are never authoritative, including internal stale drafts.
+        const people = await tx.$queryRaw<Array<{ displayName: string; relationshipType: string }>>`
+            SELECT display_name AS "displayName", relationship_type AS "relationshipType"
+            FROM persons
+            WHERE id = ${input.personId}::uuid AND user_id = ${userId}::uuid AND archived_at IS NULL
+            FOR SHARE
+        `;
+        if (!people[0]) throw resourceNotFound();
+        return tx.analysisCase.create({ data: { ...input, userId, personSnapshot: buildPersonSnapshot(people[0]) } });
+    });
 }
 
 export async function findOwnedCase(userId: string, caseId: string) {

@@ -111,7 +111,7 @@ export async function hydrateAnalysis(caseId: string): Promise<boolean> {
 }
 
 export async function createPerson(params: { displayName: string; relationshipType: string }) {
-  return fetchApiJson<{ person: { id: string } }>('/api/persons', {
+  return fetchApiJson<{ person: ApiPerson }>('/api/persons', {
     method: 'POST',
     body: JSON.stringify({
       displayName: params.displayName,

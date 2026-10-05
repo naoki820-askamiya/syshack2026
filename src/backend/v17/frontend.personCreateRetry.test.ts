@@ -31,7 +31,7 @@ function scenario(options: { person?: () => Promise<unknown>; failure?: unknown 
     'react/jsx-runtime': { jsx, jsxs: jsx },
     'react-router': { useNavigate: () => (...args: unknown[]) => navigation.push(args), useSearchParams: () => [new URLSearchParams()] },
     'lucide-react': new Proxy({}, { get: (_target, key) => String(key) }),
-    '../api/sessionV17': { createPerson: async () => { creates++; return options.person ? options.person() : { person: { id: 'acknowledged-person' } }; },
+    '../api/sessionV17': { createPerson: async () => { creates++; return options.person ? options.person() : { person: { id: 'acknowledged-person', displayName: 'Synthetic person', relationshipType: 'boss' } }; },
       createAnalysisCase: async (body: unknown) => { caseBodies.push(body); if (caseBodies.length === 1) throw options.failure ?? new Error('synthetic Case400'); return { analysisCase: { id: 'saved-case' } }; } },
     '../api/client': { fetchApiJson: () => { throw new Error('unexpected GET'); } },
     '../utils/clientTiming': { clientTiming: new Proxy({}, { get: () => () => null }) },
@@ -40,6 +40,7 @@ function scenario(options: { person?: () => Promise<unknown>; failure?: unknown 
     '../utils/storage': { getConsultations: () => [], saveConsultation: (value: unknown) => saved.push(value) },
     '../utils/relationStyles': { getRelationStyle: () => ({}) },
     '../components/Navigation': { Navigation: () => null },
+    '../components/PersonEditor': { PersonEditor: () => null },
     '../utils/consultationHistory': { findLatestConsultationByPersonId: () => undefined, getLatestConsultationsByPerson: () => [] },
     './newConsultationModel': actualModule('src/app/pages/newConsultationModel.ts'),
   });
@@ -54,6 +55,7 @@ for (const failure of [new Error('synthetic Case400'), new TypeError('synthetic 
     const flow = scenario({ failure });
     await flow.submit();
     assert.equal(flow.states[0].personId, 'acknowledged-person');
+    assert.equal(flow.render().find(n => n.props.person?.id === 'acknowledged-person')?.props.person.displayName, 'Synthetic person');
     await flow.submit();
     assert.equal(flow.creates, 1);
     assert.deepEqual(flow.caseBodies.map(body => body.personId), ['acknowledged-person', 'acknowledged-person']);

@@ -10,6 +10,7 @@ import { relationshipLabel, type ApiPerson } from '../api/consultationMapper';
 import { saveConsultation, getConsultations } from '../utils/storage';
 import { getRelationStyle } from '../utils/relationStyles';
 import { Navigation } from '../components/Navigation';
+import { PersonEditor } from '../components/PersonEditor';
 import {
   findLatestConsultationByPersonId,
   getLatestConsultationsByPerson,
@@ -47,9 +48,6 @@ export function NewConsultation() {
       if (past) {
         return {
           ...EMPTY_CONSULTATION_FORM,
-          personId: past.personId ?? '',
-          personName: past.personName,
-          relation: past.relation as RelationType,
           ageGroup: past.ageGroup ?? EMPTY_CONSULTATION_FORM.ageGroup,
           gender: past.gender ?? EMPTY_CONSULTATION_FORM.gender,
         };
@@ -60,10 +58,7 @@ export function NewConsultation() {
   };
 
   const [formData, setFormData] = useState(resolveInitialData);
-  const [prefilled, setPrefilled] = useState(() => {
-    const personId = searchParams.get('personId');
-    return !!personId && !!findLatestConsultationByPersonId(getConsultations(), personId);
-  });
+  const [prefilled, setPrefilled] = useState(false);
 
   const [actionMode, setActionMode] = useState<ActionMode>('text');
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -76,35 +71,36 @@ export function NewConsultation() {
   const [apiError, setApiError] = useState("");
 
   const selectedPersonId = searchParams.get('personId');
-  const [personLoading, setPersonLoading] = useState(!!selectedPersonId && !formData.personId);
+  const [personLoading, setPersonLoading] = useState(!!selectedPersonId);
   const [personLoadFailed, setPersonLoadFailed] = useState(false);
-  const [personLoadAttempt, setPersonLoadAttempt] = useState(0);
+  const [loadedPerson, setLoadedPerson] = useState<ApiPerson | null>(null);
+  const [personEditing, setPersonEditing] = useState(false);
+  const personLoadGeneration = useRef(0);
+  const requestedPersonId = useRef<string | null>(selectedPersonId);
+
+  const loadPerson = (personId: string) => {
+    requestedPersonId.current = personId;
+    const attempt = ++personLoadGeneration.current;
+    const boundary = captureAuthBoundary();
+    const current = () => attempt === personLoadGeneration.current && isCurrentAuthBoundary(boundary);
+    setPersonLoading(true); setPersonLoadFailed(false); setLoadedPerson(null); setPersonEditing(false);
+    void fetchApiJson<{ person: ApiPerson }>(`/api/persons/${encodeURIComponent(personId)}`)
+      .then(({ person }) => {
+        if (!current()) return;
+        if (person.id !== personId) throw new Error('相手の情報を確認できませんでした。');
+        setFormData(prev => ({ ...prev, personId: person.id, personName: person.displayName, relation: relationshipLabel(person.relationshipType), relationOther: '' }));
+        setLoadedPerson(person); setPrefilled(true);
+      })
+      .catch((error: unknown) => { if (current()) { setPersonLoadFailed(true); setApiError(error instanceof Error ? error.message : '相手の情報を取得できませんでした。'); } })
+      .finally(() => { if (current()) setPersonLoading(false); });
+  };
 
   useEffect(() => {
     setPersonLoadFailed(false);
-    if (!selectedPersonId) { setPersonLoading(false); return; }
-    const past = findLatestConsultationByPersonId(getConsultations(), selectedPersonId);
-    if (past) {
-      setFormData(prev => ({ ...prev, personId: past.personId!, personName: past.personName, relation: past.relation }));
-      setPrefilled(true);
-      setPersonLoading(false);
-      return;
-    }
-    let active = true;
-    const boundary = captureAuthBoundary();
-    setPersonLoading(true);
-    void fetchApiJson<{ person: ApiPerson }>(`/api/persons/${encodeURIComponent(selectedPersonId)}`)
-      .then(({ person }) => {
-        if (!active || !isCurrentAuthBoundary(boundary)) return;
-        setFormData(prev => ({ ...prev, personId: person.id, personName: person.displayName, relation: relationshipLabel(person.relationshipType) }));
-        setPrefilled(true);
-      })
-      .catch((error: unknown) => {
-        if (active && isCurrentAuthBoundary(boundary)) { setPersonLoadFailed(true); setApiError(error instanceof Error ? error.message : '相手の情報を取得できませんでした。'); }
-      })
-      .finally(() => { if (active && isCurrentAuthBoundary(boundary)) setPersonLoading(false); });
-    return () => { active = false; };
-  }, [selectedPersonId, personLoadAttempt]);
+    if (selectedPersonId) loadPerson(selectedPersonId);
+    else setPersonLoading(false);
+    return () => { personLoadGeneration.current++; };
+  }, [selectedPersonId]);
 
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestions, setSuggestions] = useState<ConsultationData[]>([]);
@@ -114,10 +110,14 @@ export function NewConsultation() {
   }, [chatMessages]);
 
   const handleNameChange = (value: string) => {
-    if (personLoading || isAnalyzing) return;
+    if (personLoading || isAnalyzing || personEditing) return;
     // 手入力で名前を変えた場合、別人に以前のpersonIdを流用しない。
     setFormData(prev => ({ ...prev, personId: '', personName: value }));
     setPrefilled(false);
+    setLoadedPerson(null);
+    requestedPersonId.current = null;
+    setPersonLoadFailed(false);
+    setApiError('');
     if (value.trim().length > 0) {
       const matched = getLatestConsultationsByPerson(getConsultations()).filter(c =>
         c.personName.toLowerCase().includes(value.toLowerCase())
@@ -131,7 +131,7 @@ export function NewConsultation() {
   };
 
   const applyPerson = (person: ConsultationData) => {
-    if (personLoading || isAnalyzing) return;
+    if (personLoading || isAnalyzing || personEditing) return;
     setFormData(prev => ({
       ...prev,
       personId: person.personId ?? '',
@@ -143,6 +143,7 @@ export function NewConsultation() {
     setPrefilled(true);
     setShowSuggestions(false);
     setSuggestions([]);
+    if (person.personId) loadPerson(person.personId);
   };
 
   const addChatMessage = () => {
@@ -166,7 +167,7 @@ export function NewConsultation() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isAnalyzing || personLoading || personLoadFailed) return;
+    if (isAnalyzing || personLoading || personLoadFailed || personEditing) return;
     setSubmitted(true);
     setApiError("");
     const errors = getErrors();
@@ -198,6 +199,7 @@ export function NewConsultation() {
         });
         assertCurrentAuthBoundary(boundary);
         personId = personRes.person.id;
+        setLoadedPerson(personRes.person);
         // Acknowledged identity survives a later Case failure; do not infer unknown server outcomes.
         setFormData(prev => prev.personName === formData.personName && resolveRelation(prev) === effectiveRelation && !prev.personId
           ? { ...prev, personId } : prev);
@@ -284,12 +286,12 @@ export function NewConsultation() {
 
         <div className="max-w-4xl mx-auto p-4 lg:p-8">
           {personLoading && <p role="status" className="mb-4">相手の情報を確認しています...</p>}
-          {personLoadFailed && <button type="button" className="mb-4 text-[#0F4C81]" onClick={() => setPersonLoadAttempt(v => v + 1)}>相手の情報を再取得</button>}
+          {personLoadFailed && <button type="button" className="mb-4 text-[#0F4C81]" onClick={() => { if (requestedPersonId.current) loadPerson(requestedPersonId.current); }}>相手の情報を再取得</button>}
           {prefilled && (
             <div className="mb-6 flex items-center gap-2 bg-[#E8F1F8] border border-[#D9E1EA] text-[#0F4C81] rounded-lg px-4 py-3 text-sm">
               <UserCheck className="w-4 h-4 flex-shrink-0" />
               <span>
-                過去の相談から <strong>{formData.personName}</strong> さんの情報を自動で入力しました。内容を確認してください。
+                保存済みの <strong>{formData.personName}</strong> さんの情報を入力しました。内容を確認してください。
               </span>
             </div>
           )}
@@ -316,7 +318,7 @@ export function NewConsultation() {
                       ref={nameInputRef}
                       type="text"
                       id="person-name"
-                      disabled={personLoading || isAnalyzing}
+                      disabled={personLoading || isAnalyzing || personEditing}
                       value={formData.personName}
                       onChange={(e) => handleNameChange(e.target.value)}
                       onFocus={() => {
@@ -337,7 +339,7 @@ export function NewConsultation() {
                               key={person.id}
                               type="button"
                               onMouseDown={(e) => e.preventDefault()}
-                              disabled={personLoading || isAnalyzing}
+                              disabled={personLoading || isAnalyzing || personEditing}
                               onClick={() => applyPerson(person)}
                               className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-[#F1F4F8] transition-colors text-left"
                             >
@@ -357,6 +359,12 @@ export function NewConsultation() {
                       </div>
                     )}
                   </div>
+                  {loadedPerson && formData.personId === loadedPerson.id && <PersonEditor key={loadedPerson.id}
+                    person={loadedPerson} disabled={personLoading || isAnalyzing} onEditingChange={setPersonEditing}
+                    onSaved={person => {
+                      setLoadedPerson(person);
+                      setFormData(prev => prev.personId === person.id ? { ...prev, personName: person.displayName, relation: relationshipLabel(person.relationshipType), relationOther: '' } : prev);
+                    }} />}
                   {errors.personName && (
                     <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
                       <AlertCircle className="w-3 h-3" />入力してください
@@ -403,7 +411,7 @@ export function NewConsultation() {
                   </div>
                 </div>
 
-                <fieldset disabled={personLoading || isAnalyzing}>
+                <fieldset disabled={personLoading || isAnalyzing || personEditing || !!formData.personId}>
                   <legend className="block text-sm font-medium text-[#5B6573] mb-2">
                     相手との関係<span className="text-red-500 ml-0.5">*</span>
                   </legend>
@@ -429,7 +437,7 @@ export function NewConsultation() {
                       ))}
                     </div>
                   </div>
-                  {formData.relation === 'その他' && (
+                  {formData.relation === 'その他' && !formData.personId && (
                     <div className="mt-3">
                       <label htmlFor="relation-other" className="sr-only">その他の関係性</label>
                       <input
@@ -756,7 +764,7 @@ export function NewConsultation() {
             {isAnalyzing && <p role="status" className="text-sm text-[#5B6573]">相談を保存しています…</p>}
             <button
               type="submit"
-              disabled={isAnalyzing || personLoading || personLoadFailed}
+              disabled={isAnalyzing || personLoading || personLoadFailed || personEditing}
               className={`w-full text-white py-4 lg:py-5 rounded-xl font-semibold shadow-sm transition-colors lg:text-lg flex justify-center items-center gap-2 ${
                 isAnalyzing
                   ? "bg-[#B8C2CF] cursor-not-allowed"

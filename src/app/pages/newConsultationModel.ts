@@ -78,7 +78,7 @@ export function getConsultationFormErrors(
   return {
     personName: !form.personName.trim(),
     event: !form.event.trim(),
-    relationOther: form.relation === 'その他' && !form.relationOther.trim(),
+    relationOther: !form.personId && form.relation === 'その他' && !form.relationOther.trim(),
     reactionOther: form.reaction === 'その他' && !form.reactionOther.trim(),
     userAction: actionMode === 'text' && !form.userAction.trim(),
     chatContent:
