@@ -86,6 +86,8 @@ export const PersonScalarFieldEnum = {
   displayName: 'displayName',
   relationshipType: 'relationshipType',
   notes: 'notes',
+  createIntentKey: 'createIntentKey',
+  createIntentFingerprint: 'createIntentFingerprint',
   archivedAt: 'archivedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -107,6 +109,8 @@ export const AnalysisCaseScalarFieldEnum = {
   userResponseType: 'userResponseType',
   userResponseText: 'userResponseText',
   personSnapshot: 'personSnapshot',
+  createIntentKey: 'createIntentKey',
+  createIntentFingerprint: 'createIntentFingerprint',
   analyzeRunId: 'analyzeRunId',
   analyzeStartedAt: 'analyzeStartedAt',
   analyzeAttemptCount: 'analyzeAttemptCount',

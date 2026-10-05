@@ -2,6 +2,7 @@ import type { RelationshipType } from "../generated/prisma/enums.js";
 import { createPersonSchema, paginationSchema, updatePersonSchema } from "./schemas.js";
 import { parseOrThrow, resourceNotFound } from "./http.js";
 import * as repository from "./persons.repository.js";
+import { publicCreatedResource } from './createIntent.js';
 
 export async function createPerson(userId: string, body: unknown) {
     const data = parseOrThrow(createPersonSchema, body);
@@ -9,11 +10,11 @@ export async function createPerson(userId: string, body: unknown) {
         ...data,
         relationshipType: data.relationshipType as RelationshipType,
     });
-    return { person };
+    return { person: publicCreatedResource(person) };
 }
 
 export async function getPerson(userId: string, personId: string) {
-    return { person: await getOwnedPersonOrThrow(userId, personId) };
+    return { person: publicCreatedResource(await getOwnedPersonOrThrow(userId, personId)) };
 }
 
 export async function listPersons(userId: string, query: unknown) {
@@ -22,7 +23,7 @@ export async function listPersons(userId: string, query: unknown) {
     const offset = parsed.offset ?? 0;
     const { persons, total } = await repository.listOwnedPersons(userId, limit, offset);
     return {
-        persons,
+        persons: persons.map(publicCreatedResource),
         pagination: { limit, offset, hasMore: offset + persons.length < total },
     };
 }
@@ -34,7 +35,7 @@ export async function updatePerson(userId: string, personId: string, body: unkno
         relationshipType: data.relationshipType as RelationshipType | undefined,
     });
     if (!person) throw resourceNotFound();
-    return { person };
+    return { person: publicCreatedResource(person) };
 }
 
 export async function getPersonProfile(userId: string, personId: string) {

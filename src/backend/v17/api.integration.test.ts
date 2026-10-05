@@ -117,6 +117,20 @@ function person(overrides: Record<string, unknown> = {}) {
     };
 }
 
+test('Person POST accepts dedicated intent key but never exposes key/fingerprint; PATCH rejects it', async t => {
+    authenticateAs(t);
+    const key = '88888888-8888-4888-8888-888888888888';
+    replaceMethod(t, prisma.person, 'create', async ({ data }) => {
+        assert.equal(data.createIntentKey, key); assert.match(data.createIntentFingerprint, /^v1:[a-f0-9]{64}$/);
+        assert.equal(data.displayName, 'Synthetic retry'); return person(data);
+    });
+    const response = await request('/api/persons', authorizedJson('POST', { displayName: ' Synthetic retry ', relationshipType: 'friend', createIntentKey: key }));
+    assert.equal(response.status, 201);
+    assert.equal(Object.hasOwn(response.body.person as object, 'createIntentKey'), false);
+    assert.equal(Object.hasOwn(response.body.person as object, 'createIntentFingerprint'), false);
+    assert.equal((await request(`/api/persons/${PERSON_ID}`, authorizedJson('PATCH', { createIntentKey: key }))).status, 400);
+});
+
 function caseBody(personId = PERSON_ID) {
     return {
         personId,

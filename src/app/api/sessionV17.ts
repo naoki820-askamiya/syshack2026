@@ -110,17 +110,19 @@ export async function hydrateAnalysis(caseId: string): Promise<boolean> {
   return true;
 }
 
-export async function createPerson(params: { displayName: string; relationshipType: string }) {
+export async function createPerson(params: { displayName: string; relationshipType: string; createIntentKey?: string }) {
   return fetchApiJson<{ person: ApiPerson }>('/api/persons', {
     method: 'POST',
     body: JSON.stringify({
       displayName: params.displayName,
       relationshipType: RELATIONSHIP_TYPES[params.relationshipType] ?? 'other',
+      createIntentKey: params.createIntentKey,
     }),
   });
 }
 
 export interface CreateAnalysisCaseRequest {
+  createIntentKey?: string;
   personId: string;
   userAgeRange: string;
   userGender: string;
@@ -132,7 +134,7 @@ export interface CreateAnalysisCaseRequest {
 }
 
 export async function createAnalysisCase(params: CreateAnalysisCaseRequest) {
-  return fetchApiJson<{ analysisCase: { id: string } }>('/api/analysis-cases', {
+  return fetchApiJson<{ analysisCase: ApiAnalysisCase }>('/api/analysis-cases', {
     method: 'POST',
     body: JSON.stringify(params),
   });

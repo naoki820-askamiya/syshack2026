@@ -14,7 +14,7 @@ export const relationshipTypeSchema = z.enum([
     "other",
 ]);
 
-export const createPersonSchema = z
+const personFieldsSchema = z
     .object({
         displayName: z.string().trim().min(1).max(50),
         relationshipType: relationshipTypeSchema,
@@ -22,7 +22,9 @@ export const createPersonSchema = z
     })
     .strict();
 
-export const updatePersonSchema = createPersonSchema.partial();
+const createIntentKeySchema = z.string().uuid().transform(value => value.toLowerCase()).optional();
+export const createPersonSchema = personFieldsSchema.extend({ createIntentKey: createIntentKeySchema });
+export const updatePersonSchema = personFieldsSchema.partial();
 
 export const createAnalysisCaseSchema = z
     .object({
@@ -34,6 +36,7 @@ export const createAnalysisCaseSchema = z
         eventFacts: z.string().trim().min(1).max(3000),
         userResponseType: z.enum(["action", "conversation", "none"]),
         userResponseText: z.string().trim().min(1).max(3000).nullable(),
+        createIntentKey: createIntentKeySchema,
     })
     .strict()
     .superRefine((value, context) => {

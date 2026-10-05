@@ -27,6 +27,7 @@ export interface ApiPerson {
 }
 
 export interface ApiAnalysisCase {
+  personSnapshot?: unknown;
   id: string;
   personId: string;
   eventFacts: string;
@@ -36,6 +37,16 @@ export interface ApiAnalysisCase {
   userAgeRange: string;
   userGender: string;
   createdAt: string;
+}
+
+export function personFromCaseSnapshot(value: unknown): Pick<ApiPerson, 'displayName' | 'relationshipType'> | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const snapshot = value as Record<string, unknown>;
+  if (snapshot.schemaVersion !== 'person-snapshot-v1' || !snapshot.person || typeof snapshot.person !== 'object' || Array.isArray(snapshot.person)) return null;
+  const person = snapshot.person as Record<string, unknown>;
+  return typeof person.displayName === 'string' && typeof person.relationshipType === 'string' &&
+    Object.hasOwn(RELATIONSHIP_TYPES_FROM_API, person.relationshipType)
+    ? { displayName: person.displayName, relationshipType: person.relationshipType } : null;
 }
 
 export function relationshipLabel(value: string): RelationType {

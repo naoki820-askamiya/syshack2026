@@ -77,3 +77,13 @@ plus A,B,A retry reproduction precede the fix. New Other validation is preserved
 The PG FK fixture shape was corrected to reach the original P2003 assertion.
 Independent frontend APPROVE; final backend/skeptical review recorded in R13 doc.
 Logs: experiments/residual-r13-*.log. These fixtures do not prove real browser/Auth.
+
+## Approved residual implementation: R12
+
+Cycle2 npm test299/0skip; typecheck/build PASS; Markdown53 files/0issues.
+Initial backend4/4 regressions failed before implementation. Initial PG12/14
+exposed the installed adapter error metadata; corrected PG14/14 with two real
+connections and cleanup. UI reviewed-new-intent regression8/9 before,9/9 after.
+Independent backend44/44 and frontend31/31 APPROVE; skeptical whole-change review
+is recorded in the R12 doc. Logs: experiments/residual-r12-*.log.
+Reload, physical deletion and real browser/Auth are outside the verified guarantee.

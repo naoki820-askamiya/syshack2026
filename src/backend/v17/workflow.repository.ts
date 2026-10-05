@@ -5,6 +5,7 @@ import type { AnalysisContextSnapshotV5 } from "../ai/v2/context.js";
 import { reserveAnalyzeUsageAndStartCase } from "./rateLimit.js";
 import { buildPersonSnapshot } from "./schemas.js";
 import { resourceNotFound } from "./http.js";
+import { assertSameCreateIntent, caseIntentFingerprint, isCreateIntentCollision } from './createIntent.js';
 
 export async function createCase(
     userId: string,
@@ -18,9 +19,11 @@ export async function createCase(
         userResponseType: string;
         userResponseText: string | null;
         personSnapshot?: Prisma.InputJsonValue;
+        createIntentKey?: string;
     },
 ) {
-    return prisma.$transaction(async tx => {
+    const intent = input.createIntentKey ? { createIntentKey: input.createIntentKey.toLowerCase(), createIntentFingerprint: caseIntentFingerprint(input) } : {};
+    try { return await prisma.$transaction(async tx => {
         // A short shared row lock orders snapshot+insert against Person UPDATE/archive.
         // Caller-supplied snapshots are never authoritative, including internal stale drafts.
         const people = await tx.$queryRaw<Array<{ displayName: string; relationshipType: string }>>`
@@ -30,8 +33,15 @@ export async function createCase(
             FOR SHARE
         `;
         if (!people[0]) throw resourceNotFound();
-        return tx.analysisCase.create({ data: { ...input, userId, personSnapshot: buildPersonSnapshot(people[0]) } });
-    });
+        return tx.analysisCase.create({ data: { ...input, userId, ...intent, personSnapshot: buildPersonSnapshot(people[0]) } });
+    }); } catch (error) {
+        // PostgreSQL aborts a transaction on UNIQUE failure; replay only after rollback.
+        if (!intent.createIntentKey || !isCreateIntentCollision(error, 'analysis_cases')) throw error;
+        const existing = await prisma.analysisCase.findFirst({ where: { userId, createIntentKey: intent.createIntentKey } });
+        if (!existing || !await prisma.person.findFirst({ where: { userId, id: existing.personId, archivedAt: null } })) throw resourceNotFound();
+        assertSameCreateIntent(existing.createIntentFingerprint, intent.createIntentFingerprint!);
+        return existing;
+    }
 }
 
 export async function findOwnedCase(userId: string, caseId: string) {

@@ -37,6 +37,8 @@ model Person {
   displayName      String           @map("display_name") @db.VarChar(50)
   relationshipType RelationshipType @map("relationship_type")
   notes            String?
+  createIntentKey  String?          @map("create_intent_key") @db.Uuid
+  createIntentFingerprint String?   @map("create_intent_fingerprint") @db.VarChar(67)
   archivedAt       DateTime?        @map("archived_at") @db.Timestamptz(6)
   createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt        DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
@@ -45,6 +47,7 @@ model Person {
   profile       PersonProfile?
 
   @@unique([userId, id])
+  @@unique([userId, createIntentKey])
   @@index([userId, updatedAt])
   @@index([userId, archivedAt])
   @@map("persons")
@@ -63,6 +66,8 @@ model AnalysisCase {
   userResponseType         String             @map("user_response_type") @db.VarChar(20)
   userResponseText         String?            @map("user_response_text")
   personSnapshot           Json               @map("person_snapshot") @db.JsonB
+  createIntentKey           String?            @map("create_intent_key") @db.Uuid
+  createIntentFingerprint   String?            @map("create_intent_fingerprint") @db.VarChar(67)
   analyzeRunId             String?            @map("analyze_run_id") @db.Uuid
   analyzeStartedAt         DateTime?          @map("analyze_started_at") @db.Timestamptz(6)
   analyzeAttemptCount      Int                @default(0) @map("analyze_attempt_count")
@@ -77,6 +82,7 @@ model AnalysisCase {
   feedbacks AnalysisFeedback[]
 
   @@unique([userId, id])
+  @@unique([userId, createIntentKey])
   @@index([userId, createdAt])
   @@index([userId, personId, createdAt])
   @@index([userId, personId, status, createdAt])

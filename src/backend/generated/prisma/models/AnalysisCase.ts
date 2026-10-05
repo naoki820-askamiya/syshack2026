@@ -46,6 +46,8 @@ export type AnalysisCaseMinAggregateOutputType = {
   eventFacts: string | null
   userResponseType: string | null
   userResponseText: string | null
+  createIntentKey: string | null
+  createIntentFingerprint: string | null
   analyzeRunId: string | null
   analyzeStartedAt: Date | null
   analyzeAttemptCount: number | null
@@ -68,6 +70,8 @@ export type AnalysisCaseMaxAggregateOutputType = {
   eventFacts: string | null
   userResponseType: string | null
   userResponseText: string | null
+  createIntentKey: string | null
+  createIntentFingerprint: string | null
   analyzeRunId: string | null
   analyzeStartedAt: Date | null
   analyzeAttemptCount: number | null
@@ -91,6 +95,8 @@ export type AnalysisCaseCountAggregateOutputType = {
   userResponseType: number
   userResponseText: number
   personSnapshot: number
+  createIntentKey: number
+  createIntentFingerprint: number
   analyzeRunId: number
   analyzeStartedAt: number
   analyzeAttemptCount: number
@@ -123,6 +129,8 @@ export type AnalysisCaseMinAggregateInputType = {
   eventFacts?: true
   userResponseType?: true
   userResponseText?: true
+  createIntentKey?: true
+  createIntentFingerprint?: true
   analyzeRunId?: true
   analyzeStartedAt?: true
   analyzeAttemptCount?: true
@@ -145,6 +153,8 @@ export type AnalysisCaseMaxAggregateInputType = {
   eventFacts?: true
   userResponseType?: true
   userResponseText?: true
+  createIntentKey?: true
+  createIntentFingerprint?: true
   analyzeRunId?: true
   analyzeStartedAt?: true
   analyzeAttemptCount?: true
@@ -168,6 +178,8 @@ export type AnalysisCaseCountAggregateInputType = {
   userResponseType?: true
   userResponseText?: true
   personSnapshot?: true
+  createIntentKey?: true
+  createIntentFingerprint?: true
   analyzeRunId?: true
   analyzeStartedAt?: true
   analyzeAttemptCount?: true
@@ -278,6 +290,8 @@ export type AnalysisCaseGroupByOutputType = {
   userResponseType: string
   userResponseText: string | null
   personSnapshot: runtime.JsonValue
+  createIntentKey: string | null
+  createIntentFingerprint: string | null
   analyzeRunId: string | null
   analyzeStartedAt: Date | null
   analyzeAttemptCount: number
@@ -324,6 +338,8 @@ export type AnalysisCaseWhereInput = {
   userResponseType?: Prisma.StringFilter<"AnalysisCase"> | string
   userResponseText?: Prisma.StringNullableFilter<"AnalysisCase"> | string | null
   personSnapshot?: Prisma.JsonFilter<"AnalysisCase">
+  createIntentKey?: Prisma.UuidNullableFilter<"AnalysisCase"> | string | null
+  createIntentFingerprint?: Prisma.StringNullableFilter<"AnalysisCase"> | string | null
   analyzeRunId?: Prisma.UuidNullableFilter<"AnalysisCase"> | string | null
   analyzeStartedAt?: Prisma.DateTimeNullableFilter<"AnalysisCase"> | Date | string | null
   analyzeAttemptCount?: Prisma.IntFilter<"AnalysisCase"> | number
@@ -350,6 +366,8 @@ export type AnalysisCaseOrderByWithRelationInput = {
   userResponseType?: Prisma.SortOrder
   userResponseText?: Prisma.SortOrderInput | Prisma.SortOrder
   personSnapshot?: Prisma.SortOrder
+  createIntentKey?: Prisma.SortOrderInput | Prisma.SortOrder
+  createIntentFingerprint?: Prisma.SortOrderInput | Prisma.SortOrder
   analyzeRunId?: Prisma.SortOrderInput | Prisma.SortOrder
   analyzeStartedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   analyzeAttemptCount?: Prisma.SortOrder
@@ -366,6 +384,7 @@ export type AnalysisCaseOrderByWithRelationInput = {
 export type AnalysisCaseWhereUniqueInput = Prisma.AtLeast<{
   id?: string
   userId_id?: Prisma.AnalysisCaseUserIdIdCompoundUniqueInput
+  userId_createIntentKey?: Prisma.AnalysisCaseUserIdCreateIntentKeyCompoundUniqueInput
   AND?: Prisma.AnalysisCaseWhereInput | Prisma.AnalysisCaseWhereInput[]
   OR?: Prisma.AnalysisCaseWhereInput[]
   NOT?: Prisma.AnalysisCaseWhereInput | Prisma.AnalysisCaseWhereInput[]
@@ -380,6 +399,8 @@ export type AnalysisCaseWhereUniqueInput = Prisma.AtLeast<{
   userResponseType?: Prisma.StringFilter<"AnalysisCase"> | string
   userResponseText?: Prisma.StringNullableFilter<"AnalysisCase"> | string | null
   personSnapshot?: Prisma.JsonFilter<"AnalysisCase">
+  createIntentKey?: Prisma.UuidNullableFilter<"AnalysisCase"> | string | null
+  createIntentFingerprint?: Prisma.StringNullableFilter<"AnalysisCase"> | string | null
   analyzeRunId?: Prisma.UuidNullableFilter<"AnalysisCase"> | string | null
   analyzeStartedAt?: Prisma.DateTimeNullableFilter<"AnalysisCase"> | Date | string | null
   analyzeAttemptCount?: Prisma.IntFilter<"AnalysisCase"> | number
@@ -391,7 +412,7 @@ export type AnalysisCaseWhereUniqueInput = Prisma.AtLeast<{
   person?: Prisma.XOR<Prisma.PersonScalarRelationFilter, Prisma.PersonWhereInput>
   results?: Prisma.AnalysisResultListRelationFilter
   feedbacks?: Prisma.AnalysisFeedbackListRelationFilter
-}, "id" | "userId_id">
+}, "id" | "userId_id" | "userId_createIntentKey">
 
 export type AnalysisCaseOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
@@ -406,6 +427,8 @@ export type AnalysisCaseOrderByWithAggregationInput = {
   userResponseType?: Prisma.SortOrder
   userResponseText?: Prisma.SortOrderInput | Prisma.SortOrder
   personSnapshot?: Prisma.SortOrder
+  createIntentKey?: Prisma.SortOrderInput | Prisma.SortOrder
+  createIntentFingerprint?: Prisma.SortOrderInput | Prisma.SortOrder
   analyzeRunId?: Prisma.SortOrderInput | Prisma.SortOrder
   analyzeStartedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   analyzeAttemptCount?: Prisma.SortOrder
@@ -437,6 +460,8 @@ export type AnalysisCaseScalarWhereWithAggregatesInput = {
   userResponseType?: Prisma.StringWithAggregatesFilter<"AnalysisCase"> | string
   userResponseText?: Prisma.StringNullableWithAggregatesFilter<"AnalysisCase"> | string | null
   personSnapshot?: Prisma.JsonWithAggregatesFilter<"AnalysisCase">
+  createIntentKey?: Prisma.UuidNullableWithAggregatesFilter<"AnalysisCase"> | string | null
+  createIntentFingerprint?: Prisma.StringNullableWithAggregatesFilter<"AnalysisCase"> | string | null
   analyzeRunId?: Prisma.UuidNullableWithAggregatesFilter<"AnalysisCase"> | string | null
   analyzeStartedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"AnalysisCase"> | Date | string | null
   analyzeAttemptCount?: Prisma.IntWithAggregatesFilter<"AnalysisCase"> | number
@@ -458,6 +483,8 @@ export type AnalysisCaseCreateInput = {
   userResponseType: string
   userResponseText?: string | null
   personSnapshot: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createIntentKey?: string | null
+  createIntentFingerprint?: string | null
   analyzeRunId?: string | null
   analyzeStartedAt?: Date | string | null
   analyzeAttemptCount?: number
@@ -484,6 +511,8 @@ export type AnalysisCaseUncheckedCreateInput = {
   userResponseType: string
   userResponseText?: string | null
   personSnapshot: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createIntentKey?: string | null
+  createIntentFingerprint?: string | null
   analyzeRunId?: string | null
   analyzeStartedAt?: Date | string | null
   analyzeAttemptCount?: number
@@ -507,6 +536,8 @@ export type AnalysisCaseUpdateInput = {
   userResponseType?: Prisma.StringFieldUpdateOperationsInput | string
   userResponseText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   personSnapshot?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createIntentKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createIntentFingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   analyzeRunId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   analyzeStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   analyzeAttemptCount?: Prisma.IntFieldUpdateOperationsInput | number
@@ -533,6 +564,8 @@ export type AnalysisCaseUncheckedUpdateInput = {
   userResponseType?: Prisma.StringFieldUpdateOperationsInput | string
   userResponseText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   personSnapshot?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createIntentKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createIntentFingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   analyzeRunId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   analyzeStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   analyzeAttemptCount?: Prisma.IntFieldUpdateOperationsInput | number
@@ -558,6 +591,8 @@ export type AnalysisCaseCreateManyInput = {
   userResponseType: string
   userResponseText?: string | null
   personSnapshot: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createIntentKey?: string | null
+  createIntentFingerprint?: string | null
   analyzeRunId?: string | null
   analyzeStartedAt?: Date | string | null
   analyzeAttemptCount?: number
@@ -579,6 +614,8 @@ export type AnalysisCaseUpdateManyMutationInput = {
   userResponseType?: Prisma.StringFieldUpdateOperationsInput | string
   userResponseText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   personSnapshot?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createIntentKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createIntentFingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   analyzeRunId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   analyzeStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   analyzeAttemptCount?: Prisma.IntFieldUpdateOperationsInput | number
@@ -602,6 +639,8 @@ export type AnalysisCaseUncheckedUpdateManyInput = {
   userResponseType?: Prisma.StringFieldUpdateOperationsInput | string
   userResponseText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   personSnapshot?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createIntentKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createIntentFingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   analyzeRunId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   analyzeStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   analyzeAttemptCount?: Prisma.IntFieldUpdateOperationsInput | number
@@ -627,6 +666,11 @@ export type AnalysisCaseUserIdIdCompoundUniqueInput = {
   id: string
 }
 
+export type AnalysisCaseUserIdCreateIntentKeyCompoundUniqueInput = {
+  userId: string
+  createIntentKey: string
+}
+
 export type AnalysisCaseCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
@@ -640,6 +684,8 @@ export type AnalysisCaseCountOrderByAggregateInput = {
   userResponseType?: Prisma.SortOrder
   userResponseText?: Prisma.SortOrder
   personSnapshot?: Prisma.SortOrder
+  createIntentKey?: Prisma.SortOrder
+  createIntentFingerprint?: Prisma.SortOrder
   analyzeRunId?: Prisma.SortOrder
   analyzeStartedAt?: Prisma.SortOrder
   analyzeAttemptCount?: Prisma.SortOrder
@@ -666,6 +712,8 @@ export type AnalysisCaseMaxOrderByAggregateInput = {
   eventFacts?: Prisma.SortOrder
   userResponseType?: Prisma.SortOrder
   userResponseText?: Prisma.SortOrder
+  createIntentKey?: Prisma.SortOrder
+  createIntentFingerprint?: Prisma.SortOrder
   analyzeRunId?: Prisma.SortOrder
   analyzeStartedAt?: Prisma.SortOrder
   analyzeAttemptCount?: Prisma.SortOrder
@@ -688,6 +736,8 @@ export type AnalysisCaseMinOrderByAggregateInput = {
   eventFacts?: Prisma.SortOrder
   userResponseType?: Prisma.SortOrder
   userResponseText?: Prisma.SortOrder
+  createIntentKey?: Prisma.SortOrder
+  createIntentFingerprint?: Prisma.SortOrder
   analyzeRunId?: Prisma.SortOrder
   analyzeStartedAt?: Prisma.SortOrder
   analyzeAttemptCount?: Prisma.SortOrder
@@ -800,6 +850,8 @@ export type AnalysisCaseCreateWithoutPersonInput = {
   userResponseType: string
   userResponseText?: string | null
   personSnapshot: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createIntentKey?: string | null
+  createIntentFingerprint?: string | null
   analyzeRunId?: string | null
   analyzeStartedAt?: Date | string | null
   analyzeAttemptCount?: number
@@ -823,6 +875,8 @@ export type AnalysisCaseUncheckedCreateWithoutPersonInput = {
   userResponseType: string
   userResponseText?: string | null
   personSnapshot: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createIntentKey?: string | null
+  createIntentFingerprint?: string | null
   analyzeRunId?: string | null
   analyzeStartedAt?: Date | string | null
   analyzeAttemptCount?: number
@@ -877,6 +931,8 @@ export type AnalysisCaseScalarWhereInput = {
   userResponseType?: Prisma.StringFilter<"AnalysisCase"> | string
   userResponseText?: Prisma.StringNullableFilter<"AnalysisCase"> | string | null
   personSnapshot?: Prisma.JsonFilter<"AnalysisCase">
+  createIntentKey?: Prisma.UuidNullableFilter<"AnalysisCase"> | string | null
+  createIntentFingerprint?: Prisma.StringNullableFilter<"AnalysisCase"> | string | null
   analyzeRunId?: Prisma.UuidNullableFilter<"AnalysisCase"> | string | null
   analyzeStartedAt?: Prisma.DateTimeNullableFilter<"AnalysisCase"> | Date | string | null
   analyzeAttemptCount?: Prisma.IntFilter<"AnalysisCase"> | number
@@ -898,6 +954,8 @@ export type AnalysisCaseCreateWithoutResultsInput = {
   userResponseType: string
   userResponseText?: string | null
   personSnapshot: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createIntentKey?: string | null
+  createIntentFingerprint?: string | null
   analyzeRunId?: string | null
   analyzeStartedAt?: Date | string | null
   analyzeAttemptCount?: number
@@ -923,6 +981,8 @@ export type AnalysisCaseUncheckedCreateWithoutResultsInput = {
   userResponseType: string
   userResponseText?: string | null
   personSnapshot: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createIntentKey?: string | null
+  createIntentFingerprint?: string | null
   analyzeRunId?: string | null
   analyzeStartedAt?: Date | string | null
   analyzeAttemptCount?: number
@@ -961,6 +1021,8 @@ export type AnalysisCaseUpdateWithoutResultsInput = {
   userResponseType?: Prisma.StringFieldUpdateOperationsInput | string
   userResponseText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   personSnapshot?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createIntentKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createIntentFingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   analyzeRunId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   analyzeStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   analyzeAttemptCount?: Prisma.IntFieldUpdateOperationsInput | number
@@ -986,6 +1048,8 @@ export type AnalysisCaseUncheckedUpdateWithoutResultsInput = {
   userResponseType?: Prisma.StringFieldUpdateOperationsInput | string
   userResponseText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   personSnapshot?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createIntentKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createIntentFingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   analyzeRunId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   analyzeStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   analyzeAttemptCount?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1008,6 +1072,8 @@ export type AnalysisCaseCreateWithoutFeedbacksInput = {
   userResponseType: string
   userResponseText?: string | null
   personSnapshot: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createIntentKey?: string | null
+  createIntentFingerprint?: string | null
   analyzeRunId?: string | null
   analyzeStartedAt?: Date | string | null
   analyzeAttemptCount?: number
@@ -1033,6 +1099,8 @@ export type AnalysisCaseUncheckedCreateWithoutFeedbacksInput = {
   userResponseType: string
   userResponseText?: string | null
   personSnapshot: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createIntentKey?: string | null
+  createIntentFingerprint?: string | null
   analyzeRunId?: string | null
   analyzeStartedAt?: Date | string | null
   analyzeAttemptCount?: number
@@ -1071,6 +1139,8 @@ export type AnalysisCaseUpdateWithoutFeedbacksInput = {
   userResponseType?: Prisma.StringFieldUpdateOperationsInput | string
   userResponseText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   personSnapshot?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createIntentKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createIntentFingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   analyzeRunId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   analyzeStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   analyzeAttemptCount?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1096,6 +1166,8 @@ export type AnalysisCaseUncheckedUpdateWithoutFeedbacksInput = {
   userResponseType?: Prisma.StringFieldUpdateOperationsInput | string
   userResponseText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   personSnapshot?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createIntentKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createIntentFingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   analyzeRunId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   analyzeStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   analyzeAttemptCount?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1118,6 +1190,8 @@ export type AnalysisCaseCreateManyPersonInput = {
   userResponseType: string
   userResponseText?: string | null
   personSnapshot: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createIntentKey?: string | null
+  createIntentFingerprint?: string | null
   analyzeRunId?: string | null
   analyzeStartedAt?: Date | string | null
   analyzeAttemptCount?: number
@@ -1139,6 +1213,8 @@ export type AnalysisCaseUpdateWithoutPersonInput = {
   userResponseType?: Prisma.StringFieldUpdateOperationsInput | string
   userResponseText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   personSnapshot?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createIntentKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createIntentFingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   analyzeRunId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   analyzeStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   analyzeAttemptCount?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1162,6 +1238,8 @@ export type AnalysisCaseUncheckedUpdateWithoutPersonInput = {
   userResponseType?: Prisma.StringFieldUpdateOperationsInput | string
   userResponseText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   personSnapshot?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createIntentKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createIntentFingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   analyzeRunId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   analyzeStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   analyzeAttemptCount?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1185,6 +1263,8 @@ export type AnalysisCaseUncheckedUpdateManyWithoutPersonInput = {
   userResponseType?: Prisma.StringFieldUpdateOperationsInput | string
   userResponseText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   personSnapshot?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createIntentKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createIntentFingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   analyzeRunId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   analyzeStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   analyzeAttemptCount?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1248,6 +1328,8 @@ export type AnalysisCaseSelect<ExtArgs extends runtime.Types.Extensions.Internal
   userResponseType?: boolean
   userResponseText?: boolean
   personSnapshot?: boolean
+  createIntentKey?: boolean
+  createIntentFingerprint?: boolean
   analyzeRunId?: boolean
   analyzeStartedAt?: boolean
   analyzeAttemptCount?: boolean
@@ -1275,6 +1357,8 @@ export type AnalysisCaseSelectCreateManyAndReturn<ExtArgs extends runtime.Types.
   userResponseType?: boolean
   userResponseText?: boolean
   personSnapshot?: boolean
+  createIntentKey?: boolean
+  createIntentFingerprint?: boolean
   analyzeRunId?: boolean
   analyzeStartedAt?: boolean
   analyzeAttemptCount?: boolean
@@ -1299,6 +1383,8 @@ export type AnalysisCaseSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.
   userResponseType?: boolean
   userResponseText?: boolean
   personSnapshot?: boolean
+  createIntentKey?: boolean
+  createIntentFingerprint?: boolean
   analyzeRunId?: boolean
   analyzeStartedAt?: boolean
   analyzeAttemptCount?: boolean
@@ -1323,6 +1409,8 @@ export type AnalysisCaseSelectScalar = {
   userResponseType?: boolean
   userResponseText?: boolean
   personSnapshot?: boolean
+  createIntentKey?: boolean
+  createIntentFingerprint?: boolean
   analyzeRunId?: boolean
   analyzeStartedAt?: boolean
   analyzeAttemptCount?: boolean
@@ -1333,7 +1421,7 @@ export type AnalysisCaseSelectScalar = {
   updatedAt?: boolean
 }
 
-export type AnalysisCaseOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "personId" | "status" | "userAgeRange" | "userGender" | "perceivedPartnerReaction" | "elapsedTimeType" | "eventFacts" | "userResponseType" | "userResponseText" | "personSnapshot" | "analyzeRunId" | "analyzeStartedAt" | "analyzeAttemptCount" | "lastAnalyzedAt" | "failureCode" | "failureMessage" | "createdAt" | "updatedAt", ExtArgs["result"]["analysisCase"]>
+export type AnalysisCaseOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "personId" | "status" | "userAgeRange" | "userGender" | "perceivedPartnerReaction" | "elapsedTimeType" | "eventFacts" | "userResponseType" | "userResponseText" | "personSnapshot" | "createIntentKey" | "createIntentFingerprint" | "analyzeRunId" | "analyzeStartedAt" | "analyzeAttemptCount" | "lastAnalyzedAt" | "failureCode" | "failureMessage" | "createdAt" | "updatedAt", ExtArgs["result"]["analysisCase"]>
 export type AnalysisCaseInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   person?: boolean | Prisma.PersonDefaultArgs<ExtArgs>
   results?: boolean | Prisma.AnalysisCase$resultsArgs<ExtArgs>
@@ -1367,6 +1455,8 @@ export type $AnalysisCasePayload<ExtArgs extends runtime.Types.Extensions.Intern
     userResponseType: string
     userResponseText: string | null
     personSnapshot: runtime.JsonValue
+    createIntentKey: string | null
+    createIntentFingerprint: string | null
     analyzeRunId: string | null
     analyzeStartedAt: Date | null
     analyzeAttemptCount: number
@@ -1813,6 +1903,8 @@ export interface AnalysisCaseFieldRefs {
   readonly userResponseType: Prisma.FieldRef<"AnalysisCase", 'String'>
   readonly userResponseText: Prisma.FieldRef<"AnalysisCase", 'String'>
   readonly personSnapshot: Prisma.FieldRef<"AnalysisCase", 'Json'>
+  readonly createIntentKey: Prisma.FieldRef<"AnalysisCase", 'String'>
+  readonly createIntentFingerprint: Prisma.FieldRef<"AnalysisCase", 'String'>
   readonly analyzeRunId: Prisma.FieldRef<"AnalysisCase", 'String'>
   readonly analyzeStartedAt: Prisma.FieldRef<"AnalysisCase", 'DateTime'>
   readonly analyzeAttemptCount: Prisma.FieldRef<"AnalysisCase", 'Int'>

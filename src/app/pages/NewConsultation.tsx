@@ -6,7 +6,7 @@ import type { ConsultationData, RelationType } from '../types';
 import { createPerson, createAnalysisCase } from '../api/sessionV17';
 import { fetchApiJson } from '../api/client';
 import { captureAuthBoundary, isCurrentAuthBoundary, assertCurrentAuthBoundary } from '../utils/authBoundary';
-import { relationshipLabel, type ApiPerson } from '../api/consultationMapper';
+import { relationshipLabel, personFromCaseSnapshot, type ApiPerson } from '../api/consultationMapper';
 import { saveConsultation, getConsultations } from '../utils/storage';
 import { getRelationStyle } from '../utils/relationStyles';
 import { Navigation } from '../components/Navigation';
@@ -77,6 +77,16 @@ export function NewConsultation() {
   const [personEditing, setPersonEditing] = useState(false);
   const personLoadGeneration = useRef(0);
   const requestedPersonId = useRef<string | null>(selectedPersonId);
+  const submitBusy = useRef(false);
+  const createIntents = useRef<{ person?: { payload: string; key: string; userId: string | null; epoch: number }; analysisCase?: { payload: string; key: string; userId: string | null; epoch: number } }>({});
+  const intentKey = (kind: 'person' | 'analysisCase', payload: object, boundary: ReturnType<typeof captureAuthBoundary>) => {
+    const serialized = JSON.stringify(payload);
+    const previous = createIntents.current[kind];
+    if (previous?.payload === serialized && previous.userId === boundary.userId && previous.epoch === boundary.epoch) return previous.key;
+    const key = crypto.randomUUID();
+    createIntents.current[kind] = { payload: serialized, key, userId: boundary.userId, epoch: boundary.epoch };
+    return key;
+  };
 
   const loadPerson = (personId: string) => {
     requestedPersonId.current = personId;
@@ -112,6 +122,7 @@ export function NewConsultation() {
   const handleNameChange = (value: string) => {
     if (personLoading || isAnalyzing || personEditing) return;
     // 手入力で名前を変えた場合、別人に以前のpersonIdを流用しない。
+    if (formData.personId) delete createIntents.current.person;
     setFormData(prev => ({ ...prev, personId: '', personName: value }));
     setPrefilled(false);
     setLoadedPerson(null);
@@ -167,7 +178,7 @@ export function NewConsultation() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isAnalyzing || personLoading || personLoadFailed || personEditing) return;
+    if (submitBusy.current || isAnalyzing || personLoading || personLoadFailed || personEditing) return;
     setSubmitted(true);
     setApiError("");
     const errors = getErrors();
@@ -184,6 +195,7 @@ export function NewConsultation() {
     );
 
     const boundary = captureAuthBoundary();
+    submitBusy.current = true;
     const timing = clientTiming.begin('submit', boundary);
     timingRef.current = timing;
     setIsAnalyzing(true);
@@ -192,39 +204,44 @@ export function NewConsultation() {
       // 履歴から選んだ相手は所有中のPersonを再利用し、新規入力時だけ作成します。
       assertCurrentAuthBoundary(boundary);
       let personId = formData.personId;
+      let confirmedPerson = loadedPerson;
       if (!personId) {
-        const personRes = await createPerson({
-          displayName: formData.personName,
+        const personPayload = {
+          displayName: formData.personName.trim(),
           relationshipType: effectiveRelation,
-        });
+        };
+        const personRes = await createPerson({ ...personPayload, createIntentKey: intentKey('person', personPayload, boundary) });
         assertCurrentAuthBoundary(boundary);
         personId = personRes.person.id;
         setLoadedPerson(personRes.person);
+        confirmedPerson = personRes.person;
         // Acknowledged identity survives a later Case failure; do not infer unknown server outcomes.
         setFormData(prev => prev.personName === formData.personName && resolveRelation(prev) === effectiveRelation && !prev.personId
-          ? { ...prev, personId } : prev);
+          ? { ...prev, personId, personName: personRes.person.displayName, relation: relationshipLabel(personRes.person.relationshipType), relationOther: '' } : prev);
       }
 
-      const caseRes = await createAnalysisCase({
+      const casePayload = {
         personId,
-        userAgeRange: formData.ageGroup,
-        userGender: formData.gender,
-        perceivedPartnerReaction: effectiveReaction,
-        elapsedTimeType: formData.timing,
-        eventFacts: formData.event,
-        userResponseType: actionMode === 'text' ? 'action' : actionMode === 'chat' ? 'conversation' : 'none',
-        userResponseText: effectiveUserAction,
-      });
+        userAgeRange: formData.ageGroup.trim(),
+        userGender: formData.gender.trim(),
+        perceivedPartnerReaction: effectiveReaction.trim(),
+        elapsedTimeType: formData.timing.trim(),
+        eventFacts: formData.event.trim(),
+        userResponseType: (actionMode === 'text' ? 'action' : actionMode === 'chat' ? 'conversation' : 'none') as 'action' | 'conversation' | 'none',
+        userResponseText: effectiveUserAction?.trim() ?? null,
+      };
+      const caseRes = await createAnalysisCase({ ...casePayload, createIntentKey: intentKey('analysisCase', casePayload, boundary) });
       assertCurrentAuthBoundary(boundary);
       const caseId = caseRes.analysisCase.id;
+      const savedIdentity = personFromCaseSnapshot(caseRes.analysisCase.personSnapshot) ?? confirmedPerson;
       clientTiming.ack(timing, caseId);
 
       // DBが正本であり、このキャッシュは直後の画面遷移を滑らかにする目的に限定します。
       const consultation: ConsultationData = {
         id: caseId,
         personId,
-        personName: formData.personName,
-        relation: effectiveRelation,
+        personName: savedIdentity?.displayName ?? formData.personName,
+        relation: savedIdentity ? relationshipLabel(savedIdentity.relationshipType) : effectiveRelation,
         event: formData.event,
         reaction: effectiveReaction,
         userAction: effectiveUserAction ?? '',
@@ -241,7 +258,8 @@ export function NewConsultation() {
       clientTiming.fail(timing);
       if (isCurrentAuthBoundary(boundary)) setApiError(error instanceof Error ? error.message : "サーバーとの通信に失敗しました。時間をおいて再試行してください。");
     } finally {
-      setIsAnalyzing(false);
+      submitBusy.current = false;
+      if (isCurrentAuthBoundary(boundary)) setIsAnalyzing(false);
     }
   };
 

@@ -10,16 +10,17 @@ import { paginationSchema, createAnalysisCaseSchema } from "./schemas.js";
 import { getOwnedPersonOrThrow } from "./persons.service.js";
 import { settleUsage } from "./rateLimit.js";
 import * as repository from "./workflow.repository.js";
+import { publicCreatedResource } from './createIntent.js';
 
 export async function createAnalysisCase(userId: string, body: unknown) {
     const data = parseOrThrow(createAnalysisCaseSchema, body);
     const analysisCase = await repository.createCase(userId, data);
-    return { analysisCase };
+    return { analysisCase: publicCreatedResource(analysisCase) };
 }
 
 export async function getAnalysisCase(userId: string, caseId: string) {
     const analysisCase = await ownedCaseOrThrow(userId, caseId);
-    return { analysisCase };
+    return { analysisCase: publicCreatedResource(analysisCase) };
 }
 
 export async function analyzeCase(
@@ -192,7 +193,7 @@ export async function listCasesByPerson(
     const offset = parsed.offset ?? 0;
     const analysisCases = await repository.listCases(userId, personId, limit, offset);
     return {
-        analysisCases,
+        analysisCases: analysisCases.map(publicCreatedResource),
         pagination: { limit, offset, hasMore: analysisCases.length === limit },
     };
 }

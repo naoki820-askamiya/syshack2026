@@ -1,18 +1,28 @@
 import { prisma } from "../prisma/client.js";
 import type { RelationshipType } from "../generated/prisma/enums.js";
+import { assertSameCreateIntent, isCreateIntentCollision, personIntentFingerprint } from './createIntent.js';
+import { resourceNotFound } from './http.js';
 
 export async function createPerson(
     userId: string,
-    data: { displayName: string; relationshipType: RelationshipType; notes?: string | null },
+    data: { displayName: string; relationshipType: RelationshipType; notes?: string | null; createIntentKey?: string },
 ) {
-    return prisma.person.create({
+    const intent = data.createIntentKey ? { createIntentKey: data.createIntentKey.toLowerCase(), createIntentFingerprint: personIntentFingerprint(data) } : {};
+    try { return await prisma.person.create({
         data: {
             userId,
             displayName: data.displayName,
             relationshipType: data.relationshipType,
             notes: data.notes ?? null,
+            ...intent,
         },
-    });
+    }); } catch (error) {
+        if (!intent.createIntentKey || !isCreateIntentCollision(error, 'persons')) throw error;
+        const existing = await prisma.person.findFirst({ where: { userId, createIntentKey: intent.createIntentKey } });
+        if (!existing || existing.archivedAt) throw resourceNotFound();
+        assertSameCreateIntent(existing.createIntentFingerprint, intent.createIntentFingerprint!);
+        return existing;
+    }
 }
 
 export async function findOwnedPerson(userId: string, personId: string) {

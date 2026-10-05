@@ -4,6 +4,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import test, { before, after } from 'node:test';
 import pg from 'pg';
+import { randomUUID } from 'node:crypto';
 import { assertDisposableUrl } from './safety.mjs';
 import { makeValidV2Result } from '../../src/backend/ai/v2/testFixture.js';
 import { buildContextSnapshot } from '../../src/backend/ai/v2/context.js';
@@ -44,6 +45,88 @@ before(async () => {
   personQuota = (await prisma.person.create({ data: {
     userId: USER_QUOTA, displayName: 'Synthetic quota person', relationshipType: 'coworker',
   } })).id;
+});
+
+async function withIntentInsertLock(table: 'persons' | 'analysis_cases', body: (lock: string) => Promise<void>) {
+  const lock = 'synthetic-intent-' + table;
+  await setup.query(`CREATE FUNCTION synthetic_intent_lock() RETURNS trigger LANGUAGE plpgsql
+    AS $$ BEGIN IF NEW.create_intent_key IS NOT NULL THEN PERFORM pg_advisory_xact_lock(hashtextextended('${lock}', 0)); END IF; RETURN NEW; END $$;
+    CREATE TRIGGER synthetic_intent_lock BEFORE INSERT ON ${table} FOR EACH ROW EXECUTE FUNCTION synthetic_intent_lock();`);
+  try { await body(lock); } finally { await setup.query(`DROP TRIGGER synthetic_intent_lock ON ${table}; DROP FUNCTION synthetic_intent_lock()`); }
+}
+
+test('Person create intents serialize real parallel connections and replay current resource', { timeout: 15_000 }, async () => {
+  const key = randomUUID();
+  const input = { displayName: 'Synthetic retry person', relationshipType: 'friend' as const, createIntentKey: key };
+  let person: any;
+  await withIntentInsertLock('persons', async lock => {
+    const outcomes = await concurrentlyBehindLock(lock, [() => persons.createPerson(USER_A, input), () => persons.createPerson(USER_A, input)]);
+    assert.ok(outcomes.every(result => result.status === 'fulfilled'), JSON.stringify(outcomes.map(result => result.status === 'fulfilled' ? { status: result.status } : { status: result.status, code: result.reason.code, meta: result.reason.meta })));
+    person = (outcomes[0] as PromiseFulfilledResult<any>).value;
+    assert.equal((outcomes[1] as PromiseFulfilledResult<any>).value.id, person.id);
+  });
+  assert.equal(await prisma.person.count({ where: { userId: USER_A, createIntentKey: key } }), 1);
+  assert.equal((await persons.createPerson(USER_A, input)).id, person.id); // committed response was lost
+  await assert.rejects(persons.createPerson(USER_A, { ...input, displayName: 'Different intent payload' }), (e: any) => e.status === 409 && e.code === 'CREATE_INTENT_CONFLICT');
+  assert.notEqual((await persons.createPerson(USER_A, { ...input, createIntentKey: randomUUID() })).id, person.id);
+  assert.notEqual((await persons.createPerson(USER_B, input)).id, person.id);
+  const { createIntentKey: _key, ...legacy } = input;
+  assert.notEqual((await persons.createPerson(USER_A, legacy)).id, (await persons.createPerson(USER_A, legacy)).id);
+  await persons.updateOwnedPerson(USER_A, person.id, { displayName: 'Explicit edit', relationshipType: 'coworker' });
+  const replay = await persons.createPerson(USER_A, { ...input, notes: null });
+  assert.equal(replay.displayName, 'Explicit edit'); assert.equal(replay.createIntentFingerprint, person.createIntentFingerprint);
+  await persons.archiveOwnedPerson(USER_A, person.id);
+  await assert.rejects(persons.createPerson(USER_A, input), (e: any) => e.status === 404);
+  assert.equal(await prisma.person.count({ where: { userId: USER_A, createIntentKey: key } }), 1);
+  await assert.rejects(prisma.person.create({ data: { userId: USER_A, displayName: 'Invalid pair', relationshipType: 'friend', createIntentKey: randomUUID() } }));
+});
+
+test('Case create intents preserve analyzed run/result/quota/snapshot and reject archived replay', { timeout: 15_000 }, async () => {
+  const person = await persons.createPerson(USER_A, { displayName: 'Intent case Person', relationshipType: 'friend' });
+  const input = { personId: person.id, userAgeRange: 'unknown', userGender: 'unknown', perceivedPartnerReaction: 'unknown',
+    elapsedTimeType: 'unknown', eventFacts: 'Synthetic uncertain Case commit', userResponseType: 'none', userResponseText: null, createIntentKey: randomUUID() };
+  let analysisCase: any;
+  await withIntentInsertLock('analysis_cases', async lock => {
+    const outcomes = await concurrentlyBehindLock(lock, [() => repository.createCase(USER_A, input), () => repository.createCase(USER_A, input)]);
+    assert.ok(outcomes.every(result => result.status === 'fulfilled'), JSON.stringify(outcomes.map(result => result.status === 'fulfilled' ? { status: result.status } : { status: result.status, code: result.reason.code, meta: result.reason.meta })));
+    analysisCase = (outcomes[0] as PromiseFulfilledResult<any>).value;
+    assert.equal((outcomes[1] as PromiseFulfilledResult<any>).value.id, analysisCase.id);
+  });
+  assert.equal(await prisma.analysisCase.count({ where: { userId: USER_A, createIntentKey: input.createIntentKey } }), 1);
+  const started = await repository.startAnalysis(USER_A, analysisCase.id);
+  if (started.kind !== 'started') throw new Error('Synthetic analysis not started');
+  await repository.completeAnalysis(completion(analysisCase.id, started.analyzeRunId));
+  const before = await repository.findOwnedCase(USER_A, analysisCase.id);
+  const quotaBefore = await prisma.apiUsageEvent.count({ where: { analysisCaseId: analysisCase.id } });
+  await persons.updateOwnedPerson(USER_A, person.id, { displayName: 'Later person edit' });
+  const replay = await repository.createCase(USER_A, input);
+  assert.deepEqual(replay, before);
+  assert.deepEqual(replay.personSnapshot, analysisCase.personSnapshot);
+  assert.equal(await prisma.apiUsageEvent.count({ where: { analysisCaseId: analysisCase.id } }), quotaBefore);
+  assert.equal(await prisma.analysisResult.count({ where: { analysisCaseId: analysisCase.id } }), 1);
+  await assert.rejects(repository.createCase(USER_A, { ...input, eventFacts: 'Different payload' }), (e: any) => e.status === 409);
+  assert.notEqual((await repository.createCase(USER_A, { ...input, createIntentKey: randomUUID() })).id, analysisCase.id);
+  const foreign = await persons.createPerson(USER_B, { displayName: 'Foreign intent', relationshipType: 'friend' });
+  assert.notEqual((await repository.createCase(USER_B, { ...input, personId: foreign.id })).id, analysisCase.id);
+  await assert.rejects(repository.createCase(USER_B, input), (e: any) => e.status === 404);
+  await persons.archiveOwnedPerson(USER_A, person.id);
+  await assert.rejects(repository.createCase(USER_A, input), (e: any) => e.status === 404);
+  assert.equal(await prisma.analysisCase.count({ where: { userId: USER_A, createIntentKey: input.createIntentKey } }), 1);
+});
+
+test('failed insert rolls back resource and creation intent together so unchanged retry succeeds', { timeout: 15_000 }, async () => {
+  const personInput = { displayName: 'Rollback Person', relationshipType: 'friend' as const, createIntentKey: randomUUID() };
+  const caseInput = { personId: personA, userAgeRange: 'unknown', userGender: 'unknown', perceivedPartnerReaction: 'unknown',
+    elapsedTimeType: 'unknown', eventFacts: 'Synthetic rollback Case', userResponseType: 'none', userResponseText: null, createIntentKey: randomUUID() };
+  for (const table of ['persons', 'analysis_cases'] as const) {
+    const input = table === 'persons' ? personInput : caseInput;
+    const operation = () => table === 'persons' ? persons.createPerson(USER_A, personInput) : repository.createCase(USER_A, caseInput);
+    await setup.query(`CREATE FUNCTION synthetic_intent_failure() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'Synthetic intent rollback'; END $$;
+      CREATE TRIGGER synthetic_intent_failure AFTER INSERT ON ${table} FOR EACH ROW EXECUTE FUNCTION synthetic_intent_failure();`);
+    try { await assert.rejects(operation()); } finally { await setup.query(`DROP TRIGGER synthetic_intent_failure ON ${table}; DROP FUNCTION synthetic_intent_failure()`); }
+    const count = await setup.query(`SELECT count(*)::int AS n FROM ${table} WHERE user_id=$1 AND create_intent_key=$2`, [USER_A, input.createIntentKey]);
+    assert.equal(count.rows[0].n, 0); assert.ok((await operation()).id);
+  }
 });
 after(async () => { await prisma.$disconnect(); await setup.end(); });
 
