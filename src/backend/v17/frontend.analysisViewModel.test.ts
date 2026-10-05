@@ -62,3 +62,73 @@ test('safe, caution and unknown action labels are distinguishable without color'
   assert.match(labels[1], /注意/);
   assert.match(labels[2], /情報なし/);
 });
+
+function detailFixture() {
+  const scores = Object.fromEntries(['anger', 'coldness', 'distance', 'busyness', 'flatness', 'reassurance']
+    .map(key => [key, { label: key, score: 20, category: ['busyness', 'flatness'].includes(key) ? 'context' : key === 'reassurance' ? 'relief' : 'concern', reason: 'synthetic reason' }]));
+  return { result: { analysis: { emotionScoreAnalysis: { scores },
+    evidence: {
+      signalsForConcern: [{ text: '今回の材料', source: 'current_case', strength: 'low' }],
+      signalsAgainstConcern: [{ text: '過去AIの見方', source: 'recent_case', strength: 'high' }, { text: '本人の後日報告', source: 'feedback', strength: 'medium' }],
+      unknowns: ['まだ未確認'],
+    },
+    usualVsCurrent: { enabled: true, comparisonConclusion: '同じ点と違う点を検討する',
+      usualPatternsUsed: [{ label: '過去の短文', source: 'person_profile', relevance: 'medium' }],
+      sameAsUsual: [{ label: '今回も短文', reason: '同じ長さという入力材料がある' }],
+      deviationSignals: [{ label: '確認がない', reason: '今回の入力では確認が省略されている', strength: 'low' }],
+    },
+  } } };
+}
+
+test('score context categories survive rather than becoming concern', () => {
+  const view = normalizeAnalysis(detailFixture())!;
+  assert.deepEqual(view.scores.map(item => item.category), ['concern', 'concern', 'concern', 'context', 'context', 'reassurance']);
+});
+
+test('evidence retains its source and AI-rated strength', () => {
+  const view = normalizeAnalysis(detailFixture())!;
+  assert.deepEqual(view.concernSignals, [{ text: '今回の材料', source: 'current_case', strength: 'low' }]);
+  assert.deepEqual(view.reassuringSignals, [
+    { text: '過去AIの見方', source: 'recent_case', strength: 'high' },
+    { text: '本人の後日報告', source: 'feedback', strength: 'medium' },
+  ]);
+});
+
+test('usual comparison preserves same points, reasons and source relevance', () => {
+  const view = normalizeAnalysis(detailFixture())!;
+  assert.deepEqual(view.contextComparison, { enabled: true, conclusion: '同じ点と違う点を検討する',
+    patterns: [{ label: '過去の短文', source: 'person_profile', relevance: 'medium' }],
+    sameAsUsual: [{ label: '今回も短文', reason: '同じ長さという入力材料がある' }],
+    deviations: [{ label: '確認がない', reason: '今回の入力では確認が省略されている', strength: 'low' }],
+  });
+});
+
+test('legacy and missing metadata remain unknown instead of gaining invented provenance', () => {
+  const legacy = normalizeAnalysis({ result: { scores: {}, reasons: [{ label: '旧項目', detail: '旧説明' }], goodSignals: [{ text: '旧材料' }] } })!;
+  assert.equal((legacy.concernSignals[0] as any).source, 'unknown');
+  assert.equal((legacy.reassuringSignals[0] as any).strength, 'unknown');
+  assert.deepEqual((legacy.contextComparison as any).sameAsUsual, []);
+  const fixture: any = detailFixture();
+  fixture.result.analysis.evidence.signalsForConcern = [{ text: '欠損' }, { text: '不明値', source: 'future', strength: 'definite' }];
+  assert.deepEqual(normalizeAnalysis(fixture)!.concernSignals, [
+    { text: '欠損', source: 'unknown', strength: 'unknown' },
+    { text: '不明値', source: 'unknown', strength: 'unknown' },
+  ]);
+});
+
+test('disabled comparison omits leftover comparison details', () => {
+  const fixture: any = detailFixture();
+  fixture.result.analysis.usualVsCurrent.enabled = false;
+  const view = normalizeAnalysis(fixture)!;
+  assert.deepEqual(view.contextComparison.patterns, []);
+  assert.deepEqual((view.contextComparison as any).sameAsUsual, []);
+  assert.deepEqual(view.contextComparison.deviations, []);
+});
+
+test('missing or invalid confidence is unknown, while explicit medium is retained', () => {
+  assert.equal(normalizeAnalysis({ result: { scores: {} } })!.confidenceLevel, 'unknown');
+  for (const value of [undefined, null, 'definite', 'medium']) {
+    const fixture: any = detailFixture(); fixture.result.analysis.confidenceLevel = value;
+    assert.equal(normalizeAnalysis(fixture)!.confidenceLevel, value === 'medium' ? 'medium' : 'unknown');
+  }
+});
