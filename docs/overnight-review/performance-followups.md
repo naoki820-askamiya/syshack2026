@@ -1,5 +1,7 @@
 # Performance follow-ups
 
+Historical snapshot before the resumed2026-10-05 changes. Current bounded History reads and refreshed bundle evidence are in [final performance](final-performance.md) and [History repair](history-concurrency.md).
+
 Historical snapshot through 6879385. The final hardening run supersedes current status/counts; see [final summary](final-summary.md) and [final risk register](final-risk-register.md).
 
 ## Measured

@@ -2,51 +2,51 @@
   "mode": "LOCAL_PRODUCTION_BUILD_MEASUREMENT",
   "chunks": [
     {
-      "file": "assets/index-DEiKxMgG.js",
+      "file": "assets/index-jfglP_h0.js",
       "isEntry": true,
-      "bytes": 530835,
-      "gzipBytes": 153241,
+      "bytes": 535265,
+      "gzipBytes": 154875,
       "imports": [],
       "dynamicImports": [
-        "assets/AnalysisV17-BuTh7EdG.js",
-        "assets/ActionSuggestionV17-CLE0H7J-.js"
+        "assets/AnalysisV17-Bb6HdIv1.js",
+        "assets/ActionSuggestionV17-CqJKMwR-.js"
       ]
     },
     {
-      "file": "assets/AnalysisV17-BuTh7EdG.js",
+      "file": "assets/AnalysisV17-Bb6HdIv1.js",
       "isEntry": false,
-      "bytes": 379576,
-      "gzipBytes": 106035,
+      "bytes": 382545,
+      "gzipBytes": 106669,
       "imports": [
-        "assets/index-DEiKxMgG.js",
-        "assets/useHydratedAnalysis-CKDK9DXG.js"
+        "assets/index-jfglP_h0.js",
+        "assets/useHydratedAnalysis-DsOKFbCm.js"
       ],
       "dynamicImports": []
     },
     {
-      "file": "assets/ActionSuggestionV17-CLE0H7J-.js",
+      "file": "assets/ActionSuggestionV17-CqJKMwR-.js",
       "isEntry": false,
       "bytes": 7102,
-      "gzipBytes": 2427,
+      "gzipBytes": 2426,
       "imports": [
-        "assets/index-DEiKxMgG.js",
-        "assets/useHydratedAnalysis-CKDK9DXG.js"
+        "assets/index-jfglP_h0.js",
+        "assets/useHydratedAnalysis-DsOKFbCm.js"
       ],
       "dynamicImports": []
     },
     {
-      "file": "assets/useHydratedAnalysis-CKDK9DXG.js",
+      "file": "assets/useHydratedAnalysis-DsOKFbCm.js",
       "isEntry": false,
-      "bytes": 6390,
-      "gzipBytes": 2804,
+      "bytes": 7275,
+      "gzipBytes": 3082,
       "imports": [
-        "assets/index-DEiKxMgG.js"
+        "assets/index-jfglP_h0.js"
       ],
       "dynamicImports": []
     }
   ],
   "renderedCharactersBeforeMinification": {
-    "application": 166690,
+    "application": 182124,
     "react": 9585,
     "react-dom": 134728,
     "scheduler": 4962,

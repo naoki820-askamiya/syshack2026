@@ -1,7 +1,7 @@
 # R10 Runtime Dependency Repair
 
 Date: 2026-10-05 JST. Status: Completed scoped runtime patch; independent/skeptical reviews approved and adopted dedicated dependencies verified.
-Current source snapshot: `b4ff1da21b667243ed26a20a895134b4616cb640`.
+Isolated candidate source snapshot: `b4ff1da21b667243ed26a20a895134b4616cb640`.
 
 ## Problem and bounded change
 

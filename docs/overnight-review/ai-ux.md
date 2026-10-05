@@ -15,16 +15,26 @@ it was not measured against a real model. Total end-to-end latency UNKNOWN.
 
 ## Instrumentation
 
-Server `analysis_timing` captures monotonic db_start, db_context, combined AI generation,
-db_save and total request analysis durations with IDs/model/prompt/schema/attempt/status/
-errorStage/reference counts. Generated/input text, names, token/secret and raw error
-messages are excluded. Arbitrary client request-ID header text is not copied into logs.
-Provider-first-event/complete/prompt/validation sub-times remain null because generation
-is currently nonstreaming. Compensation/usage failures emit metadata-only operational
-signals without changing a saved successful result. Mock success/failure/log-failure
-fixtures verify logging does not affect business behavior or disclose synthetic secrets.
-Client submit/case-create/first-result/complete and auth timings are NOT_INSTRUMENTED.
-Cross-navigation/retry/auth correlation needs a separately verified client measurement path.
+Server analysis_timing retains DB start/context, combined AI, save and total durations.
+The resumed [backend substages](backend-substage-metrics.md) observe prompt build,
+SDK request/complete, validation and attempt duration, plus available safe-integer
+input/output/cached/reasoning/total token counts. Completion includes transport and
+SDK parsing; it is not provider compute time. Missing usage and late completion
+after timeout remain null. First provider event, auth and settlement sub-times
+remain unknown. No raw prompt/output, names, credentials, headers or raw errors
+enter these events; failures of observers do not change business success/error.
+
+The [client measurement](client-timing.md) records accepted submit, current-boundary
+Case ACK, accepted state, usable stored result and logical successful finish with
+opaque native Performance events. Private correlation is bounded and cleared on
+auth change; retries use their own trace, stale leases cannot write, and a
+StrictMode-like cleanup/setup is coalesced. No consultation/Person/user/Case IDs
+or text enters exposed measures. Missing stages remain unknown.
+
+These are observed control-flow milestones. Browser paint, visible first useful
+interpretation, actual provider latency, p50/p95 and end-to-end improvement remain
+UNMEASURED. Cached readiness is not new provider output. No invented percent or
+arrival estimate was added.
 
 ## Streaming decision
 

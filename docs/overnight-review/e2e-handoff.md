@@ -35,6 +35,22 @@ Do not deploy or use Production DB without separate authorization.
 | Score interpretation | Ask whether numbers mean emotional probability; record misunderstanding | NOT_RUN |
 | Crisis / safety | Use proposal fixtures; expert policy review required, not approval by regex tests | NOT_RUN |
 
+## Residual implementation follow-up
+
+| Test | What to observe | Result |
+| --- | --- | --- |
+| Evidence and comparison | Identify current entry, Feedback report and prior AI; explain strength/relevance/reasons without treating them as facts | NOT_RUN |
+| Older result metadata | Missing confidence/source stays unknown; busyness/flatness remain context, not reassurance | NOT_RUN |
+| Person ACK then Case error | Retry retains confirmed Person ID; editing identity chooses a new intent; response-lost commit remains a documented limitation | NOT_RUN |
+| History failure/retry | Filter preserved, inline retry, all pages/newest order, per-load4 and no subsequent dispatch after failure/auth change | NOT_RUN |
+| Logout failure | Current user sees retryable error; no premature navigation or another-user error | NOT_RUN |
+| Password recovery affordance | Unavailable state is clear; login/register continue; no unfinished email/reset flow | NOT_RUN |
+| Client timing | Native opaque milestones omit private text/IDs; retry/remount/auth do not mix traces; compare logical events with actual visible paint separately | NOT_RUN |
+| Dependency HTTP contract | Query/JSON/error behavior under adopted runtime patch | NOT_RUN |
+
+The History cap applies per invocation; overlapping retry may temporarily retain earlier
+in-flight peers. SDK recovery characterization is not an implemented reset flow.
+
 ## Post-deploy smoke preparation
 
 Only after an independently authorized deployment: obtain the intended full commit

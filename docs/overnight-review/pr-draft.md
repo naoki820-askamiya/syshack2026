@@ -2,51 +2,53 @@
 
 ## Title
 
-KIGEN404: 相談・認証・AI検証の境界を修正し、独立E2Eへ引き継ぐ
+KIGEN404: 認証・相談・AI出力の境界を修正し、残件と独立E2Eへ引き継ぐ
 
-## Why
+## Problem and resulting behavior
 
-Portfolio review reproduced feedback length mismatch, lost caution, old history
-selection, settings fallback writes, auth/cache races, and non-resumable AI wait.
-Final whole-branch review additionally caught a real SDK timeout contract failure
-missed by parse mocks and delayed Person prefill overwriting identity edits.
+The portfolio review reproduced auth/cache/write-intent races, non-resumable analysis,
+lost caution/source metadata and inconsistent Feedback/privacy boundaries. The final
+resumed review additionally found acknowledged Person IDs lost on Case failure,
+unbounded continued History reads, inert error affordances and a diagnostic quote
+exception that accepted instructions reversing the denial.
 
-## What changed
+The branch now preserves the original ownership/CAS/latest-version authority while
+isolating stale client responses/writes, resuming the saved Case, displaying actual
+source/strength/comparison reasons and keeping unknown confidence unknown.
+Confirmed Person ACKs survive retry; each History load has at most4 workers and
+stops new pages after failure/auth change. History/logout failures are recoverable.
+Password recovery is explicitly unavailable pending a safe complete operation contract.
 
-- Correctness: aligned feedback1000 contract, newest-first history and malformed-JSON errors.
-- Auth/session: synchronous user/epoch cache isolation, success-body guard, write-intent pre-send guard; same-user parallelism and API errors preserved.
-- UX: saved Case handoff/state reconciliation/retry, consume start intent, pending Person identity protection.
-- Personalization: stable Person ID, editable/revocable Feedback, atomic profile invalidation, factual provenance/source owner+Person checks.
-- AI reliability: classified bounded retries/deadline, actual SDK integer timeout and known safety-role bypass containment;30 offline fixtures/human-review flags.
-- DB/invariants: run CAS/latest version/owner constraints preserved;7 disposable PostgreSQL scenarios.
-- Accessibility: native groups/names/pressed state and pending/error announcements, with browser audit pending.
-- Observability: PII-free stage/outcome/reconciliation metadata; unknown timings remain null.
-- Docs: risk/escalation/E2E/PR package, retention/crisis proposals and measured build/history evidence.
+## Scope
 
-## What intentionally did not change
+- Atomic Feedback/Profile invalidation and source provenance/owner checks.
+- Classified AI retry/deadline, actual SDK integer timeout and bounded safety exceptions.
+- Saved-Case intent consumption, stable Person identity and source-backed result display.
+- Metadata-only backend attempt durations/known usage and bounded client logical milestones.
+- Express4.22.3/body-parser1.20.8/qs6.16.0 only; existing direct ranges/root manifest retained.
+- Synthetic evaluation30 fixtures, build/history evidence, risk/decision/E2E handoff.
 
-Architecture, provider/model/prompt/output schema, Production DB and major dependency
-versions remain. No deploy/merge/push. Crisis/retention/source-chain policy decisions
-were prepared, not selected. Lazy routing and streaming are prototypes, not adopted.
+Prompt/model/output schema/DB architecture and Supabase session storage are retained.
+No Production write/deploy/migration/delete, merge, push or external PR creation.
+No major/override/forced dependency repair. Streaming/lazy routes remain experiments.
 
-## Verification
+## Validation
 
-191 tests/0skip; typecheck/build/lint PASS. Disposable PostgreSQL7/0skip and safety1.
-Central auth41; UX9; Person/a11y6; AI SDK/safety33; offline13/30syntheticrows.
-Independent and skeptical whole-branch reviews from406fc858 found no remaining
-confirmed new local blocker after fixes. See final-verification.md for limits.
+Final command evidence is in [verification](final-verification.md): full regressions,
+typecheck, client/server build, Markdown, disposable PG, standalone HTTP/qs6,
+offline13, auth41 and new client29 focused cases. Every logical issue received
+independent and skeptical review; confirmed full-branch findings were repaired.
+Large-chunk warning remains. Local Node/synthetic checks do not prove browser,
+Supabase RLS/GRANT, real model safety/quality or deployed route behavior.
 
-## Remaining risks
+## Remaining decisions and recommendation
 
-FACT: crisis normal dispatch, archive-not-delete, crash quota linkage, inherited
-Person relationship edit contract and known dependencies. UNMEASURED: live Auth/RLS,
-browser/deep-route behavior, real-model quality, score comprehension and speed.
-INFERENCE: lazy entry reduction or bounded fanout may help; no user benefit claimed.
-Full IDs and merge/public-demo gates are in final-risk-register.md.
+Crisis/retention/derived consent/Profile generation policy, durable crash quota,
+uncertain-create idempotency, complete password recovery and graph comprehension
+remain explicit partials. Thirteen audit entries remain; exact production packaging
+and exploitation prerequisites are separate from raw audit counts.
 
-## E2E follow-up
-
-Another member should execute e2e-handoff.md independently on isolated accounts,
-including direct reload, auth switching, saved-Case retry, personalization/Feedback
-revocation, mobile/keyboard and result interpretation. Recommendation READY_AFTER_E2E.
-This is a saved draft only; no PR was opened, pushed or merged.
+READY_AFTER_E2E: use [handoff](e2e-handoff.md) with isolated synthetic users and
+independent device/browser observation before merge judgment. See
+[risk register](final-risk-register.md) for recommended merge/public-demo gates.
+This is a saved draft, not a created or merged PR.

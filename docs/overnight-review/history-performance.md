@@ -1,5 +1,7 @@
 # History retrieval measurement
 
+Historical snapshot before the resumed2026-10-05 changes. Current bounded History reads and refreshed bundle evidence are in [final performance](final-performance.md) and [History repair](history-concurrency.md).
+
 Date: 2026-10-04 JST. Mode: SOURCE_BACKED_SYNTHETIC_MOCK. No product runtime change.
 
 ## Method and scope

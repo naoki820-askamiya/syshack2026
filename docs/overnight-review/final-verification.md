@@ -1,37 +1,61 @@
 # Final verification
 
-Date: 2026-10-04 JST. Dedicated branch; no Production writes or real user fixtures.
-All requested commands are rerun at the final documentation tip. Their output logs
-are ignored local artifacts under experiments; exact final HEAD is reported by git.
+Date: 2026-10-05 JST. Existing dedicated branch; original develop preserved.
+Frozen resumed runtime uses independently installed/copied candidate dependencies,
+not the original node_modules junction. Original3 package manifest hashes are unchanged.
 
 | Gate | Result / scope |
 | --- | --- |
-| npm.cmd test | 191 passed, 0 failed, 0 skipped; actual SDK uses injected synthetic fetch |
+| npm.cmd test | 254 passed,0 failed,0 skipped |
 | npm.cmd run typecheck | PASS |
-| npm.cmd run build | PASS client/server; Prisma generate uses loopback port9 synthetic URL |
-| npm.cmd run lint:md | PASS; final document count in final terminal evidence |
-| Disposable PG safety | 1 passed, 0 skipped |
-| Disposable PostgreSQL | 7 passed, 0 failed, 0 skipped; unique loopback tmpfs, container removed |
-| AI deterministic | 13 passed; 30 constructed synthetic contract rows; no model inference |
-| Focused central auth | 41 passed:20 response races/errors +21 write-intent cases |
-| Progressive UX | 9 passed:actual hook5 + saved-Case retry4 |
-| Person prefill/accessibility | 6 passed:actual page1 + source/AST5 |
-| AI runtime safety/SDK | 33 passed:analyzer14 + safety12 + validation7 |
-| History measurement | 23 actual-function mock scenarios; source hashes refreshed |
-| Bundle prototype | Both local builds pass; exact lazy4 files checked by root before normal build |
-| Whole branch reviews | Independent backend/frontend and skeptical; base406fc858 through final tip |
+| npm.cmd run build | PASS client/server; Prisma generation uses loopback port9 dummy URL |
+| npm.cmd run lint:md | PASS;50 files in preflight |
+| Disposable PG safety | 1 passed,0 skipped |
+| Disposable PostgreSQL | 7 cases; unique loopback tmpfs DB, owner role/shadow scaffold, own container cleaned |
+| AI deterministic | 13 tests/30 constructed synthetic rows, model inference0 |
+| Focused auth | 41 tests:response20/write-intent21 |
+| Client timing + existing flow | 29 passed:dedicated18/navigation5/Person retry5/prefill1 |
+| SDK/safety/validation | 43 passed:analyzer21/safety15/validation7 |
+| Runtime HTTP/qs | 6 passed under adopted tree; same script against untouched control4pass/2expectedfail |
+| History | 23 source-hashed synthetic scenarios; loader9/retry2 focused |
+| Bundle | Normal1/lazy4 actual files independently read/gzipped; exact reports matched |
+| Independent reviews | Root/backend/frontend across base406fc858 through resumed source; skeptical per-change and whole-branch |
 
-Full-branch review found and fixed actual SDK timeout validation and selected-Person
-prefill overwrite. B01 skeptical cycle1 found affirmative-prefix role bypass; cycle2
-approved full-label containment. Every logical fix received independent and skeptical
-review, with original30 commits preserved. No remaining confirmed new local blocker.
+The final documentation tip repeats the four requested commands plus PG safety/
+integration, AI/auth/UX and runtime dependency tests. Exact revision and final Git
+commands are in [git evidence](../../experiments/final-git-state.log); ignored logs
+are final-tests.log/final-typecheck.log/final-build.log/final-markdown.log/
+final-db.log/final-focused.log under experiments. No secret or real user fixture
+is included. Logs preserve actual terminal evidence; this file cannot recursively
+embed its own commit hash.
 
-Actual PostgreSQL owner-role results are not Supabase RLS/GRANT evidence.
-Mock/source/browser lifecycle, real provider semantics/latency/cost and Production
-deep routes remain NOT_RUN, explicitly gated in the risk register. No critical local
-test was skipped or weakened. The large-chunk build warning remains informational.
+Final whole-branch review discovered a diagnostic quote exception that accepted
+reverse instructions. Before2valid regression failures, after full254 green;
+5 adversarial reversals/prefixes/extra-text were independently denied while the
+original benign two-sentence warning remains. No prompt/model/schema change.
 
-Repeat from this worktree: npm.cmd test; npm.cmd run typecheck; npm.cmd run build;
-npm.cmd run lint:md; node --test scripts/db-integration/safety.test.mjs;
-node scripts/db-integration/run.mjs; focused suites use existing tsx.cmd --test.
-Do not run migration deploy or connect these tests to a shared/Production database.
+R11 skeptical cycle1 found same-batch next-page dispatch4-to7; per-fetch latch
+and two regressions repair it. Client cached StrictMode-like duplicate timing is
+also fixed and tested. Root independent controls and skeptical replays confirm scope.
+See [resumed reviews](resumed-reviews.md) and each linked per-issue evidence doc.
+
+Initial PG run after Docker cold start reached the15-second Feedback test timeout:
+6passed/1cancelled, then synthetic test.invalid DNS failed after mock restoration.
+An unchanged rerun passed7/0skips (4857.7304ms), with own-container cleanup.
+Cold import/setup is a possible explanation, not a confirmed cause. No timeout
+increase, skipped test or weaker assertion. Final-tip DB repetition is separate.
+
+Dependency copying initially used slow Copy-Item; its partial copy was safely
+completed with non-deleting robocopy /E. A permission-review deadline timed out,
+then the permitted short-command retry succeeded. Adopted inventory matches
+23,748 files/473,597,375 bytes, ordinary directory/no shared junction; original
+Express/body-parser/qs manifest hashes and original branch are unchanged.
+
+Local Node/transpile fixtures establish control flow, not real React/browser
+paint, Supabase RLS/GRANT/Data API, model semantics/quality/cost or Production routes.
+These remain NOT_RUN/UNMEASURED in the risk register. Large-chunk warning remains.
+
+Repeat only in this worktree: npm.cmd test; npm.cmd run typecheck; npm.cmd run build;
+npm.cmd run lint:md; node --test scripts/runtime-dependency-regression.test.mjs;
+node --test scripts/db-integration/safety.test.mjs; node scripts/db-integration/run.mjs.
+Never point the DB suite at shared/Production data or run migration deployment.

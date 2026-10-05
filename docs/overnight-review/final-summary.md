@@ -2,138 +2,134 @@
 
 ## Executive Summary
 
-新harnessを実行し、認証送信前の競合、復旧結果記録、Profile出典保持、
-Case開始意図、安全label例外、実SDK timeout、Person遅延入力競合を修正しました。
-元の30 commitを保ち、Issueごとに独立commit。全191テストと実PG7件はgreenです。
-現在の結果は従来のovernight summaryを上書きする状態報告です。
+2026-10-05 JST、既存の専用worktreeとchore/portfolio-polish-overnightを継続。
+開始ec68febまでの40 commitを保持し、残件の10局所変更を独立commitしました。
+全体レビューで見つかった診断引用の反転bypassも修正。全254回帰と型・buildがgreenです。
+最終文書commitを含め今回11 commit、baseから51 commit。以下が現在の状態です。
 
 ## New Commits
 
 | Commit | Issue | Summary |
 | --- | --- | --- |
-| 0a26764 | P1-01 | fix(auth): 認証境界変更後の古い更新requestを送信前に拒否 |
-| 3beda9d | B02 | fix(workflow): 補償更新と利用量精算の結果を記録 |
-| df639fa | B03 | fix(context): Profile出典の所有者と既知metadataを確認 |
-| e475488 | UX-start | fix(ux): 保存Caseの開始意図を一度だけ消費 |
-| 87ee9f1 | B01 | fix(ai): 回避行動labelの命令形と肯定prefixを拒否 |
-| 3dfbf9a | P1-SDK | fix(ai): 実SDKの整数timeout契約を保持 |
-| 2648e16 | P2-prefill | fix(person): 読込中のidentity編集と遅延上書きを防止 |
-| 2219609 | AI-eval | test(ai): 合成30条件と事実化・stream失敗境界を評価 |
-| 75d58c1 | PERF | perf(evidence): lazy route比較と履歴規模の現行測定を記録 |
-
-This final documentation package is an additional independent commit; its own hash
-is resolved from git HEAD after publication (not embedded recursively in this file).
+| 6606878 | F15 | 出典・strength・比較理由・context分類を表示、欠損confidenceをunknown保持 |
+| 02b3dd4 | R12 ACK | Case保存失敗後も確認済みPerson IDを再利用 |
+| 066d6c3 | R11 | 1回のHistory取得を最大4並列に制限し失敗/auth変更で次ページ停止 |
+| c55d4d5 | R15 backend | 試行別prompt/SDK/validation時間と既知token使用量を観測 |
+| 4f6cd4f | R14 History | フィルタを保持して取得を再試行 |
+| 41b1f0e | R14 logout | 現在ユーザーへの失敗表示、pendingと遅延境界 |
+| b4ff1da | R14 honesty | 未実装のpassword recoveryを明示、実SDKの危険境界を記録 |
+| 585e3d8 | R10 runtime | Express4.22.3/body-parser1.20.8/qs6.16.0だけ更新 |
+| 64a8fd4 | R15 client | submit/Case ACK/state/usable result/logical finishを匿名・有限に相関 |
+| 66e64f8 | B01 quote | 診断を否定した後で反転する引用例外を封じる |
+| final documentation tip | Evidence | 最新risk/verification/PR/E2E/性能を同期、SHAはgit evidenceへ記録 |
 
 ## Completed
 
 | Issue | Evidence | Tests |
 | --- | --- | --- |
-| P1-01 | 修正前12種類で旧write送信→修正後0回 | auth41 |
-| B02 observability | 補償0件と既知attempt/run欠落を再現 | service7 / PG7 |
-| B03 source facts | 保存metadata欠落とsource境界を再現 | context16 |
-| UX start intent | 実hook再mountが自動retryする問題を再現 | UX9 |
-| B01 bounded containment | 命令・逆否定・肯定prefixを再現 | safety+validation19 |
-| P1 SDK | 実SDKが小数timeoutをfetch前に拒否 | analyzer14 |
-| P2 prefill | 実page遅延GETが名前/Personを上書き | prefill+a11y6 |
-| AI preparation | 30入力・事実化/axis反例・stream失敗境界 | offline13 |
-| Performance evidence | current hashes、writeBundle最終bytes、lazy試作 | History23 / 2builds |
-| Final review / handoff | 全branch独立+skeptical、risk/PR/E2E | local gates |
+| F15 display | 実mapper/pageでsource・reason消失を再現。旧結果のconfidenceは捏造しない | 15 |
+| R12 ACK retry | Person作成成功→Case失敗→retryで人物が増える再現 | new5 + prefill1 |
+| R11 bounded read | baseline6失敗、skeptical同時完了4-to7を再現・4-to4に修正 | loader9 + retry2 |
+| R15 backend | 実SDK usage/timeout/late completionとobserver failureを検証 | analyzer21/service8/safety+validation22 |
+| R14 History/logout/honesty | 実page/componentでerror/retry/current-user境界を再現 | 2/3/4 |
+| R10 scoped patch | 旧qs2失敗→候補6成功。579lock entriesの3つのみ変更 | standalone6 + full suite |
+| R15 client plumbing | actualNew/hook、StrictMode相当、auth/retry/unmount、native清掃失敗上限 | dedicated18 + existing11 |
+| B01 diagnostic containment | 反転・prefix・追加文が旧候補でaccepted→unsafe。既存否定文保持 | safety/validation22; SDK込み43 |
+| Evidence/review | base全体の独立・skeptical review、source hashes、実bundle bytes | final gates |
 
 ## Partial
 
 | Issue | Done | Human Decision |
 | --- | --- | --- |
-| B01 safety / crisis | 既知回帰・policy案・合成入力 | Expert routing/copy/resources |
-| B02 crash recovery | owner/run helper・実PG・reconciliation準備 | 閾値/scheduler/未知quota |
-| B03 personalization | provenance・source存在/所有者確認 | age/minimum/regeneration/derived consent |
-| B04 live routes/Auth | local rewrite/build identityとsmoke手順 | deploy後/isolated E2E |
-| B06 dependencies | 全advisory到達条件と候補表 | scoped patch/major override判断 |
-| Retention / graph | コピー監査・A-F比較試作 | deletion/format/理解確認 |
-| Measurement / streaming | stage inventory・private mock stream・lazy build | 実browser/provider測定と採用 |
+| R01 safety/crisis | 既知bypass修正、合成fixtureとpolicy案 | routing/copy/resources/専門家semantic評価 |
+| R02 retention | 保存コピー監査 | 期間/バックアップ/派生JSON/provider/削除契約 |
+| R03-R06 live evidence | 独立E2E手順、実PG、build identity | isolated Auth/RLS/browser/deploy/model評価 |
+| R07 quota recovery | owner/run helper、既知失敗精算と実PG | durable linkage/未知attempt/課金/scheduler |
+| R08/R13 personalization | provenance・所有者・revocation確認 | Profile最小件数/寿命/生成/derived consent/Person edit |
+| R09 result UX | 根拠とunknown表示改善、A-F試作 | 人間のscore理解・最終graph形式 |
+| R10 remaining deps | runtime patchとaudit16-to13 | 残り13entriesのupstream/major/override/packaging判断 |
+| R11/R12 lifecycle | bounded History・確認済みPerson再利用 | partial pagination/deadline/不確実commitのidempotency |
+| R14 recovery | dead button除去、実SDK2反例と完全flow案 | dispatch/session publicationをoperationへ束縛する設計 |
+| R15/R16 measurement/models | safe timing plumbing、offline30条件、Luna/prompt準備 | 実browser/paint/provider/予算/採用 |
 
 ## Skipped
 
 | Issue | Reason |
 | --- | --- |
-| Paid Luna A/B/C | 許可gateと数値aggregate cap未設定 |
-| Production deploy/DB/migration/delete/merge/push | 明示禁止 |
-| Live Supabase / browser / deep-route / model grading | authorized isolated environment未検証;手順準備 |
-| Automatic policy/dependency/provider/graph adoption | 人間判断・実測gate未通過 |
+| Paid Luna / Prompt A-B-C | 承認flagと数値aggregate budget capが成立せず、有料実行0 |
+| Production DB/write/migration/delete/deploy/merge/push | 明示禁止、実行なし |
+| Live Supabase/browser/provider/E2E | authorized isolated環境/実出力未確認、NOT_RUN |
+| Auto graph/stream/lazy/provider/major adoption | 人間判断・実測gate未通過 |
 
 ## Verification
 
-    npm test:191 PASS /0skip
+    npm test:254 PASS /0fail /0skip
     typecheck:PASS
-    build:PASS client/server
+    build:PASS client/server (large-chunk warning retained)
     lint:md:PASS
-    PostgreSQL:7 PASS + safety1
-    AI eval:13 PASS /30 synthetic contract rows
+    PostgreSQL:7 PASS + safety1; owner-role disposable scaffold
+    AI eval:13 PASS /30 synthetic rows; model inference0
     auth race:41 PASS
+    client measurement/navigation/Person:29 PASS
+    runtime dependency regression:6 PASS
+
+最終documentation tipの再実行ログとSHAはfinal-verification.mdから参照できます。
+初回PGの15s timeoutと無変更rerun成功も記録。testの弱化・skipなし。
 
 ## AI / Prompt / Luna
 
-    Current model:UNKNOWN deployed value; env source only verified
+    Current deployed model:UNKNOWN; env source only identified
     Luna benchmark:NOT_RUN /paid0
-    Prompt baseline:immutable406fc858 snapshot;17lines/1520 UTF8bytes
-    Prompt candidate:1; +338byte planning bound;not adopted
-    Adoption decision:KEEP CURRENT MODEL /KEEP CURRENT PROMPT
-    Why:constructed fixtures cannot prove real model quality/latency/cost
-
-Machine-readable results and aggregate planning are under experiments/ai-evals/results.
-Prompt/schema/context audits retain policy, provenance, cost and compatibility limits.
+    Prompt baseline:immutable406fc858;17lines/1520UTF8bytes
+    Candidate:1, +338byte planning bound; not adopted
+    Adoption:KEEP CURRENT MODEL /KEEP CURRENT PROMPT
+    Reason:synthetic contract outputs are not real semantic/latency/cost evidence
 
 ## Progressive UX
 
-    Current flow:save Case→navigate→read latest/state→intended start→validated saved result
-    Improved/prototyped flow:one-time start flag;private full-validation stream prototype
-    First useful state:Case existence/actual status
-    First validated AI output:complete result;real timing UNKNOWN
-    Total completion:UNKNOWN
-    Streaming decision:NOT_ADOPTED;no early-delivery evidence
+    Flow:save Case→intended navigation→reconcile latest/state→validated saved result
+    First useful confirmation:current-boundary Case ACK/accepted state
+    First usable AI result:complete stored result accepted by display model
+    Observations:backend attempt times/known usage; anonymous client logical milestones
+    Real first visible interpretation/paint/total latency:UNMEASURED
+    Streaming/lazy decision:NOT_ADOPTED
 
 ## Performance
 
-    Measured:entry923124B/gzip262567;lazy entry530835B/gzip153241
-    Measured:lazy total923903B/gzip264507;total increases
-    Measured:History P100/C100 requests302/concurrency100;mock106.537ms
-    Unknown:real network/DB/provider/browser/paint/capacity
-    Do not claim:real speedup, latency p50/p95, calibrated safety/model quality
+    Eager:931403B/gzip264959
+    Lazy prototype entry:535265B/gzip154875
+    Lazy total:932187B/summed gzip267052; total increases784B/2093gzip
+    History P100/C100:302requests, per-load peak4, mock926.036ms
+    Unknown:real browser/network/DB/provider/paint/capacity/p50/p95
+    No claim:real speedup, calibrated confidence or comprehensive safety
 
-## Risk Register
+## Risk Register and Production Safety
 
-P0: no confirmed P0. P1: R01-R06 require explicit live/safety/privacy review.
-P2: R07-R16 remain tracked. See final-risk-register.md for each fact, decision and gate.
-
-## Production Safety
-
-    deploy:none
-    Production DB write:none
-    migration deployment:none
-    data deletion:none (only disposable container cleanup)
-    secret exposure:none observed
-    paid API calls:0
-    merge/push:none
+P0:確定P0なし。R01-R06と各P2の判断/merge/demo gateはfinal-risk-register.md。
+Production変更/deploy/DB write/migration/delete/merge/push/有料API:0。
+削除は使い捨てDBだけ。依存は専用directoryへコピーし元checkoutのmanifest hash不変。
+旧complete commitのrewrite/squash/rebaseはなし。
 
 ## Git
 
     Branch:chore/portfolio-polish-overnight
+    Worktree:C:/Users/kaito/.codex/worktrees/kigen404-overnight/syshack2026
     Base:406fc8581a471cedfe4a030845c820b03a4c4f2f
-    Start:6879385ef79099251f1d21c1741a32a744f2eaf0
-    Final HEAD:resolve git HEAD of this final documentation commit
-    New commits:10 including this report;total40 since base
-    Changed files:128 since base;final clean status verified after gates
-    Original develop/origin-develop:unchanged at406fc858
+    Resume start:ec68feb966be62ff9eab872bd7a24f3f97e1dc1b
+    Final HEAD:exact value in experiments/final-git-state.log (after this doc commit)
+    New commits:11 including final documentation; total51 since base
+    Original develop/local origin-develop:unchanged at406fc858; remote not pushed
 
-## PR Recommendation
+## PR Recommendation / E2E follow-up
 
-READY_AFTER_E2E. 局所修正はreview/test済みです。live Auth/RLS、browser・deep route、
-model semanticsの必要な残課題を独立E2Eで確認してからmerge判断してください。
-Public demoにはcrisis/retention/score理解の追加gateもあります。PRは作成していません。
+READY_AFTER_E2E。局所修正をレビュー可能な状態へ揃えました。実Auth/RLS、browser、
+model semanticsと実deployed build/deep-routeは独立環境で確認後にmerge判断してください。
+Public demoにはcrisis/retention/score理解の追加判断も必要です。PRは作成していません。
 
 ## Tomorrow First 5
 
-1. E2E担当者がisolated環境でbuild identity/direct reloadを確認。
-2. A/B・logout/expiry・遅延token/response/JSONのauth matrix。
-3. saved Case/state/retry・Person同名/二回目・Feedback opt-out/settings failure。
-4. mobile/keyboardとscore/caution/uncertainty理解を独立観察。
-5. safety/retention/profile/quotaを判断し、必要ならaggregate cap付きmodel評価を別途実施。
+1. isolated E2Eでexactbuild/direct reload/SDK auth matrixを確認。
+2. 遅延token/response/body/write intentとlogout/再login、401/403/409を確認。
+3. ACK済み人物のretry、履歴エラー、Feedback/privacy opt-outを確認。
+4. mobile/keyboard、出典/不確実性/scoreの理解を独立観察。
+5. Profile/retention/crisis/recovery/idempotencyを判断し、必要ならaggregate cap付きmodel評価。

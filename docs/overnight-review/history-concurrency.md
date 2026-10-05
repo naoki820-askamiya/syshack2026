@@ -6,7 +6,7 @@ Date: 2026-10-05 JST. Baseline: ec68feb. No new endpoint or pagination/error pol
 
 The actual History loader launched a Case pagination chain for every Person at once.
 Baseline regressions reproduced peak12 for12 Persons, continued page dispatch after
-failure, and missing local auth-boundary checks before cache publication.
+failure, and missing local auth-boundary checks before subsequent pagination dispatch.
 
 One History load now uses at most4 Case-read workers. Each Person keeps sequential
 pagination; all pages, stable Person order and the existing newest-first sort remain.
@@ -15,6 +15,7 @@ Auth changes and the first failure stop subsequent pages/queued Persons. A faili
 read rejects promptly even if another peer remains pending; Promise.all observes
 late peer rejection. Cache publication remains all-or-nothing under the original
 auth boundary. Protected API errors retain their identity.
+The baseline store already checked the captured boundary; the cache spy alone does not prove a real baseline cross-user publication.
 
 The limit is per load invocation, not global across the app. Already-dispatched
 requests are not aborted; a retry can overlap those settling requests. No request

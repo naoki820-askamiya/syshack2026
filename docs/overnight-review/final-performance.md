@@ -1,30 +1,26 @@
 # Final performance evidence
 
-Mode: local build and source-backed synthetic mocks. Production deployment: none.
+Date: 2026-10-05 JST. Local build/source-backed synthetic measurements only.
 
-## Bundle comparison
+## Current bundle comparison
 
 | Build | Entry JS bytes / gzip | All JS bytes / sum of per-chunk gzip | Chunks |
 | --- | --- | --- | --- |
-| Current eager routes | 923,124 / 262,567 | 923,124 / 262,567 | 1 |
-| Build-only lazy Analysis/Action | 530,835 / 153,241 | 923,903 / 264,507 | 4 |
+| Current eager routes | 931,403 / 264,959 | 931,403 / 264,959 | 1 |
+| Build-only lazy Analysis/Action | 535,265 / 154,875 | 932,187 / 267,052 | 4 |
 
-The prototype moves bytes out of the entry; total bytes grow 779 and summed gzip
-grows 1,940. It does not establish network transfer, browser parse/render, cold/warm
-route latency or mobile improvement. Null Suspense fallback, chunk load failures,
-auth boundaries and direct reload need browser E2E before adopting route splitting.
-The app routes, standard Vite config and package scripts remain unchanged.
+Both builds use the frozen resumed client and adopted runtime dependency tree.
+Root read every emitted file before the next normal build cleared dist; exact
+bytes and Node gzip matched bundle.json/bundle-lazy.json. The writeBundle probe
+includes final preload rewriting. Total lazy bytes grow784; summed gzip grows2,093.
+This is entry relocation, not a measured network/parse/render/mobile speedup.
 
-The probe uses writeBundle so later Vite preload rewrites are included. Root read
-all four emitted prototype files and independently gzip-compressed them; every
-exact count matched bundle-lazy.json. Reviewers checked source scope and arithmetic;
-their later physical inspection could not see the prototype because the normal
-build replaced dist. The normal physical entry also matches bundle.json.
-Rendered package character attribution remains before minification and is not
-a package gzip share. Recharts is attributable to the deferred Analysis route,
-but no independent Recharts compressed-byte contribution is claimed.
+Production route splitting was not adopted. Null fallback, chunk failure recovery,
+auth lifecycle and direct reload need independent browser evidence. Package character
+attribution is transformed code before minification, not package compressed share;
+no independent Recharts gzip contribution is claimed.
 
-Repeat the prototype first, inspect its artifacts before normal build clears dist:
+Repeat lazy first, inspect its physical artifacts, then normal measurement build:
 
     $env:KIGEN_BUNDLE_REPORT='experiments/performance/bundle-lazy.json'
     npm.cmd run build:client -- --config scripts/bundle-lazy-prototype.config.ts
@@ -33,19 +29,30 @@ Repeat the prototype first, inspect its artifacts before normal build clears dis
 
 ## History
 
-All 20 size combinations and 3 failures reran with current source hashes.
-P100/C100: 302 requests, 100 concurrent, 10,000 synthetic cases, 2,616,512 response
-bytes; 106.537 ms mock completion and 16,160,752 bytes highest sampled heap growth.
-These are variable Node mock time/memory, not production or browser measurements.
-First case-page failure still leaves 99 peers active and 198 later requests, with
-zero partial cache writes. No concurrency pool or new endpoint was adopted.
+Current23 source-hashed scenarios:20 size combinations and3 failures.
+P100/C100:10,000 synthetic cases,302 requests, peak4 per invocation,926.036ms mock.
+Before at ec68feb:peak100 and106.537ms mock. Fixed synthetic timers/scheduling/CPU
+make these durations variable; the cap increases this mock time and is not a speedup.
 
-## Backend and client
+First Case-page failure:6 requests,3 in-flight peers at return,0 later dispatch,
+0 partial cache writes. Already-sent requests are not aborted; retries can overlap
+them, so the cap is not app-global. Other failures/ordering/auth/same-batch boundaries
+are covered in [R11 evidence](history-concurrency.md). Real capacity/network/DB,
+request deadlines, partial results and browser rendering remain UNMEASURED.
 
-Existing metadata-only timing observes DB start/context, combined generation,
-save and total analysis. Auth, usage settlement, prompt, provider-first/complete and
-validation substages are not individually measured. Client submit/Case create/
-first result/paint/complete remain uninstrumented. The stage inventory is verified;
-missing values remain UNKNOWN/null. An isolated cross-navigation capture design
-was reviewed, but adoption into the UI needs lifecycle/browser measurement
-coverage; no unmeasured latency improvement is claimed.
+## Backend and client observations
+
+[Backend metrics](backend-substage-metrics.md) observe prompt build, SDK request/
+complete, validation/attempt times and known safe-integer response token counts.
+SDK completion includes receipt/parse, not server compute. First event, auth and
+settlement sub-times remain unknown; absent/invalid/late usage remains null.
+No incomplete usage is imputed as a complete cost total.
+
+[Client instrumentation](client-timing.md) observes accepted submit/Case ACK/state/
+usable saved result/logical finish with bounded private correlation and anonymous
+native Performance entries. Auth/retry/unmount/StrictMode-like controls are tested.
+Cached result readiness is not new model output; logical finish is not paint.
+
+Actual browser/React lifecycle, first visible useful interpretation, provider latency,
+p50/p95, throughput/billing and human-perceived improvement remain UNMEASURED.
+No stream or performance architecture was adopted.

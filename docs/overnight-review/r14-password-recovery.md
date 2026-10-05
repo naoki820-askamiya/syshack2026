@@ -2,7 +2,7 @@
 
 ## Status and authority
 
-Actual password recovery: PARTIAL / HUMAN_DECISION_REQUIRED. The misleading affordance fix is implemented; its final Completed classification depends on the full gates and two reviews. The residual-implementation request permits a narrow existing-SDK recovery flow, while the harness still forbids an Auth/storage redesign. History retry and logout error feedback are separate implemented issues. This password issue contains investigation, synthetic installed-SDK characterization, a minimal honest-affordance change, and an unadopted complete-flow proposal. No recovery request, password update, route, AuthContext publication, client configuration, redirect allowlist, or email template was changed.
+Actual password recovery: PARTIAL / HUMAN_DECISION_REQUIRED. The misleading affordance fix is Completed; full gates and both reviews approved its narrow scope. The residual-implementation request permits a narrow existing-SDK recovery flow, while the harness still forbids an Auth/storage redesign. History retry and logout error feedback are separate implemented issues. This password issue contains investigation, synthetic installed-SDK characterization, a minimal honest-affordance change, and an unadopted complete-flow proposal. No recovery request, password update, route, AuthContext publication, client configuration, redirect allowlist, or email template was changed.
 
 ## Existing implementation and official reference
 
@@ -25,7 +25,7 @@ These are unsafe-behavior characterizations, not successful recovery regressions
 
 The actual Login TSX is rendered under strictly allowlisted React/navigation/AuthContext fixtures. Before the fix, 1 of 2 new cases failed because the unavailable message was absent; the unchanged SDK-option source contract passed. After replacing only the dead button, both cases pass. The page has no interactive password-reset control, retains ordinary login/register controls, and the singleton configuration remains exactly autoRefreshToken=false, detectSessionInUrl=true, persistSession=false.
 
-Command: tsx --test src/backend/v17/frontend.passwordResetAffordance.test.ts src/backend/v17/frontend.passwordRecoverySdk.test.ts (4/4, zero skips). npm.cmd run typecheck and npm.cmd run build:client pass after this source change; client build retains the existing large-chunk warning. Independent/skeptical review is required before commit. This does not implement password recovery.
+Command: tsx --test src/backend/v17/frontend.passwordResetAffordance.test.ts src/backend/v17/frontend.passwordRecoverySdk.test.ts (4/4, zero skips). npm.cmd run typecheck and npm.cmd run build:client pass after this source change; client build retains the existing large-chunk warning. Independent/skeptical review approved this scope. Final adopted-tree254 tests/typecheck/build pass; this does not implement password recovery.
 
 ## Smallest proposed complete flow
 
