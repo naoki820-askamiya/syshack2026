@@ -6,7 +6,7 @@
 既存51 commitを保持し、R07利用予約の紐付け、R13の明示Person編集、
 R12の作成要求重複防止、全体reviewで再現した認証SDK例外の安全な500応答を実装しました。
 R14は実SDKの隔離候補を検証しpartialを維持。
-今回7 commit（最終文書を含む）、baseから58 commitです。Production変更はありません。
+今回8 commit（最終文書と集計訂正を含む）、baseから59 commitです。Production変更はありません。
 
 全312テスト、型検査、client/server build、Markdown54 files、使い捨てPG14件が通過。
 独立・skeptical reviewで見つかったUI5件とSDK fixture型エラーを修正しました。
@@ -22,7 +22,8 @@ R14は実SDKの隔離候補を検証しpartialを維持。
 | f4fa335 | R12 | owner/key一意性・正規化hash・409・response-loss replay、画面内intent |
 | 633152a | R14 partial | private SDKの遅延response/JSON・epoch・refresh候補の成立性を検証 |
 | 5bd32fa | AUTH-P1 | 予期しないSDK拒否を汎用500へ包み、内部detail露出とnull通常継続を防止 |
-| final documentation tip | Evidence | SSOT・risk・escalation・PR draft・E2E・実行結果を同期 |
+| ebb166c | Evidence | SSOT・risk・escalation・PR draft・E2E・実行結果を同期 |
+| final count correction tip | Evidence count | 文書同期後のchanged files182・追加8/total59へ訂正、既存commit保持 |
 
 ## Completed
 
@@ -119,8 +120,9 @@ Worktree:C:/Users/kaito/.codex/worktrees/kigen404-overnight/syshack2026。
 Base:406fc8581a471cedfe4a030845c820b03a4c4f2f。
 Start:3ae8fe4ce3a4cac9dd7aa367cd9aa83aeb464145。
 Runtime tip:5bd32fa4680bb2b204d76a2e8a8e2fce472f195f。
-Final HEAD/clean/new7/total58は最終文書commit後のgit evidenceに記録。
-Changed files:baseから180。最終HEADは自己参照SHAを文書へ埋めずgit evidenceに保存。
+Final HEAD/clean/new8/total59は集計訂正commit後のgit evidenceに記録。
+Changed files:baseから182。文書同期前の180を訂正。
+最終HEADは自己参照SHAを文書へ埋めずgit evidenceに保存。
 Original develop/local origin-developはbaseのまま。remote更新なし。
 
 ## PR Recommendation
