@@ -1,9 +1,10 @@
-import { useSyncExternalStore } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { MessageCircle, History, ChevronRight, ChevronDown, House, LogIn, LogOut, UserPlus, Settings } from 'lucide-react';
 import { getCacheRevision, getConsultations, subscribeCache } from '../utils/storage';
 import { getRelationStyle } from '../utils/relationStyles';
 import { useAuth } from '../auth/AuthContext';
+import { captureAuthBoundary, isCurrentAuthBoundary } from '../utils/authBoundary';
 import { getLatestConsultationsByPerson } from '../utils/consultationHistory';
 import {
   getExpandedPerson,
@@ -15,6 +16,10 @@ export function Navigation() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const [signOutState, setSignOutState] = useState(() => ({ boundary: captureAuthBoundary(), pending: false, error: '' }));
+  const currentBoundary = captureAuthBoundary();
+  const signOutStatus = signOutState.boundary.userId === currentBoundary.userId && signOutState.boundary.epoch === currentBoundary.epoch
+    ? signOutState : { pending: false, error: '' };
   useSyncExternalStore(subscribeCache, getCacheRevision);
   const persons = user ? getLatestConsultationsByPerson(getConsultations()) : [];
 
@@ -24,8 +29,17 @@ export function Navigation() {
   );
 
   const handleSignOut = async () => {
-    await signOut();
-    navigate('/');
+    if (signOutStatus.pending) return;
+    const boundary = captureAuthBoundary();
+    setSignOutState({ boundary, pending: true, error: '' });
+    try {
+      await signOut();
+      navigate('/');
+    } catch {
+      if (isCurrentAuthBoundary(boundary)) setSignOutState({ boundary, pending: false, error: 'ログアウトに失敗しました。時間をおいて再試行してください。' });
+    } finally {
+      if (isCurrentAuthBoundary(boundary)) setSignOutState(current => ({ ...current, pending: false }));
+    }
   };
 
   const sideNavItems = [
@@ -67,11 +81,14 @@ export function Navigation() {
               <button
                 type="button"
                 onClick={handleSignOut}
+                disabled={signOutStatus.pending}
                 className="flex w-full items-center gap-2 rounded-lg border border-[#D9E1EA] px-3 py-2 text-sm font-medium text-[#5B6573] transition-colors hover:bg-[#F1F4F8]"
               >
                 <LogOut className="h-4 w-4" />
-                ログアウト
+                {signOutStatus.pending ? 'ログアウト中…' : 'ログアウト'}
               </button>
+              {signOutStatus.pending && <p role="status" className="text-sm text-[#5B6573]">ログアウトしています…</p>}
+              {signOutStatus.error && <p role="alert" className="text-sm text-red-700">{signOutStatus.error}</p>}
             </div>
           ) : (
             <p className="text-sm text-[#5B6573]">ログインすると相談履歴を保存できます。</p>
