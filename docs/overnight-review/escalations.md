@@ -1,5 +1,22 @@
 # Escalations
 
+Current2026-10-05 residual status supersedes earlier candidates below. R07 durable
+original owner/event/case/run linkage and known-attempt settlement, R13 explicit
+Person edit/atomic invalidation/future snapshot lock, R12 owner/key atomic replay
+and current-screen retry are implemented and reviewed. Missing linkage, temporary
+cache-only editing and in-screen response-loss duplicate creation are no longer open.
+Completed A05 and later pre-send work remain unchanged. See [current decisions](final-escalations.md).
+
+R07 unknown crash/provider attempts/refunds/scheduler, R12 reload/unmount/physical
+deletion recovery, Profile/retention/crisis policy and R14 callback/grant/issued bearer
+reuse remain partial. R14 private SDK tests do not wire or certify recovery routes.
+Actual Auth/RLS/browser/deployed identity/model semantics remain NOT_RUN; paid Luna
+calls0 pending a numeric aggregate cap. These decisions did not stop other Issues.
+
+Whole-branch auth SDK rejection was reproduced and minimally repaired at5bd32fa,
+including safe500/requestId for shaped/null rejection and normal401 preservation.
+No global Auth/token storage/provider/error-normalizer redesign was performed.
+
 Historical snapshot through 6879385. The final hardening run supersedes current status/counts; see [final summary](final-summary.md) and [final risk register](final-risk-register.md).
 
 All items below are deferred at the decision boundary. No production mutation,

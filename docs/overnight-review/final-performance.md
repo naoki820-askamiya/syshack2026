@@ -6,13 +6,13 @@ Date: 2026-10-05 JST. Local build/source-backed synthetic measurements only.
 
 | Build | Entry JS bytes / gzip | All JS bytes / sum of per-chunk gzip | Chunks |
 | --- | --- | --- | --- |
-| Current eager routes | 931,403 / 264,959 | 931,403 / 264,959 | 1 |
-| Build-only lazy Analysis/Action | 535,265 / 154,875 | 932,187 / 267,052 | 4 |
+| Current eager routes | 935,768 / 266,276 | 935,768 / 266,276 | 1 |
+| Build-only lazy Analysis/Action | 539,628 / 156,284 | 936,550 / 268,464 | 4 |
 
-Both builds use the frozen resumed client and adopted runtime dependency tree.
+Both builds use the resumed R12/R13 client and adopted runtime dependency tree.
 Root read every emitted file before the next normal build cleared dist; exact
 bytes and Node gzip matched bundle.json/bundle-lazy.json. The writeBundle probe
-includes final preload rewriting. Total lazy bytes grow784; summed gzip grows2,093.
+includes final preload rewriting. Total lazy bytes grow782; summed gzip grows2,188.
 This is entry relocation, not a measured network/parse/render/mobile speedup.
 
 Production route splitting was not adopted. Null fallback, chunk failure recovery,
@@ -29,10 +29,15 @@ Repeat lazy first, inspect its physical artifacts, then normal measurement build
 
 ## History
 
-Current23 source-hashed scenarios:20 size combinations and3 failures.
-P100/C100:10,000 synthetic cases,302 requests, peak4 per invocation,926.036ms mock.
+Current23 source-hashed scenarios:20 size combinations and3 failures. All five
+hashes match current mapper/create-intent/Person/workflow/History-loader source;
+the probe executes actual pagination/serialization with allowlisted mock dependencies.
+P100/C100:10,000 synthetic cases,302 requests, peak4 per invocation,2402.543ms mock.
 Before at ec68feb:peak100 and106.537ms mock. Fixed synthetic timers/scheduling/CPU
 make these durations variable; the cap increases this mock time and is not a speedup.
+
+The previous resumed926.036ms snapshot predated R12/R13 and is superseded by this
+fresh report. GC was unavailable in this run; memory sampling is not a true peak.
 
 First Case-page failure:6 requests,3 in-flight peers at return,0 later dispatch,
 0 partial cache writes. Already-sent requests are not aborted; retries can overlap

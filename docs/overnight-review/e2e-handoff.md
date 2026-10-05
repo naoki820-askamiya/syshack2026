@@ -18,7 +18,9 @@ Do not deploy or use Production DB without separate authorization.
 | State GET failure/stall | No implicit provider start; polling cutoff is scheduling only | NOT_RUN |
 | Same Person second case | Existing Person reused, selected ID not display-name equality | NOT_RUN |
 | Same-name two Persons | Histories and consultation targets remain distinct | NOT_RUN |
-| Existing relationship edit | Inspect cache label versus DB snapshot; record current limitation | NOT_RUN |
+| Existing Person edit | Save/cancel/error/retry, nickname/raw relationship, server-authoritative re-read; profile stale even privacy OFF | NOT_RUN |
+| Edited Person / new Case | New snapshot reflects committed edit; earlier snapshot stays immutable; historical labels use current latest Person | NOT_RUN |
+| Edit/archive versus Case create | Concurrent operations preserve owned active Person and atomic snapshot; observe existing last-writer-wins | NOT_RUN |
 | Personalization ON/OFF | Actual permitted source IDs reflect settings | NOT_RUN |
 | Privacy GET/PATCH failure | No saving fallback defaults, recover with read/retry | NOT_RUN |
 | Feedback create/edit/reload | POST once, PATCH existing, restored values | NOT_RUN |
@@ -29,6 +31,7 @@ Do not deploy or use Production DB without separate authorization.
 | Parallel same-user requests | Ordinary independent requests complete | NOT_RUN |
 | 401/403/409 / abort / network | Existing errors remain distinguishable and recoverable | NOT_RUN |
 | Public/login/register | No unnecessary protected client guard effect | NOT_RUN |
+| Auth SDK rejection | Isolated provider fault returns generic500/requestId, no private message/token and no business write; ordinary auth error401 | NOT_RUN |
 | Mobile | Readability, scrolling, controls and navigation | NOT_RUN |
 | Keyboard | Focus, labels, choice state, pending/error announcements | NOT_RUN |
 | Result comprehension | Independently explain evidence, uncertainty, alternatives and caution | NOT_RUN |
@@ -41,7 +44,11 @@ Do not deploy or use Production DB without separate authorization.
 | --- | --- | --- |
 | Evidence and comparison | Identify current entry, Feedback report and prior AI; explain strength/relevance/reasons without treating them as facts | NOT_RUN |
 | Older result metadata | Missing confidence/source stays unknown; busyness/flatness remain context, not reassurance | NOT_RUN |
-| Person ACK then Case error | Retry retains confirmed Person ID; editing identity chooses a new intent; response-lost commit remains a documented limitation | NOT_RUN |
+| Person ACK then Case error | Retry retains confirmed full Person; editor remains available; explicit name change chooses new intent even when returning to original text | NOT_RUN |
+| Person response lost after commit | Same mounted screen unchanged retry reuses key and owned resource; changed fields/new intent gets new key; differing key input409 | NOT_RUN |
+| Case response lost after commit | Unchanged retry returns original Case/snapshot without resetting analyzed run/results/updatedAt/quota | NOT_RUN |
+| Concurrent create replay | Same owner/key/input resolves to one ID/row; other owner isolated; omitted key legacy ordinary create | NOT_RUN |
+| Archived target / changed replay input | Safe404/no resurrection and typed409 reach caller; reload/unmount or physical delete recovery outside current guarantee | NOT_RUN |
 | History failure/retry | Filter preserved, inline retry, all pages/newest order, per-load4 and no subsequent dispatch after failure/auth change | NOT_RUN |
 | Logout failure | Current user sees retryable error; no premature navigation or another-user error | NOT_RUN |
 | Password recovery affordance | Unavailable state is clear; login/register continue; no unfinished email/reset flow | NOT_RUN |
@@ -50,6 +57,9 @@ Do not deploy or use Production DB without separate authorization.
 
 The History cap applies per invocation; overlapping retry may temporarily retain earlier
 in-flight peers. SDK recovery characterization is not an implemented reset flow.
+Current-screen keys are in memory only and are not a cross-reload draft or durable ledger.
+Server-side authorization/ownership remains authoritative; stale UI guards cannot undo
+an already-sent write. Unknown provider attempts remain conservative quota, not refunds.
 
 ## Post-deploy smoke preparation
 

@@ -1,57 +1,64 @@
 # Final human decisions
 
-Date: 2026-10-05 JST. Work continued around these decisions without confirmation waits.
-Current item classification is in [risk register](final-risk-register.md).
+Date: 2026-10-05 JST. Decisions did not stop other issues. Current status is in
+[summary](final-summary.md) and [risk register](final-risk-register.md).
 
-## Safety / Crisis and retention
+## Adopted residual contracts
 
-R01: decide crisis routing, urgent-support copy/resources and expert semantic review.
-Known avoid-label regressions are contained; complete Japanese safety is not proven.
-R02: choose retention period, backup/provider/operator handling and deletion of
-old/derived JSON snapshots. Archive is not physical deletion.
+R07 linkage and known-attempt settlement are implemented; missing durable linkage
+is no longer an open defect. Unknown/abandoned attempts retain conservative usage.
+Choose scheduler, stale threshold, refund and provider-billing reconciliation.
+Legacy NULL reservations are not guessed/backfilled; costUnits are quota attempts.
 
-## Personalization and identity
+R13 explicit save/cancel/edit is implemented with current owned Person lookup,
+atomic Profile invalidation and locked future Case snapshot creation. Past
+snapshots are retained, historical labels KEEP current latest-Person mapping,
+and existing last-writer-wins is retained. No new revision/CAS or Profile writer.
+R08 minimum evidence, age, regeneration and derived-source consent remain decisions.
 
-R08: choose minimum evidence, stale age, regeneration and derived-source consent.
-Provenance/source-owner checks are implemented; no threshold or automatic writer
-was invented. R13: persistent existing-Person relationship edits need a contract;
-automatically PATCHing Person could alter future context and history labels.
-
-R12: acknowledged Person ID is now retained for a failed Case-create retry.
-An uncertain Person/Case commit with a lost response remains distinct: choose
-owner-scoped intent key, uniqueness, payload conflict/replay and lifetime before
-server idempotency. Equal display names or consultation text are not intent keys.
+R12 optional owner/resource-scoped UUID key, server-normalized immutable fingerprint,
+atomic uniqueness, replay and typed409 are implemented. Omitted key/legacy DB NULL
+remain ordinary create; explicit JSON null is rejected. Archived Person POST/replay
+fails404 and resources are not resurrected. Resource lifetime bounds metadata;
+no TTL/independent retention policy was introduced. Reload/unmount/physical-delete
+retry recovery remains outside this bounded guarantee; choose that contract before
+persisting drafts or adding a ledger.
 
 ## Password recovery
 
-R14 History retry and logout failure feedback are implemented. Login now explicitly
-reports unavailable recovery instead of an inert button. Actual recovery remains
-PARTIAL: synthetic installed-SDK cases demonstrate session selection after an await
-and stale SDK session publication before the caller postcheck. A page guard alone
-does not solve these boundaries. See [SDK evidence and bounded proposal](r14-password-recovery.md).
-Choose an operation-bound dispatch/publication design before adding a complete
-recovery flow; no Auth storage/SDK/configuration redesign was adopted.
+R14 supported private SDK isolation is executable as a synthetic-only feasibility
+probe; no reset/email route is wired. Exact captured-token GET/PUT and a sticky
+refresh-denial latch prevent the observed private SDK from altering the main
+session in delayed-response/body tests. Ordinary autoRefreshToken=false alone was
+insufficient, as the near-expiry SDK fallback counterexample shows.
 
-## Model, UX and performance
+The existing main singleton still consumes callbacks. Decide central recovery
+intent observation/revocation/consumption, ordinary sign-in denial and reused
+issued bearer-session callback policy. One-use email code is not one-use bearer
+session. A same-origin page flag alone cannot prove cross-reload replay denial.
+Do not weaken this requirement or redesign Auth/token storage within this harness.
+Then verify cancel/duplicate/failure/reload, provider redirect/email and actual UI.
+An already-sent A password update may still change A; UI guards cannot undo it.
 
-R06/R16: approve an aggregate numeric paid budget, deployed-model baseline and blind
-human semantic ratings before Luna/Prompt adoption. Paid calls0; KEEP CURRENT MODEL
-and KEEP CURRENT PROMPT. Thirty synthetic fixtures/offline13 tests are prepared.
+## Safety / retention / result comprehension
 
-R09: source/strength/comparison reasons and missing-confidence honesty are repaired.
-Choose score/radar format after observing human comprehension; AI confidence is
-not calibrated accuracy. R11: per-load read cap and failure stop are implemented;
-live capacity, partial pagination, deadlines and lazy fallback/chunk recovery remain.
-R15: backend substages/known usage and bounded client logical milestones are implemented; first provider event,
-browser paint and real latency remain UNMEASURED. No streaming adoption.
+R01 crisis routing, urgent-support copy/resources and expert semantic review remain.
+R02 retention duration, old/derived snapshots, backups/provider/operator copies and
+physical deletion remain; archive is not deletion. R09 score/radar selection needs
+human observation; confidence is not calibrated accuracy. Source/unknown fixes stay.
 
-## Production and operations
+## Model, UX and operations
 
-R03/R04/R05: live Auth/RLS/GRANT, browser auth/device matrix, deployment and exact
-build/deep-route checks require an isolated environment and separate authority.
-No Production writes, deployment, merge or push occurred.
-R07: do not guess or refund unknown abandoned attempts by timestamp; durable
-event-case/run linkage, conservative charge and scheduler policy remain undecided.
-R10: scoped runtime patches are handled separately from remaining tooling/Prisma
-advisories. Major changes and forced overrides remain unadopted; braces has no
-patched version in the reviewed advisory.
+The user allows Luna adoption, but no numeric aggregate paid cap exists. Paid calls0;
+KEEP CURRENT MODEL/PROMPT until capped real outputs and blind semantic grading.
+Current deployed baseline, framing/price/usage/retry bounds and adoption criteria
+must be verified. Thirty synthetic fixtures/offline13 are preparation only.
+
+R03-R05 actual Auth/RLS/GRANT, browser matrix and deployed exact build remain NOT_RUN.
+No Supabase CLI or cached Auth-stack images were found. Do not run the shadow
+auth.uid stub against a real Supabase project. Existing disposable PG is owner-role
+evidence only. R10 remaining advisories need package/upstream/major decisions.
+R11 partial pagination/deadline/lazy fallback and R15 actual paint/provider latency
+remain UNMEASURED; no streaming adoption.
+
+No Production writes, deployment, merge, push or paid provider calls occurred.

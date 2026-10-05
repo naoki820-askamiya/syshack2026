@@ -2,16 +2,16 @@
   "mode": "LOCAL_PRODUCTION_BUILD_MEASUREMENT",
   "chunks": [
     {
-      "file": "assets/index-BvzBidNa.js",
+      "file": "assets/index-DUSVPuju.js",
       "isEntry": true,
-      "bytes": 931403,
-      "gzipBytes": 264959,
+      "bytes": 935768,
+      "gzipBytes": 266276,
       "imports": [],
       "dynamicImports": []
     }
   ],
   "renderedCharactersBeforeMinification": {
-    "application": 179242,
+    "application": 187073,
     "react": 9585,
     "react-dom": 134728,
     "scheduler": 4962,

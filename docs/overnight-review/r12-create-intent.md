@@ -66,3 +66,9 @@ Cycle2 frontend independent31/31 and backend44/44 pass and APPROVE. Final npm
 test299/0skip, typecheck/build PASS; Markdown53 files/0issues.
 Cycle2 skeptical APPROVE, independent69/69 focused including R13/timing interop.
 No unresolved confirmed blocker within the documented guarantee.
+
+The bounded design follows caller intent and atomic resource/key persistence in
+[AWS retry guidance](https://aws.amazon.com/builders-library/making-retries-safe-with-idempotent-APIs/),
+and optional UUID request identification/current-resource replay in
+[Google AIP-155](https://google.aip.dev/155). These are design references, not a
+claim of service certification or permission to choose an arbitrary lifetime.

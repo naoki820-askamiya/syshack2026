@@ -28,6 +28,10 @@ function sourceModule(relativePath, dependencies) {
   return module.exports;
 }
 const mapper = sourceModule('src/app/api/consultationMapper.ts', {});
+const intent = sourceModule('src/backend/v17/createIntent.ts', {
+  'node:crypto': requireLocal('node:crypto'), '../generated/prisma/client.js': { Prisma: {} },
+  '../utils/index.js': {},
+});
 const delay = (ms) => new Promise((done) => setTimeout(done, ms));
 const mockLatencyMs = 2;
 
@@ -48,6 +52,7 @@ async function scenario(personCount, casesPerPerson, failure = null) {
   const http = { parseOrThrow: (_schema, query) => query, resourceNotFound: () => new Error('Synthetic not found') };
   const schemas = { paginationSchema: {}, buildPersonSnapshot: forbidden, createAnalysisCaseSchema: {} };
   const personService = sourceModule('src/backend/v17/persons.service.ts', {
+    './createIntent.js': intent,
     './schemas.js': schemas, './http.js': http,
     './persons.repository.js': {
       listOwnedPersons: async (_user, limit, offset) => {
@@ -61,6 +66,7 @@ async function scenario(personCount, casesPerPerson, failure = null) {
     },
   });
   const caseService = sourceModule('src/backend/v17/workflow.service.ts', {
+    './createIntent.js': intent,
     '../ai/v2/constants.js': {}, '../ai/v2/analyzeMood.js': {}, '../utils/index.js': {},
     './context.repository.js': {}, './http.js': http, './schemas.js': schemas,
     './persons.service.js': personService, './rateLimit.js': {},

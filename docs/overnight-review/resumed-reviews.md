@@ -41,3 +41,24 @@ Before2 valid failures, current22 safety/validation and43 with SDK pass. General
 Japanese semantics/crisis remains partial. No known confirmed local blocker remains
 after the independent and skeptical whole-branch reviews. Final four gates use the
 adopted independent dependencies:254 full regressions/0 skips, typecheck/fullbuild green.
+
+## Approved residual pass and whole-branch second review
+
+The earlier254/7 counts are historical. Start3ae8fe4; base406fc858; original51
+commits are retained. Current full source has312 regressions and disposable PG14.
+
+| Change | Independent / skeptical evidence | Result |
+| --- | --- | --- |
+| R07 original-run usage | Backend and skeptic owner/event/run, pair CHECK, atomic reserve, known settlement; focused33 and PG8 | Approved b8aca18; generated synchronization05f8fe5 |
+| R13 explicit edit/snapshot | Frontend24, skeptic27, PG11; cycle1 four UI counterexamples then cycle2 fixes | Approved a011611 |
+| R12 create intent | Backend44, frontend31, skeptic69, PG14; installed adapter metadata and explicit new-intent replay counterexample repaired | Approved f4fa335 |
+| R14 private SDK candidate | Independent/skeptic11, server typecheck; near-expiry refresh fallback before7/8 then fixed with latch | Approved experiment633152a, recovery remains partial |
+| Whole branch before AUTH repair | Backend119, frontend172, skeptic228 and server typecheck; complete base-to633152a source read | Frontend bounded APPROVE; backend found existing-base AUTH-P1 |
+| AUTH-P1 cycle1/2 | Initial middleware2/3; shaped/null realHTTP18/20 before final containment; independent24 and skeptic24 after plus server typecheck | Approved5bd32fa; safe generic500, normal401 retained |
+
+The final source tip is5bd32fa. Final document/performance commit is evidence only;
+all reviewers must match its exact HEAD and compare the complete base-to-tip diff.
+Exact final review and all-command terminal results are saved in ignored
+experiments/residual-final-*.log and final-git-state.log; no recursive self-SHA in docs.
+No open confirmed local blocker after cycle2. Browser/Auth/RLS/model/operational
+partials remain explicit in final-risk-register, not inferred from reviewer PASS.

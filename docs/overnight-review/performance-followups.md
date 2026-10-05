@@ -8,7 +8,10 @@ Historical snapshot through 6879385. The final hardening run supersedes current 
 
 Base client: one chunk909.22kB/gzip258.32kB. Current measurement-only build:
 921,702 bytes/gzip262,133, one entry, no imports/dynamic imports. Exact output in
-`experiments/performance/bundle.json`; run `npm.cmd run build:client -- --config scripts/bundle-measure.config.ts`.
+The current `experiments/performance/bundle.json` supersedes this historical921,702
+snapshot with935,768 bytes/gzip266,276; do not use the current JSON as the earlier
+run's proof. Current matched normal/lazy files and five-source History refresh are
+in [final performance](final-performance.md). Repeat using the measurement config.
 Recharts contributes449,182 rendered characters before final minification; lodash194,364,
 React Router223,553 and Supabase Auth379,855. These are transformed module counts,
 **not compressed-byte percentages or browser parse times**. No source map is committed.

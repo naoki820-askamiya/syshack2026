@@ -2,51 +2,51 @@
   "mode": "LOCAL_PRODUCTION_BUILD_MEASUREMENT",
   "chunks": [
     {
-      "file": "assets/index-jfglP_h0.js",
+      "file": "assets/index-CZwATcCg.js",
       "isEntry": true,
-      "bytes": 535265,
-      "gzipBytes": 154875,
+      "bytes": 539628,
+      "gzipBytes": 156284,
       "imports": [],
       "dynamicImports": [
-        "assets/AnalysisV17-Bb6HdIv1.js",
-        "assets/ActionSuggestionV17-CqJKMwR-.js"
+        "assets/AnalysisV17-CY-3O4G7.js",
+        "assets/ActionSuggestionV17-DoeM62oj.js"
       ]
     },
     {
-      "file": "assets/AnalysisV17-Bb6HdIv1.js",
+      "file": "assets/AnalysisV17-CY-3O4G7.js",
       "isEntry": false,
       "bytes": 382545,
-      "gzipBytes": 106669,
+      "gzipBytes": 106670,
       "imports": [
-        "assets/index-jfglP_h0.js",
-        "assets/useHydratedAnalysis-DsOKFbCm.js"
+        "assets/index-CZwATcCg.js",
+        "assets/useHydratedAnalysis-C_U5o59k.js"
       ],
       "dynamicImports": []
     },
     {
-      "file": "assets/ActionSuggestionV17-CqJKMwR-.js",
+      "file": "assets/ActionSuggestionV17-DoeM62oj.js",
       "isEntry": false,
       "bytes": 7102,
       "gzipBytes": 2426,
       "imports": [
-        "assets/index-jfglP_h0.js",
-        "assets/useHydratedAnalysis-DsOKFbCm.js"
+        "assets/index-CZwATcCg.js",
+        "assets/useHydratedAnalysis-C_U5o59k.js"
       ],
       "dynamicImports": []
     },
     {
-      "file": "assets/useHydratedAnalysis-DsOKFbCm.js",
+      "file": "assets/useHydratedAnalysis-C_U5o59k.js",
       "isEntry": false,
       "bytes": 7275,
-      "gzipBytes": 3082,
+      "gzipBytes": 3084,
       "imports": [
-        "assets/index-jfglP_h0.js"
+        "assets/index-CZwATcCg.js"
       ],
       "dynamicImports": []
     }
   ],
   "renderedCharactersBeforeMinification": {
-    "application": 182124,
+    "application": 189955,
     "react": 9585,
     "react-dom": 134728,
     "scheduler": 4962,

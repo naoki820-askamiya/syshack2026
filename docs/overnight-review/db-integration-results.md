@@ -47,3 +47,19 @@ The auth.users/auth.uid scaffold is the existing shadow stub; real Supabase RLS/
 behavior remains unverified and must be exercised in a separately authorized isolated Supabase project.
 No production scheduler, stale threshold, user quota policy, retention rule or safety policy was selected.
 Fixtures use a test-only quota of one request to expose contention; that value is not a product recommendation.
+
+## Current residual pass supersedes historical seven-case counts
+
+Current disposable suite passes14/14 without skips; R07 added original case/run
+linkage and known settlement, R13 added Person edit/Profile invalidation plus real
+two-connection snapshot/edit/archive ordering, R12 added owner/key uniqueness,
+concurrent unchanged replay, differing input409, other-owner isolation, legacy NULL,
+rollback and archived/edited/analyzed resource behavior. See each R07/R12/R13 document
+and [final verification](final-verification.md) for frozen revisions and failed controls.
+
+R12 first real-PG run12/14 exposed Prisma7 adapter P2002 metadata; the classifier
+was narrowed to installed structured23505/unique-field metadata and the unchanged
+two-request/two-connection assertions passed14/14. Test-only FK fixture correction
+preserved the P2003 ownership assertion. Container cleanup is verified after runs.
+The auth.users/auth.uid owner-role shadow scaffold still does not prove live Supabase
+RLS/GRANT/Data API. All schema changes were applied only to the disposable container.

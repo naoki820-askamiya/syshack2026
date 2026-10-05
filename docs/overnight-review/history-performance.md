@@ -11,7 +11,10 @@ The harness transpiles and executes the actual `loadConsultationHistory`, `toCon
 `listPersons` and `listCasesByPerson` source functions with an explicit dependency allowlist.
 Only synthetic person/case fixtures, mock repositories, in-memory cache spies and a fixed
 2ms HTTP timer are supplied. There is no app API, auth provider, dotenv, database or paid API call.
-Source SHA-256 values and all 23 scenarios are recorded in [history.json](../../experiments/performance/history.json).
+The current [history.json](../../experiments/performance/history.json) has since been
+replaced by the R12/R13 refresh. Historical measurements below remain this dated
+snapshot; use [final performance](final-performance.md) for current five-source hashes,
+23 scenarios, bounded dispatch and current timings rather than mixing the two runs.
 
 Time includes local JSON conversion, sorting, sampled memory overhead and Windows timer scheduling.
 It is not real network or production latency. Memory is process heap/RSS growth sampled around
