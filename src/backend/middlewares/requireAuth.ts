@@ -17,7 +17,18 @@ export async function requireAuth(
     }
 
     // JWTを独自検証せずSupabaseへ照会し、失効を含む現在の認証状態を正本に従わせます。
-    const { data, error } = await supabaseAuth.auth.getUser(token);
+    let verified: Awaited<ReturnType<typeof supabaseAuth.auth.getUser>>;
+    try {
+        verified = await supabaseAuth.auth.getUser(token);
+    } catch (error) {
+        // Express4 does not observe an async middleware's rejected Promise.
+        // SDK errors may look like public AppErrors, and falsey rejection is not
+        // an Express error signal. Contain every unexpected rejection here.
+        next(new AppError({ code: 'INTERNAL_SERVER_ERROR', status: 500,
+            message: 'サーバー内部エラーが発生しました。', cause: error }));
+        return;
+    }
+    const { data, error } = verified;
 
     if (error || !data.user) {
         next(buildAuthRequiredError());

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import type { AddressInfo } from "node:net";
 import type { Server } from "node:http";
 import test, { after, before } from "node:test";
+import { AuthApiError } from '@supabase/auth-js';
 
 process.env.DATABASE_URL ??= "postgresql://test:test@127.0.0.1:5432/kigen404_test";
 process.env.SUPABASE_URL ??= "https://test.supabase.co";
@@ -159,6 +160,28 @@ test("protected APIs return 401 without a valid authenticated session", async (t
     assert.equal(invalid.status, 401);
     assert.equal((invalid.body.error as { code: string }).code, "UNAUTHENTICATED");
 });
+
+test('rejected auth SDK request returns safe500 with requestId before any business handler', async t => {
+    replaceMethod(t, supabaseAuth.auth, 'getUser', async () => { throw new Error('SYNTHETIC_PRIVATE_AUTH_DETAIL'); });
+    const create = replaceMethod(t, prisma.person, 'create', async () => { throw new Error('Business handler must not run'); });
+    const response = await request('/api/persons', { ...authorizedJson('POST', { displayName: 'Synthetic', relationshipType: 'friend' }),
+        headers: { authorization: 'Bearer SYNTHETIC_PRIVATE_TOKEN', 'x-request-id': 'auth-error-regression' }, signal: AbortSignal.timeout(2000) });
+    assert.equal(response.status, 500); assert.equal(create.mock.callCount(), 0);
+    assert.deepEqual(response.body.error, { code: 'INTERNAL_SERVER_ERROR', message: 'サーバー内部エラーが発生しました。', status: 500, requestId: 'auth-error-regression' });
+    assert.equal(JSON.stringify(response.body).includes('SYNTHETIC_PRIVATE'), false);
+});
+
+for (const rejection of [new AuthApiError('SYNTHETIC_PRIVATE_AUTH_DETAIL', 502, 'PRIVATE_SDK_CODE'), null]) {
+    test('auth SDK error-shaped/falsey rejection stays an internal500, never raw error or success', async t => {
+        replaceMethod(t, supabaseAuth.auth, 'getUser', async () => { throw rejection; });
+        const create = replaceMethod(t, prisma.person, 'create', async () => { throw new Error('Business handler must not run'); });
+        const response = await request('/api/persons', { ...authorizedJson('POST', { displayName: 'Synthetic', relationshipType: 'friend' }),
+            headers: { authorization: 'Bearer SYNTHETIC_PRIVATE_TOKEN', 'x-request-id': 'auth-rejected-value' }, signal: AbortSignal.timeout(2000) });
+        assert.equal(response.status, 500); assert.equal(create.mock.callCount(), 0);
+        assert.deepEqual(response.body.error, { code: 'INTERNAL_SERVER_ERROR', message: 'サーバー内部エラーが発生しました。', status: 500, requestId: 'auth-rejected-value' });
+        assert.equal(JSON.stringify(response.body).includes('PRIVATE'), false);
+    });
+}
 
 test("Person create uses authenticated userId and rejects client user_id", async (t) => {
     authenticateAs(t);
