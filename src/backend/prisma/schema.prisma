@@ -220,6 +220,8 @@ model ApiUsageEvent {
   id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId              String?  @map("user_id") @db.Uuid
   guestTrialAttemptId String?  @map("guest_trial_attempt_id") @db.Uuid
+  analysisCaseId      String?  @map("analysis_case_id") @db.Uuid
+  analyzeRunId        String?  @map("analyze_run_id") @db.Uuid
   routeKey            String   @map("route_key") @db.VarChar(100)
   ipHash              String?  @map("ip_hash") @db.VarChar(128)
   userAgentHash       String?  @map("user_agent_hash") @db.VarChar(128)
@@ -230,6 +232,7 @@ model ApiUsageEvent {
   guestTrialAttempt GuestTrialAttempt? @relation(fields: [guestTrialAttemptId], references: [id], onDelete: SetNull)
 
   @@index([routeKey, userId, createdAt])
+  @@index([analysisCaseId, analyzeRunId])
   @@index([routeKey, ipHash, createdAt])
   @@index([routeKey, ipHash, userAgentHash, createdAt])
   @@map("api_usage_events")

@@ -59,3 +59,11 @@ Repeat only in this worktree: npm.cmd test; npm.cmd run typecheck; npm.cmd run b
 npm.cmd run lint:md; node --test scripts/runtime-dependency-regression.test.mjs;
 node --test scripts/db-integration/safety.test.mjs; node scripts/db-integration/run.mjs.
 Never point the DB suite at shared/Production data or run migration deployment.
+
+## Approved residual implementation: R07
+
+Start HEAD3ae8fe4; branch chore/portfolio-polish-overnight; develop/A05 preserved.
+Frozen R07 tree: npm test268/0skip; typecheck/build PASS; Markdown51 files/0 issues;
+focused33/0skip; real disposable PostgreSQL8/0skip with own container removed.
+Independent and skeptical reviews APPROVE. Logs: experiments/residual-r07-*.log.
+No Production migration, external Auth, paid API, push or merge.

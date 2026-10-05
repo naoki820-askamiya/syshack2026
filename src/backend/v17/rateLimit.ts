@@ -86,15 +86,6 @@ export async function reserveAnalyzeUsageAndStartCase(
         }
     }
 
-    const usageEvent = await tx.apiUsageEvent.create({
-        data: {
-            userId,
-            routeKey: "analyze",
-            costUnits: MAX_INTERNAL_AI_ATTEMPTS,
-            status: "allowed",
-        },
-    });
-
     // 実行ごとのrun idを後続の完了・失敗条件に使い、古い応答による上書きを防ぎます。
     const started = await tx.$queryRaw<Array<{ analyze_run_id: string }>>`
         UPDATE analysis_cases
@@ -119,25 +110,49 @@ export async function reserveAnalyzeUsageAndStartCase(
         });
     }
 
+    // Both writes belong to the caller's transaction. An insert failure also rolls back start.
+    // These IDs describe this reservation's original run, not the case's mutable current run.
+    const usageEvent = await tx.apiUsageEvent.create({
+        data: {
+            userId, analysisCaseId: caseId, analyzeRunId: started[0].analyze_run_id,
+            routeKey: "analyze", costUnits: MAX_INTERNAL_AI_ATTEMPTS, status: "allowed",
+        },
+    });
+
     return {
         usageEventId: usageEvent.id,
         analyzeRunId: started[0].analyze_run_id,
     };
 }
 
+export interface UsageIdentity {
+    userId: string;
+    usageEventId: string;
+    analysisCaseId: string;
+    analyzeRunId: string;
+}
+
 export async function settleUsage(
     prisma: PrismaClient,
-    usageEventId: string,
+    identity: UsageIdentity,
     status: "succeeded" | "failed",
     actualAttempts: number,
-): Promise<void> {
-    await prisma.apiUsageEvent.updateMany({
-        where: { id: usageEventId, status: "allowed" },
-        data: {
-            status,
-            costUnits: Math.max(0, Math.min(MAX_INTERNAL_AI_ATTEMPTS, actualAttempts)),
-        },
+): Promise<"settled" | "already_settled" | "unmatched" | "conflict"> {
+    if (!Number.isInteger(actualAttempts) || actualAttempts < 0 || actualAttempts > MAX_INTERNAL_AI_ATTEMPTS) {
+        throw new RangeError("Usage settlement requires a known bounded attempt count");
+    }
+    const where = {
+        id: identity.usageEventId, userId: identity.userId, routeKey: "analyze",
+        analysisCaseId: identity.analysisCaseId, analyzeRunId: identity.analyzeRunId,
+    };
+    const updated = await prisma.apiUsageEvent.updateMany({
+        where: { ...where, status: "allowed" },
+        data: { status, costUnits: actualAttempts },
     });
+    if (updated.count === 1) return "settled";
+    const existing = await prisma.apiUsageEvent.findFirst({ where, select: { status: true, costUnits: true } });
+    if (!existing) return "unmatched";
+    return existing.status === status && existing.costUnits === actualAttempts ? "already_settled" : "conflict";
 }
 
 function windowStartSql(policy: Policy): Prisma.Sql {

@@ -180,6 +180,33 @@ test("usage reconciliation reports known attempts and exact run correlation afte
     assert.equal(JSON.stringify(events).includes(SECRET), false);
 });
 
+test("unexpected generation failure retains the reservation and reports unknown attempts", async (t) => {
+    const { events, settlement } = startFixture(t);
+    contextFixture(t);
+    await assert.rejects(analyzeCase(USER_ID, CASE_ID, {
+        generate: async () => { throw new Error(SECRET); },
+    }));
+    assert.equal(settlement.mock.callCount(), 0);
+    const usage = events.find(([name]) => name === "usage_reconciliation_required")?.[1];
+    assert.ok(usage);
+    assert.equal(usage.outcome, "unknown_attempts");
+    assert.equal(usage.actualAttempts, null);
+    assert.equal(JSON.stringify(events).includes(SECRET), false);
+});
+
+test("unmatched usage is observed without rolling back a successfully saved result", async (t) => {
+    const { events, recovery } = startFixture(t);
+    contextFixture(t);
+    replace(t, prisma.apiUsageEvent, "updateMany", async () => ({ count: 0 }));
+    replace(t, prisma.apiUsageEvent, "findFirst", async () => null);
+    const result = await analyzeCase(USER_ID, CASE_ID, { generate: generateSuccess });
+    assert.equal(result.status, "analyzed");
+    assert.equal(recovery.mock.callCount(), 0);
+    const usage = events.find(([name]) => name === "usage_reconciliation_required")?.[1];
+    assert.equal(usage?.outcome, "unmatched");
+    assert.equal(JSON.stringify(events).includes(SECRET), false);
+});
+
 
 test("workflow aggregates observed substages and correlates per-attempt token counts without persisting metrics", async (t) => {
     const { events } = startFixture(t);

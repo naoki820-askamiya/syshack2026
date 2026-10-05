@@ -43,7 +43,7 @@ export async function analyzeCase(
     let stage = "db_start";
     let runId: string | null = null;
     let model: string | null = null;
-    let actualAttempts = 0;
+    let actualAttempts: number | null = 0;
     let status = "failed";
     let failureCode: string | null = null;
     try {
@@ -69,6 +69,8 @@ export async function analyzeCase(
 
             stage = "ai_generation";
             const generationAt = performance.now();
+            // Once dispatch can occur, an unexpected exception has unknown usage, not zero usage.
+            actualAttempts = null;
             const generated = await (options.generate ?? analyzeMoodV2)(context.aiInput, {
                 onAttemptMetrics: (metrics) => {
                     for (const key of ["prompt_build_ms", "provider_request_ms", "provider_complete_ms", "validation_ms"] as const) {
@@ -105,7 +107,7 @@ export async function analyzeCase(
             }
 
             stage = "usage_settlement";
-            await settleUsageOrLog(started.usageEventId, "succeeded", actualAttempts, { caseId, runId: started.analyzeRunId });
+            await settleUsageOrLog(userId, started.usageEventId, "succeeded", actualAttempts, { caseId, runId: started.analyzeRunId });
             status = "succeeded";
             return {
                 status: "analyzed",
@@ -124,7 +126,7 @@ export async function analyzeCase(
                     userId, caseId, analyzeRunId: started.analyzeRunId,
                     failureCode: normalized.code, failureMessage: normalized.message,
                 }),
-                settleUsageOrLog(started.usageEventId, "failed", actualAttempts, { caseId, runId: started.analyzeRunId }),
+                settleUsageOrLog(userId, started.usageEventId, "failed", actualAttempts, { caseId, runId: started.analyzeRunId }),
             ]);
             if (compensation[0].status === "rejected") {
                 safeWorkflowLog("error", "analysis_compensation_required", {
@@ -221,13 +223,25 @@ function toResultEnvelope(result: StoredAnalysisResult) {
 }
 
 async function settleUsageOrLog(
+    userId: string,
     usageEventId: string,
     status: "succeeded" | "failed",
-    actualAttempts: number,
+    actualAttempts: number | null,
     correlation: { caseId: string; runId: string },
 ): Promise<void> {
     try {
-        await settleUsage(repository.prisma, usageEventId, status, actualAttempts);
+        if (actualAttempts === null) {
+            safeWorkflowLog("error", "usage_reconciliation_required", {
+                usageEventId, ...correlation, actualAttempts, status, outcome: "unknown_attempts",
+            });
+            return;
+        }
+        const outcome = await settleUsage(repository.prisma, {
+            userId, usageEventId, analysisCaseId: correlation.caseId, analyzeRunId: correlation.runId,
+        }, status, actualAttempts);
+        safeWorkflowLog(outcome === "settled" || outcome === "already_settled" ? "info" : "error",
+            outcome === "settled" || outcome === "already_settled" ? "usage_settlement_outcome" : "usage_reconciliation_required",
+            { usageEventId, ...correlation, actualAttempts, status, outcome });
     } catch (error) {
         // 利用量集計は運用上補正できるため、分析結果やcase復旧の成否を巻き戻しません。
         safeWorkflowLog("error", "usage_reconciliation_required", {

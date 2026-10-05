@@ -22,6 +22,7 @@ const [{ PrismaClient }, { PrismaPg }] = await Promise.all([
 const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: databaseUrl, max: 2 }) });
 (globalThis as typeof globalThis & { prisma?: unknown }).prisma = prisma;
 const repository = await import('../../src/backend/v17/workflow.repository.js');
+const { settleUsage } = await import('../../src/backend/v17/rateLimit.js');
 const setup = new pg.Client({ connectionString: databaseUrl });
 let personA: string;
 let personQuota: string;
@@ -304,4 +305,56 @@ test('stale recovery locks the exact owned run and old responses cannot overwrit
   assert.equal((await repository.recoverStaleAnalysis({ ...recovery, analyzeRunId: newRun.analyzeRunId })).count, 0);
   assert.equal((await repository.findOwnedCase(USER_A, analysisCase.id))?.status, 'analyzed');
   assert.equal(await prisma.analysisResult.count({ where: { analysisCaseId: analysisCase.id } }), 1);
+});
+
+test('usage linkage is atomic and settlement targets the immutable owned run', { timeout: 15_000 }, async () => {
+  const analysisCase = await createCase();
+  // A reservation INSERT failure must roll back the preceding case start too.
+  await setup.query(`CREATE FUNCTION synthetic_usage_failure() RETURNS trigger LANGUAGE plpgsql
+    AS $$ BEGIN RAISE EXCEPTION 'synthetic reservation failure'; END $$;
+    CREATE TRIGGER synthetic_fail_usage BEFORE INSERT ON api_usage_events
+      FOR EACH ROW EXECUTE FUNCTION synthetic_usage_failure();`);
+  try {
+    await assert.rejects(repository.startAnalysis(USER_A, analysisCase.id));
+    const state = await repository.findOwnedCase(USER_A, analysisCase.id);
+    assert.equal(state?.status, 'draft');
+    assert.equal(state?.analyzeRunId, null);
+    assert.equal(state?.analyzeAttemptCount, 0);
+    assert.equal(await prisma.apiUsageEvent.count({ where: { analysisCaseId: analysisCase.id } }), 0);
+  } finally { await setup.query('DROP TRIGGER synthetic_fail_usage ON api_usage_events'); }
+  const oldRun = await repository.startAnalysis(USER_A, analysisCase.id);
+  if (oldRun.kind !== 'started') throw new Error('No linked reservation.');
+  const identity = { userId: USER_A, usageEventId: oldRun.usageEventId,
+    analysisCaseId: analysisCase.id, analyzeRunId: oldRun.analyzeRunId };
+  const event = await prisma.apiUsageEvent.findUnique({ where: { id: oldRun.usageEventId } });
+  assert.equal(event?.analysisCaseId, analysisCase.id);
+  assert.equal(event?.analyzeRunId, oldRun.analyzeRunId);
+  assert.equal(event?.costUnits, 3);
+  assert.equal(await settleUsage(prisma, { ...identity, userId: USER_B }, 'failed', 0), 'unmatched');
+  assert.equal(await settleUsage(prisma, { ...identity, analyzeRunId: USER_B }, 'failed', 0), 'unmatched');
+  await repository.failAnalysis({ userId: USER_A, caseId: analysisCase.id,
+    analyzeRunId: oldRun.analyzeRunId, failureCode: 'SYNTHETIC', failureMessage: 'Synthetic fixture.' });
+  const newRun = await repository.startAnalysis(USER_A, analysisCase.id);
+  if (newRun.kind !== 'started') throw new Error('No replacement reservation.');
+  assert.notEqual(newRun.analyzeRunId, oldRun.analyzeRunId);
+  // The current run changed. Settlement must still match only the original event/run.
+  const outcomes = await Promise.all([settleUsage(prisma, identity, 'failed', 2), settleUsage(prisma, identity, 'failed', 2)]);
+  assert.deepEqual(outcomes.sort(), ['already_settled', 'settled']);
+  assert.equal(await settleUsage(prisma, identity, 'succeeded', 1), 'conflict');
+  assert.equal((await prisma.apiUsageEvent.findUnique({ where: { id: newRun.usageEventId } }))?.costUnits, 3);
+  assert.equal((await prisma.apiUsageEvent.findUnique({ where: { id: newRun.usageEventId } }))?.status, 'allowed');
+  assert.equal((await prisma.apiUsageEvent.findUnique({ where: { id: oldRun.usageEventId } }))?.costUnits, 2);
+  const legacy = await prisma.apiUsageEvent.create({ data: { userId: USER_A, routeKey: 'analyze', costUnits: 3, status: 'allowed' } });
+  assert.equal(await settleUsage(prisma, { ...identity, usageEventId: legacy.id }, 'failed', 0), 'unmatched');
+  assert.equal((await prisma.apiUsageEvent.findUnique({ where: { id: legacy.id } }))?.costUnits, 3);
+  await assert.rejects(prisma.apiUsageEvent.create({ data: { userId: USER_A,
+    routeKey: 'analyze', analysisCaseId: analysisCase.id, costUnits: 3, status: 'allowed' } }));
+  // Preserve existing ON DELETE SET NULL retention without cascading usage through new IDs.
+  const disposableUser = '99999999-9999-4999-8999-999999999999';
+  await setup.query('INSERT INTO auth.users(id) VALUES ($1)', [disposableUser]);
+  const retained = await prisma.apiUsageEvent.create({ data: { userId: disposableUser,
+    routeKey: 'analyze', analysisCaseId: analysisCase.id, analyzeRunId: oldRun.analyzeRunId, costUnits: 3, status: 'allowed' } });
+  await setup.query('DELETE FROM auth.users WHERE id = $1', [disposableUser]);
+  assert.equal((await prisma.apiUsageEvent.findUnique({ where: { id: retained.id } }))?.userId, null);
+  assert.equal(await settleUsage(prisma, { ...identity, userId: disposableUser, usageEventId: retained.id }, 'failed', 0), 'unmatched');
 });
