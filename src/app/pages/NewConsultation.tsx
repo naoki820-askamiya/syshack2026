@@ -111,7 +111,7 @@ export function NewConsultation() {
   }, [chatMessages]);
 
   const handleNameChange = (value: string) => {
-    if (personLoading) return;
+    if (personLoading || isAnalyzing) return;
     // 手入力で名前を変えた場合、別人に以前のpersonIdを流用しない。
     setFormData(prev => ({ ...prev, personId: '', personName: value }));
     setPrefilled(false);
@@ -128,7 +128,7 @@ export function NewConsultation() {
   };
 
   const applyPerson = (person: ConsultationData) => {
-    if (personLoading) return;
+    if (personLoading || isAnalyzing) return;
     setFormData(prev => ({
       ...prev,
       personId: person.personId ?? '',
@@ -193,6 +193,9 @@ export function NewConsultation() {
         });
         assertCurrentAuthBoundary(boundary);
         personId = personRes.person.id;
+        // Acknowledged identity survives a later Case failure; do not infer unknown server outcomes.
+        setFormData(prev => prev.personName === formData.personName && resolveRelation(prev) === effectiveRelation && !prev.personId
+          ? { ...prev, personId } : prev);
       }
 
       const caseRes = await createAnalysisCase({
@@ -305,7 +308,7 @@ export function NewConsultation() {
                       ref={nameInputRef}
                       type="text"
                       id="person-name"
-                      disabled={personLoading}
+                      disabled={personLoading || isAnalyzing}
                       value={formData.personName}
                       onChange={(e) => handleNameChange(e.target.value)}
                       onFocus={() => {
@@ -326,7 +329,7 @@ export function NewConsultation() {
                               key={person.id}
                               type="button"
                               onMouseDown={(e) => e.preventDefault()}
-                              disabled={personLoading}
+                              disabled={personLoading || isAnalyzing}
                               onClick={() => applyPerson(person)}
                               className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-[#F1F4F8] transition-colors text-left"
                             >
@@ -392,7 +395,7 @@ export function NewConsultation() {
                   </div>
                 </div>
 
-                <fieldset disabled={personLoading}>
+                <fieldset disabled={personLoading || isAnalyzing}>
                   <legend className="block text-sm font-medium text-[#5B6573] mb-2">
                     相手との関係<span className="text-red-500 ml-0.5">*</span>
                   </legend>
