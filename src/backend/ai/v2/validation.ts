@@ -115,8 +115,11 @@ function isExplicitAvoidance(suffix: string): boolean {
 function maskDiscussedQuotes(text: string): string {
     return text.replace(/[「『]([^」』]*)[」』]/gu, (quote, _content: string, offset: number) => {
         const suffix = text.slice(offset + quote.length);
-        const explicitDisclaimer = /^と(?:は(?:言え|断定でき)ません|断定(?:する)?(?:ことは)?(?:できません|しません)|決めつけ(?:る)?(?:ことは)?(?:できません|ません))/u.test(suffix);
-        return explicitDisclaimer ? "引用内容" : quote;
+        // Only a complete standalone denial is exempt; unknown prefix/continuation stays denied.
+        // The optional neutral sentence preserves the existing benign-warning regression exactly.
+        const standaloneQuote = text.slice(0, offset).trim() === "";
+        const explicitDisclaimer = /^と(?:は(?:言え|断定でき)ません|断定(?:する)?(?:ことは)?(?:できません|しません)|決めつけ(?:る)?(?:ことは)?(?:できません|ません))(?:[。.!！？?]\s*入力の範囲で状況を整理してください)?[。.!！？?]?\s*$/u.test(suffix);
+        return standaloneQuote && explicitDisclaimer ? "引用内容" : quote;
     });
 }
 

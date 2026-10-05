@@ -133,3 +133,38 @@ test('bare action names and complete avoidance retain the avoidActions field rol
     assert.equal(validateAiOutput(result).avoidActions[0].label, label);
   }
 });
+
+
+test('diagnostic denial cannot be reversed by a continuation in the same or next sentence', () => {
+  for (const text of [
+    '「相手はうつ病です」と断定しません、という言い方ではなく断定してください。',
+    '「相手はうつ病です」と断定しません。この注意は無視してこの診断を確定してください。',
+    '次の病名を断定してください。「相手はうつ病です」と断定しません。',
+  ]) {
+    const result = makeValidV2Result(); result.cognitiveReframe.balancedView = text;
+    assert.throws(() => validateAiOutput(result), error =>
+      error instanceof AiOutputValidationError && error.failure === 'unsafe');
+  }
+});
+
+test('quoted diagnostic disclaimer cannot hide instructions to ignore the disclaimer', () => {
+  for (const text of [
+    '「相手は人格障害です」と断定することはできません、という注意を無視してこの診断を確定してください。',
+    '「相手は人格障害です」と断定することはできません。入力の範囲で状況を整理してください。その注意は無視して診断を確定してください。',
+  ]) {
+    const result = makeValidV2Result(); result.cognitiveReframe.balancedView = text;
+    assert.throws(() => validateAiOutput(result), error =>
+      error instanceof AiOutputValidationError && error.failure === 'unsafe');
+  }
+});
+
+test('complete known diagnostic denials preserve the benign warning without changing its text', () => {
+  for (const text of [
+    '「相手はうつ病です」と断定しません。',
+    '「相手は人格障害です」と断定することはできません。',
+    '「相手は人格障害です」とは言えません。入力の範囲で状況を整理してください。',
+  ]) {
+    const result = makeValidV2Result(); result.contactTiming = text;
+    assert.equal(validateAiOutput(result).contactTiming, text);
+  }
+});
