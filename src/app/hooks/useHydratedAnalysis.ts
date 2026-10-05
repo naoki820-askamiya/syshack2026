@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { clientTiming } from '../utils/clientTiming';
 import { useLocation, useNavigate } from 'react-router';
 import { useAuth } from '../auth/AuthContext';
 import { analyze, hydrateAnalysis } from '../api/sessionV17';
@@ -33,7 +34,13 @@ export function useHydratedAnalysis(caseId: string | undefined) {
   }, [location.state, location.pathname, location.search, location.hash, navigate]);
 
   useEffect(() => {
-    if (!caseId || (getConsultation(caseId) && normalizeAnalysis(getAnalysis(caseId)))) return;
+    if (!caseId) return;
+    const timing = clientTiming.claim(caseId, captureAuthBoundary());
+    if (getConsultation(caseId) && normalizeAnalysis(getAnalysis(caseId))) {
+      clientTiming.stage(timing, 'result_ready');
+      clientTiming.finish(timing);
+      return () => clientTiming.release(timing);
+    }
     let active = true;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const controller = new AbortController();
@@ -51,10 +58,11 @@ export function useHydratedAnalysis(caseId: string | undefined) {
       const { analysisCase } = await fetchApiJson<{ analysisCase: { status: string } }>(`/api/analysis-cases/${id}`, { signal: controller.signal });
       assertCurrentAuthBoundary(boundary);
       if (!['draft', 'failed', 'analyzing', 'analyzed'].includes(analysisCase.status)) throw new Error('分析状態を確認できませんでした。');
-      if (current()) setStatus(analysisCase.status as SavedAnalysisStatus);
+      if (current()) { setStatus(analysisCase.status as SavedAnalysisStatus); clientTiming.stage(timing, 'state'); }
       return analysisCase.status as SavedAnalysisStatus;
     };
     const check = async (start: boolean) => {
+      let resultReady = false;
       setLoading(true);
       setError('');
       try {
@@ -66,22 +74,27 @@ export function useHydratedAnalysis(caseId: string | undefined) {
         } }, start);
         if (!current()) return;
         setStatus(next);
+        clientTiming.stage(timing, 'state');
         if (next === 'analyzed') {
           if (!(getConsultation(caseId) && normalizeAnalysis(getAnalysis(caseId)))) await hydrateAnalysis(caseId);
-          if (current()) setRevision(v => v + 1);
+          if (current()) {
+            resultReady = !!(getConsultation(caseId) && normalizeAnalysis(getAnalysis(caseId)));
+            if (resultReady) clientTiming.stage(timing, 'result_ready');
+            setRevision(v => v + 1);
+          }
         } else if (next === 'analyzing' && performance.now() - startedAt < 120_000) {
           timer = setTimeout(() => { if (current()) void check(false); }, 2_000);
         }
       } catch (cause: unknown) {
         if (current()) setError(cause instanceof Error ? cause.message : '分析状態を取得できませんでした。');
       } finally {
-        if (current()) setLoading(false);
+        if (current()) { setLoading(false); if (resultReady) clientTiming.finish(timing); }
       }
     };
     void check(startRequest.caseId === caseId && startRequest.allowStart);
-    return () => { active = false; controller.abort(); if (timer !== undefined) clearTimeout(timer); };
+    return () => { clientTiming.release(timing); active = false; controller.abort(); if (timer !== undefined) clearTimeout(timer); };
   }, [caseId, authEpoch, attempt, startRequest]);
 
-  const retry = () => { setStartRequest({ caseId, allowStart: true }); setAttempt(v => v + 1); };
+  const retry = () => { if (caseId) clientTiming.retry(caseId, captureAuthBoundary()); setStartRequest({ caseId, allowStart: true }); setAttempt(v => v + 1); };
   return { consultation, view, loading, error, status, retry };
 }

@@ -34,6 +34,7 @@ function scenario(options: { person?: () => Promise<unknown>; failure?: unknown 
     '../api/sessionV17': { createPerson: async () => { creates++; return options.person ? options.person() : { person: { id: 'acknowledged-person' } }; },
       createAnalysisCase: async (body: unknown) => { caseBodies.push(body); if (caseBodies.length === 1) throw options.failure ?? new Error('synthetic Case400'); return { analysisCase: { id: 'saved-case' } }; } },
     '../api/client': { fetchApiJson: () => { throw new Error('unexpected GET'); } },
+    '../utils/clientTiming': { clientTiming: new Proxy({}, { get: () => () => null }) },
     '../utils/authBoundary': { captureAuthBoundary: () => ({ ...current }), isCurrentAuthBoundary: (b: any) => b.userId === current.userId && b.epoch === current.epoch, assertCurrentAuthBoundary: (b: any) => { if (b.userId !== current.userId || b.epoch !== current.epoch) throw new Error('synthetic stale'); } },
     '../api/consultationMapper': { relationshipLabel: () => '上司' },
     '../utils/storage': { getConsultations: () => [], saveConsultation: (value: unknown) => saved.push(value) },

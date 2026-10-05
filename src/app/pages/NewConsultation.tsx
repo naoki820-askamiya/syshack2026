@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { clientTiming, type TimingToken } from '../utils/clientTiming';
 import { useNavigate, useSearchParams } from 'react-router';
 import { ArrowLeft, Send, MessageSquare, PenLine, X, ChevronDown, AlertCircle, UserCheck } from 'lucide-react';
 import type { ConsultationData, RelationType } from '../types';
@@ -36,6 +37,8 @@ export function NewConsultation() {
   const [searchParams] = useSearchParams();
   const chatEndRef = useRef<HTMLDivElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
+  const timingRef = useRef<TimingToken | null>(null);
+  useEffect(() => () => clientTiming.cancelSubmit(timingRef.current), []);
 
   const resolveInitialData = () => {
     const personIdParam = searchParams.get('personId');
@@ -180,6 +183,8 @@ export function NewConsultation() {
     );
 
     const boundary = captureAuthBoundary();
+    const timing = clientTiming.begin('submit', boundary);
+    timingRef.current = timing;
     setIsAnalyzing(true);
     
     try {
@@ -210,6 +215,7 @@ export function NewConsultation() {
       });
       assertCurrentAuthBoundary(boundary);
       const caseId = caseRes.analysisCase.id;
+      clientTiming.ack(timing, caseId);
 
       // DBが正本であり、このキャッシュは直後の画面遷移を滑らかにする目的に限定します。
       const consultation: ConsultationData = {
@@ -226,9 +232,11 @@ export function NewConsultation() {
         gender: formData.gender,
       };
       saveConsultation(consultation, boundary);
+      clientTiming.handoff(timing);
       navigate(`/analysis/${caseId}`, { state: { startAnalysis: true } });
 
     } catch (error: unknown) {
+      clientTiming.fail(timing);
       if (isCurrentAuthBoundary(boundary)) setApiError(error instanceof Error ? error.message : "サーバーとの通信に失敗しました。時間をおいて再試行してください。");
     } finally {
       setIsAnalyzing(false);

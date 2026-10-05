@@ -44,6 +44,7 @@ test('pending selected Person lookup disables identity edits and preserves unrel
     'lucide-react':new Proxy({}, {get:(_target,key)=>String(key)}),
     '../api/sessionV17':{createPerson:()=>{throw new Error('unexpected create');},createAnalysisCase:()=>{throw new Error('unexpected create');}},
     '../api/client':{fetchApiJson:()=>response},
+    '../utils/clientTiming': { clientTiming: new Proxy({}, { get: () => () => null }) },
     '../utils/authBoundary':{captureAuthBoundary:()=>boundary,isCurrentAuthBoundary:()=>true,assertCurrentAuthBoundary:()=>{}},
     '../api/consultationMapper':{relationshipLabel:()=> '同僚'},
     '../utils/storage':{getConsultations:()=>[],saveConsultation:()=>{}},

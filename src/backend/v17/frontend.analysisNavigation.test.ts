@@ -65,7 +65,8 @@ function scenario({ start = true, cached = false, unreadable = false } = {}) {
       '../utils/storage': { getConsultation: () => cached ? {} : undefined, getAnalysis: () => cached ? {} : undefined },
       '../utils/analysisViewModel': { normalizeAnalysis: () => cached ? {} : null },
       '../utils/analysisRetry': retryLogic,
-      '../utils/authBoundary': {
+      '../utils/clientTiming': { clientTiming: new Proxy({}, { get: () => () => null }) },
+    '../utils/authBoundary': {
         captureAuthBoundary: () => boundary, assertCurrentAuthBoundary: () => {}, isCurrentAuthBoundary: () => true,
       },
     });
