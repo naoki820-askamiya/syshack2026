@@ -43,3 +43,56 @@ The smallest future transport-bound design must retain the initiating recovery u
 Before adoption: genuine recovery versus ordinary sign-in; missing/invalid/expired/reused/reloaded callback; successful update and single-use intent; validation and retry; delayed initialization/session selection; user switch before dispatch; user switch during update; no superseded SDK session restoration; unchanged default auth/client configuration; exact route rewrites; accessible errors/busy controls; full tests/typecheck/build and two reviews.
 
 Redirect allowlist, email templates/delivery, deployed deep-route reload, actual recovery callback/provider errors, browser keyboard/screen-reader behavior, and real-session concurrency remain UNKNOWN / NOT_RUN. No live Auth request or provider configuration change was made.
+
+## Approved residual feasibility probe
+
+The revised supported private-client candidate is tested with the installed
+GoTrueClient public APIs only: initialize/setSession/updateUser, separate memory
+storage keys, URL detection OFF and automatic refresh OFF. Main singleton and
+AuthProvider are unchanged. All transport is injected synthetic fetch; the test
+is an executable design probe, not a runtime reset route or successful email flow.
+
+Candidate transport allows only captured-token GET/PUT on the exact user endpoint
+while the initiating user/epoch is current. Refresh endpoints receive a synthetic
+terminal error and are never dispatched to a provider. Any refresh attempt latches
+the candidate closed so later user requests cannot dispatch. This extra latch is
+necessary: initial probe7/8 passed and the near-expiry case failed because installed
+SDK preserves a still-valid token after non-retryable refresh failure and can
+continue to PUT. Source and actual SDK reproduce this; autoRefreshToken=false by
+itself is insufficient. Corrected candidate plus existing unsafe-characterization
+tests9/9 pass/0skip, including same-user logout/relogin.
+That case models logout by invalidating the shared boundary, then uses the real
+SDK signInWithPassword; it is not real signOut/AuthProvider integration. Both
+synthetic clients have URL detection OFF, so callback initialization is untested.
+Independent review caught a Node Response.json readonly fixture typing error;
+Object.defineProperty retains the same delayed body seam and fixes server build.
+
+Fresh supported session update preserves the main token and boundary. Switching
+before session initialization produces no private password PUT. Switching during
+response or delayed JSON parsing permits private SDK publication only to the
+private client; main B stays B and the application outcome is stale. Near-expiry
+and expired sessions produce no provider refresh or password PUT. A PUT already
+sent for A can still change A's password on the provider; isolation cannot undo it.
+
+R14 remains PARTIAL. The real existing singleton consumes URL callbacks; a private
+client alone does not isolate that initialization. PASSWORD_RECOVERY is an SDK
+callback classification, not cryptographic evidence of a reset-only capability.
+Before wiring, define/test central callback observation, finite in-memory recovery
+authorization and revocation/consumption, ordinary sign-in denial, duplicate update,
+cancel/unmount/reload, failure retry, exact route rewrites and real email/redirect
+behavior. There is no new storage policy, global signOut, forced token revocation,
+SDK patch or unfinished email-request link in the product.
+
+The single-use email verification code and the bearer session returned after that
+verification have different lifetimes. Reusing a still-valid issued bearer-session
+callback is not proven impossible by a one-use in-memory page grant. Rejecting all
+such cross-reload replay needs an adopted server/provider contract; inventing a
+new Auth/token-storage design is outside this harness. This acceptance condition
+is not silently weakened to wire the reset route.
+
+Local readiness inspection found no Supabase CLI and no cached Supabase Auth stack
+images. PostgreSQL owner-role tests remain separate from Auth/RLS evidence.
+Do not run init-shadow-db.sql on a real Supabase database; its auth.uid stub cannot
+prove client roles or RLS. Live Auth/RLS/browser remain NOT_RUN, with handoff steps.
+Cycle2 independent and skeptical reviewers APPROVE experimental scope only;
+each reran11/11 focused cases and server typecheck. No runtime adoption is claimed.
