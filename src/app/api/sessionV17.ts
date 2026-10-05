@@ -13,30 +13,34 @@ const RELATIONSHIP_TYPES: Record<string, string> = {
   配偶者: 'spouse', 友人: 'friend', 家族: 'family', その他: 'other',
 };
 
-async function listAllPersons(): Promise<ApiPerson[]> {
+async function listAllPersons(checkCurrent: () => void, recordFailure: (error: unknown) => never): Promise<ApiPerson[]> {
   const persons: ApiPerson[] = [];
   let offset = 0;
   while (true) {
+    checkCurrent();
     const payload = await fetchApiJson<{
       persons: ApiPerson[];
       pagination: { hasMore: boolean };
-    }>(`/api/persons?limit=50&offset=${offset}`);
+    }>(`/api/persons?limit=50&offset=${offset}`).catch(recordFailure);
+    checkCurrent();
     persons.push(...payload.persons);
     if (!payload.pagination.hasMore) return persons;
     offset += payload.persons.length;
   }
 }
 
-async function listAllCases(personId: string): Promise<ApiAnalysisCase[]> {
+async function listAllCases(personId: string, checkCurrent: () => void, recordFailure: (error: unknown) => never): Promise<ApiAnalysisCase[]> {
   const cases: ApiAnalysisCase[] = [];
   let offset = 0;
   while (true) {
+    checkCurrent();
     const payload = await fetchApiJson<{
       analysisCases: ApiAnalysisCase[];
       pagination: { hasMore: boolean };
     }>(
       `/api/persons/${personId}/analysis-cases?limit=50&offset=${offset}`,
-    );
+    ).catch(recordFailure);
+    checkCurrent();
     cases.push(...payload.analysisCases);
     if (!payload.pagination.hasMore) return cases;
     offset += payload.analysisCases.length;
@@ -46,11 +50,38 @@ async function listAllCases(personId: string): Promise<ApiAnalysisCase[]> {
 export async function loadConsultationHistory(): Promise<ConsultationData[]> {
   const boundary = captureAuthBoundary();
   assertCurrentAuthBoundary(boundary);
-  const persons = await listAllPersons();
-  assertCurrentAuthBoundary(boundary);
-  const casesByPerson = await Promise.all(
-    persons.map(async (person) => ({ person, cases: await listAllCases(person.id) })),
-  );
+  let failed = false;
+  let firstFailure: unknown;
+  const checkCurrent = () => {
+    if (failed) throw firstFailure;
+    assertCurrentAuthBoundary(boundary);
+  };
+  const recordFailure = (error: unknown): never => {
+    if (!failed) { failed = true; firstFailure = error; }
+    throw firstFailure;
+  };
+  const persons = await listAllPersons(checkCurrent, recordFailure);
+  checkCurrent();
+  const casesByPerson: { person: ApiPerson; cases: ApiAnalysisCase[] }[] = new Array(persons.length);
+  let nextPerson = 0;
+  // Limit only this History read's fan-out; parallel writes and other API calls are unchanged.
+  const worker = async () => {
+    try {
+      while (true) {
+        checkCurrent();
+        const index = nextPerson++;
+        if (index >= persons.length) return;
+        const person = persons[index];
+        casesByPerson[index] = { person, cases: await listAllCases(person.id, checkCurrent, recordFailure) };
+      }
+    } catch (error) {
+      recordFailure(error);
+    }
+  };
+  // Promise.all observes every peer rejection but returns the first failure promptly.
+  // In-flight GETs may finish; checkCurrent prevents any subsequent page/Person request.
+  await Promise.all(Array.from({ length: Math.min(4, persons.length) }, worker));
+  checkCurrent();
   const consultations = casesByPerson
     .flatMap(({ person, cases }) => cases.map((analysisCase) => toConsultation(analysisCase, person)))
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());

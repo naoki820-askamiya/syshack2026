@@ -117,7 +117,7 @@ async function scenario(personCount, casesPerPerson, failure = null) {
   const requestsAtReturn = requestLog.length;
   const activeAtReturn = active;
   sampleMemory();
-  // Promise.all rejects without cancelling peer requests. Let those peers settle before the next scenario.
+  // Promise.all reports the first failure promptly. Observe in-flight peer settling before the next scenario.
   do { await delay(1); } while (active > 0);
   const settledAfterMs = performance.now() - started;
   sampleMemory();
@@ -155,7 +155,7 @@ const report = {
     'Time includes fixed synthetic timers, JSON conversion and local CPU; not production latency.',
     'No React render, browser layout, auth provider, real network, DB, query plan or production capacity measurement.',
     'Memory deltas/sampled peaks include module/transpile overhead and GC variability; fixture construction is excluded.',
-    'Failure drain observes continued requests; no product runtime behavior was changed.',
+    'Current runtime limits History case reads to four workers and stops new requests after failure/auth change; already in-flight reads can settle.',
   ], rows,
 };
 const target = resolve(root, 'experiments/performance/history.json');
