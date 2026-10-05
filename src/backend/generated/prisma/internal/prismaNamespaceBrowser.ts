@@ -243,6 +243,8 @@ export const ApiUsageEventScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
   guestTrialAttemptId: 'guestTrialAttemptId',
+  analysisCaseId: 'analysisCaseId',
+  analyzeRunId: 'analyzeRunId',
   routeKey: 'routeKey',
   ipHash: 'ipHash',
   userAgentHash: 'userAgentHash',
