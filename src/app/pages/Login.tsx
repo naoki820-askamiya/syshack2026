@@ -92,14 +92,9 @@ export function Login() {
               />
             </div>
 
-            <div className="text-right">
-              <button
-                type="button"
-                className="text-sm text-[#0F4C81] hover:text-[#0C3E69]"
-              >
-                パスワードを忘れた方
-              </button>
-            </div>
+            <p className="text-sm text-[#5B6573]">
+              パスワード再設定は現在利用できません。
+            </p>
 
             {isSubmitting && <p role="status" className="text-sm text-[#5B6573]">処理中です…</p>}
             <button
