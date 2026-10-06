@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import type { AddressInfo } from "node:net";
 import type { Server } from "node:http";
 import test, { after, before } from "node:test";
-import { AuthApiError } from '@supabase/auth-js';
+import { AuthApiError, AuthRetryableFetchError } from '@supabase/auth-js';
 
 process.env.DATABASE_URL ??= "postgresql://test:test@127.0.0.1:5432/kigen404_test";
 process.env.SUPABASE_URL ??= "https://test.supabase.co";
@@ -526,3 +526,53 @@ test("withdrawing previously allowed Feedback invalidates its Profile even when 
     assert.equal(storage.stored?.allowPersonalizationUse, false);
     assert.equal(storage.staleWrites, 1);
 });
+
+for (const rejection of [new Error('SYNTHETIC_PRIVATE'), new AuthApiError('SYNTHETIC_PRIVATE', 502, 'PRIVATE_CODE'), null]) {
+    test('/me and protected routes preserve safe infrastructure500 and one auth call', async t => {
+        const auth = replaceMethod(t, supabaseAuth.auth, 'getUser', async () => { throw rejection; });
+        for (const path of ['/api/me', '/api/persons']) {
+            const response = await fetch(`${baseUrl}${path}`, { headers: { authorization: 'Bearer SYNTHETIC_PRIVATE_TOKEN', 'x-request-id': 'me-infra-error' }, signal: AbortSignal.timeout(2000) });
+            assert.equal(response.status, 500);
+            assert.equal(response.headers.get('x-request-id'), 'me-infra-error');
+            assert.deepEqual(await response.json(), { error: { code: 'INTERNAL_SERVER_ERROR', message: 'サーバー内部エラーが発生しました。', status: 500, requestId: 'me-infra-error' } });
+        }
+        assert.equal(auth.mock.callCount(), 2);
+    });
+}
+test('/me retains missing/null/invalid identity contract and normal parallel verification', async t => {
+    const auth = replaceMethod(t, supabaseAuth.auth, 'getUser', async (token: string) => token === 'valid-test-token' ? { data: { user: { id: USER_ID, email: 'user@example.com' } }, error: null } : { data: { user: null }, error: token === 'null-user' ? null : new Error('SYNTHETIC_PRIVATE') });
+    assert.deepEqual(await request('/api/me'), { status: 200, body: { user: null } });
+    assert.equal(auth.mock.callCount(), 0);
+    for (const token of ['invalid', 'null-user']) {
+        const response = await request('/api/me', { headers: { authorization: `Bearer ${token}` } });
+        assert.equal(response.status, 401); assert.equal((response.body.error as any).code, 'AUTH_INVALID');
+    }
+    const results = await Promise.all(Array.from({ length: 3 }, () => request('/api/me', authorizedJson('GET'))));
+    for (const response of results) assert.deepEqual(response, { status: 200, body: { user: { id: USER_ID, email: 'user@example.com' } } });
+    assert.equal(auth.mock.callCount(), 5);
+});
+
+for (const sdkError of [...[0, 502, 503, 504].map(status => new AuthRetryableFetchError('SYNTHETIC_PRIVATE_SDK_ERROR', status)), new AuthApiError('SYNTHETIC_PRIVATE_SDK_ERROR', 500, 'PRIVATE_CODE')]) {
+    test('returned known SDK infrastructure error preserves safe500: ' + sdkError.status, async t => {
+        const auth = replaceMethod(t, supabaseAuth.auth, 'getUser', async () => ({ data: { user: null }, error: sdkError }));
+        for (const path of ['/api/me', '/api/persons']) {
+            const response = await fetch(`${baseUrl}${path}`, { headers: { authorization: 'Bearer SYNTHETIC_PRIVATE_TOKEN', 'x-request-id': 'returned-sdk-infra' }, signal: AbortSignal.timeout(2000) });
+            assert.equal(response.status, 500);
+            assert.equal(response.headers.get('x-request-id'), 'returned-sdk-infra');
+            assert.deepEqual(await response.json(), { error: { code: 'INTERNAL_SERVER_ERROR', message: 'サーバー内部エラーが発生しました。', status: 500, requestId: 'returned-sdk-infra' } });
+        }
+        assert.equal(auth.mock.callCount(), 2);
+    });
+}
+for (const sdkError of [new AuthApiError('SYNTHETIC_PRIVATE_INVALID_JWT', 400, 'bad_jwt'), new AuthApiError('SYNTHETIC_PRIVATE_INVALID_JWT', 401, 'bad_jwt'), Object.assign(new Error('SYNTHETIC_PRIVATE_UNKNOWN'), { name: 'AuthRetryableFetchError', status: 503 })]) {
+    test('returned invalid credentials or unrecognized ordinary error preserves401: ' + sdkError.status, async t => {
+        const auth = replaceMethod(t, supabaseAuth.auth, 'getUser', async () => ({ data: { user: null }, error: sdkError }));
+        for (const [path, code] of [['/api/me', 'AUTH_INVALID'], ['/api/persons', 'UNAUTHENTICATED']]) {
+            const response = await request(path, authorizedJson('GET'));
+            assert.equal(response.status, 401);
+            assert.equal((response.body.error as { code: string }).code, code);
+            assert.equal(JSON.stringify(response.body).includes('SYNTHETIC_PRIVATE'), false);
+        }
+        assert.equal(auth.mock.callCount(), 2);
+    });
+}

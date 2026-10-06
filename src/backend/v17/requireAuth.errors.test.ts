@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { AuthApiError, AuthRetryableFetchError } from '@supabase/supabase-js';
 process.env.SUPABASE_URL ??= 'https://test.invalid';
 process.env.SUPABASE_PUBLISHABLE_KEY ??= 'synthetic-publishable';
 const [{ requireAuth }, { supabaseAuth }] = await Promise.all([import('../middlewares/requireAuth.js'), import('../auth/supabase.js')]);
@@ -37,3 +38,15 @@ test('successful SDK auth retains ownership publication and missing header sends
   await requireAuth({ headers: {} } as any, {} as any, error => { next.push(error); });
   assert.equal(next[1].status, 401); assert.equal(calls, 1);
 });
+
+for (const sdkError of [new AuthRetryableFetchError('Synthetic private SDK detail', 0), new AuthRetryableFetchError('Synthetic private SDK detail', 503), new AuthApiError('Synthetic private SDK detail', 500, 'PRIVATE_CODE')]) {
+  test('returned SDK infrastructure error is delivered once without publishing identity: ' + sdkError.status, async t => {
+    const next: any[] = [];
+    replace(t, async () => ({ data: { user: { id: 'must-not-publish', email: 'synthetic@example.invalid' } }, error: sdkError }));
+    const req: any = { headers: { authorization: 'Bearer synthetic-token' } };
+    await requireAuth(req, {}, error => { next.push(error); });
+    assert.equal(next.length, 1); assert.equal(next[0].status, 500); assert.equal(next[0].code, 'INTERNAL_SERVER_ERROR');
+    assert.equal(next[0].message, 'サーバー内部エラーが発生しました。'); assert.equal(next[0].cause, sdkError);
+    assert.equal(req.userId, undefined); assert.equal(req.userEmail, undefined);
+  });
+}
