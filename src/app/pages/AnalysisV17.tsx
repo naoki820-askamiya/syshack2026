@@ -71,7 +71,7 @@ export function AnalysisV17() {
           <section className="rounded-2xl border border-[#D9E1EA] bg-white p-5 shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-xs text-[#5B6573]">{consultation.personName}さんとの状況</p>
+                <p className="text-xs text-[#5B6573]">{consultation.personName}との状況</p>
                 <h2 className="mt-1 text-lg font-semibold text-[#1F2A37]">{view.summary}</h2>
               </div>
               <span className={`rounded-full border px-3 py-1 text-xs font-medium ${conf.className}`}>

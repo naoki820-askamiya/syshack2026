@@ -309,7 +309,7 @@ export function NewConsultation() {
             <div className="mb-6 flex items-center gap-2 bg-[#E8F1F8] border border-[#D9E1EA] text-[#0F4C81] rounded-lg px-4 py-3 text-sm">
               <UserCheck className="w-4 h-4 flex-shrink-0" />
               <span>
-                保存済みの <strong>{formData.personName}</strong> さんの情報を入力しました。内容を確認してください。
+                保存済みの<strong>{formData.personName}</strong>の情報を入力しました。内容を確認してください。
               </span>
             </div>
           )}

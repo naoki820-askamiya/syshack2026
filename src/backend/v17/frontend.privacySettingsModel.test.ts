@@ -17,3 +17,20 @@ test('successful retry preserves original OFF values when saved', async () => {
   });
   assert.deepEqual(result.settings, off);
 });
+
+test('privacy GET metadata is not sent to the strict PATCH API', async () => {
+  const flags = { ...off, personalizationEnabled: true, usePersonProfile: true, useFeedbackForContext: true };
+  const loaded = {
+    ...flags,
+    id: 'privacy-record-id',
+    userId: 'authenticated-owner-id',
+    createdAt: '2026-10-06T00:00:00.000Z',
+    updatedAt: '2026-10-06T00:00:00.000Z',
+  };
+  const result = await saveLoadedPrivacySettings(loaded, async (settings) => {
+    assert.deepEqual(settings, flags);
+    return { settings };
+  });
+  assert.deepEqual(result.settings, flags);
+  assert.equal(loaded.id, 'privacy-record-id');
+});

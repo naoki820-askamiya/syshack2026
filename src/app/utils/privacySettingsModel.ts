@@ -10,5 +10,11 @@ export async function saveLoadedPrivacySettings(
   update: (settings: PrivacySettings) => Promise<{ settings: PrivacySettings }>,
 ): Promise<{ settings: PrivacySettings }> {
   if (!settings) throw new Error('設定を取得してから保存してください。');
-  return update(settings);
+  // GET also returns database metadata; TypeScript's interface does not remove it at runtime.
+  return update({
+    personalizationEnabled: settings.personalizationEnabled,
+    usePersonProfile: settings.usePersonProfile,
+    useUserPatternSummary: settings.useUserPatternSummary,
+    useFeedbackForContext: settings.useFeedbackForContext,
+  });
 }

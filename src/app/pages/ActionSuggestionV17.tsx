@@ -45,7 +45,7 @@ export function ActionSuggestionV17() {
 
         <main className="mx-auto max-w-5xl space-y-5 p-4 lg:p-8">
           <section className="rounded-2xl border border-[#D9E1EA] bg-white p-5 shadow-sm">
-            <p className="text-xs text-[#5B6573]">{consultation.personName}さんとの状況</p>
+            <p className="text-xs text-[#5B6573]">{consultation.personName}との状況</p>
             <h2 className="mt-1 text-lg font-semibold text-[#1F2A37]">{view.summary}</h2>
           </section>
 
