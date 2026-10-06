@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router';
 import { AlertTriangle, ArrowLeft, CheckCircle2, Copy, MessageSquare, XCircle } from 'lucide-react';
 import { Navigation } from '../components/Navigation';
 import { useHydratedAnalysis } from '../hooks/useHydratedAnalysis';
+import { actionSafetyLabel, type ActionSafety } from '../utils/analysisViewModel';
 
 const TONES = {
   formal: { label: '丁寧', className: 'bg-[#E8F1F8] text-[#0F4C81]' },
@@ -120,7 +121,7 @@ export function ActionSuggestionV17() {
 function ListCard({ icon, title, items, color }: {
   icon: React.ReactNode;
   title: string;
-  items: { label: string; reason: string }[];
+  items: { label: string; reason: string; safety?: ActionSafety }[];
   color: 'green' | 'red';
 }) {
   const background = color === 'green' ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100';
@@ -129,11 +130,12 @@ function ListCard({ icon, title, items, color }: {
       <div className="mb-3 flex items-center gap-2">{icon}<h2 className="font-semibold text-[#1F2A37]">{title}</h2></div>
       <div className="space-y-2">
         {items.map((item, index) => (
-          <div key={`${item.label}-${index}`} className={`rounded-xl border p-3 ${background}`}>
+          <div key={`${item.label}-${index}`} className={`rounded-xl border p-3 ${color === 'green' && item.safety !== 'safe' ? 'bg-amber-50 border-amber-200' : background}`}>
             <p className="flex gap-2 text-sm font-medium text-[#1F2A37]">
-              {color === 'green' ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" /> : <XCircle className="mt-0.5 h-4 w-4 shrink-0" />}
+              {color === 'green' && item.safety !== 'safe' ? <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /> : color === 'green' ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" /> : <XCircle className="mt-0.5 h-4 w-4 shrink-0" />}
               {item.label}
             </p>
+            {color === 'green' && <p className="mt-1 pl-6 text-xs font-medium text-[#5B6573]">{actionSafetyLabel(item.safety ?? 'unknown')}</p>}
             {item.reason && <p className="mt-1 pl-6 text-xs text-[#5B6573]">{item.reason}</p>}
           </div>
         ))}

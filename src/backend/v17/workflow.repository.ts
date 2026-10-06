@@ -1,8 +1,11 @@
 import { Prisma } from "../generated/prisma/client.js";
 import { prisma } from "../prisma/client.js";
 import type { KigenAnalysisResultV2 } from "../ai/v2/output.schema.js";
-import type { AnalysisContextSnapshotV4 } from "../ai/v2/context.js";
+import type { AnalysisContextSnapshotV5 } from "../ai/v2/context.js";
 import { reserveAnalyzeUsageAndStartCase } from "./rateLimit.js";
+import { buildPersonSnapshot } from "./schemas.js";
+import { resourceNotFound } from "./http.js";
+import { assertSameCreateIntent, caseIntentFingerprint, isCreateIntentCollision } from './createIntent.js';
 
 export async function createCase(
     userId: string,
@@ -15,10 +18,30 @@ export async function createCase(
         eventFacts: string;
         userResponseType: string;
         userResponseText: string | null;
-        personSnapshot: Prisma.InputJsonValue;
+        personSnapshot?: Prisma.InputJsonValue;
+        createIntentKey?: string;
     },
 ) {
-    return prisma.analysisCase.create({ data: { ...input, userId } });
+    const intent = input.createIntentKey ? { createIntentKey: input.createIntentKey.toLowerCase(), createIntentFingerprint: caseIntentFingerprint(input) } : {};
+    try { return await prisma.$transaction(async tx => {
+        // A short shared row lock orders snapshot+insert against Person UPDATE/archive.
+        // Caller-supplied snapshots are never authoritative, including internal stale drafts.
+        const people = await tx.$queryRaw<Array<{ displayName: string; relationshipType: string }>>`
+            SELECT display_name AS "displayName", relationship_type AS "relationshipType"
+            FROM persons
+            WHERE id = ${input.personId}::uuid AND user_id = ${userId}::uuid AND archived_at IS NULL
+            FOR SHARE
+        `;
+        if (!people[0]) throw resourceNotFound();
+        return tx.analysisCase.create({ data: { ...input, userId, ...intent, personSnapshot: buildPersonSnapshot(people[0]) } });
+    }); } catch (error) {
+        // PostgreSQL aborts a transaction on UNIQUE failure; replay only after rollback.
+        if (!intent.createIntentKey || !isCreateIntentCollision(error, 'analysis_cases')) throw error;
+        const existing = await prisma.analysisCase.findFirst({ where: { userId, createIntentKey: intent.createIntentKey } });
+        if (!existing || !await prisma.person.findFirst({ where: { userId, id: existing.personId, archivedAt: null } })) throw resourceNotFound();
+        assertSameCreateIntent(existing.createIntentFingerprint, intent.createIntentFingerprint!);
+        return existing;
+    }
 }
 
 export async function findOwnedCase(userId: string, caseId: string) {
@@ -54,7 +77,7 @@ export async function completeAnalysis(input: {
     resultSchemaVersion: string;
     model: string;
     result: KigenAnalysisResultV2;
-    context: AnalysisContextSnapshotV4;
+    context: AnalysisContextSnapshotV5;
     usedCaseIds: string[];
     usedFeedbackIds: string[];
     personProfileId: string | null;
@@ -132,6 +155,61 @@ export async function failAnalysis(input: {
             failureMessage: input.failureMessage,
         },
     });
+}
+
+type AnalysisRunState = {
+    status: string;
+    analyzeRunId: string | null;
+    analyzeStartedAt: Date | null;
+};
+
+export function isStaleAnalysis(state: AnalysisRunState, cutoff: Date): boolean {
+    if (!Number.isFinite(cutoff.getTime())) throw new RangeError("Invalid stale analysis cutoff");
+    return state.status === "analyzing" && state.analyzeRunId !== null &&
+        state.analyzeStartedAt !== null && state.analyzeStartedAt.getTime() < cutoff.getTime();
+}
+
+export async function recoverStaleAnalysis(input: {
+    userId: string;
+    caseId: string;
+    analyzeRunId: string;
+    cutoff: Date;
+}) {
+    // The caller chooses the cutoff; this helper does not install a scheduler or production threshold.
+    const cutoff = new Date(input.cutoff.getTime());
+    if (!Number.isFinite(cutoff.getTime()) || cutoff.getTime() > Date.now()) {
+        throw new RangeError("Invalid or future stale analysis cutoff");
+    }
+    const recovered = await prisma.$transaction(async (tx) => {
+        await tx.$queryRaw<Array<{ locked: number }>>`
+            SELECT 1 AS locked
+            FROM pg_advisory_xact_lock(hashtextextended(${`analysis-case:${input.caseId}`}, 0))
+        `;
+        const current = await tx.analysisCase.findFirst({
+            where: { id: input.caseId, userId: input.userId },
+            select: { status: true, analyzeRunId: true, analyzeStartedAt: true },
+        });
+        if (!current || current.analyzeRunId !== input.analyzeRunId || !isStaleAnalysis(current, cutoff)) {
+            return { count: 0 };
+        }
+        // Completion or a new run that wins the race also makes this compare-and-swap fail safely.
+        return tx.analysisCase.updateMany({
+            where: {
+                id: input.caseId, userId: input.userId, status: "analyzing",
+                analyzeRunId: input.analyzeRunId, analyzeStartedAt: { lt: cutoff },
+            },
+            data: {
+                status: "failed", failureCode: "ANALYSIS_STALE",
+                failureMessage: "分析処理が途中で停止した可能性があります。",
+            },
+        });
+    });
+    if (recovered.count > 0) {
+        try {
+            console.info("analysis_stale_recovered", { caseId: input.caseId, runId: input.analyzeRunId, status: "failed" });
+        } catch { /* Monitoring must not change an already committed recovery result. */ }
+    }
+    return recovered;
 }
 
 export async function findLatestResult(userId: string, caseId: string) {

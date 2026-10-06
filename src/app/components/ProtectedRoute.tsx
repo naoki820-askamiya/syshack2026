@@ -1,9 +1,9 @@
 import { Navigate, useLocation } from 'react-router';
-import type { ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import { useAuth } from '../auth/AuthContext';
 
 export function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, loading, authEpoch } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -19,5 +19,5 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
     return <Navigate to={`/login?returnTo=${encodeURIComponent(returnTo)}`} replace />;
   }
 
-  return <>{children}</>;
+  return <Fragment key={`${user.id}:${authEpoch}`}>{children}</Fragment>;
 }

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import type { AddressInfo } from "node:net";
 import type { Server } from "node:http";
 import test, { after, before } from "node:test";
+import { AuthApiError, AuthRetryableFetchError } from '@supabase/auth-js';
 
 process.env.DATABASE_URL ??= "postgresql://test:test@127.0.0.1:5432/kigen404_test";
 process.env.SUPABASE_URL ??= "https://test.supabase.co";
@@ -65,6 +66,19 @@ function authenticateAs(t: test.TestContext, userId = USER_ID) {
     }) as never);
 }
 
+function mockPersonTransaction(t: test.TestContext) {
+    replaceMethod(t, prisma.personProfile, "updateMany", async () => ({ count: 0 }));
+    replaceMethod(t, prisma, "$transaction", async (operation) => {
+        if (typeof operation !== "function") return Promise.all(operation);
+        return operation({ person: prisma.person, personProfile: prisma.personProfile, analysisCase: prisma.analysisCase,
+            $queryRaw: async (sql: TemplateStringsArray, personId: string, userId: string) => {
+                assert.match(sql.join(""), /FOR SHARE/);
+                const owned = await prisma.person.findFirst({ where: { id: personId, userId, archivedAt: null } });
+                return owned ? [owned] : [];
+            } });
+    });
+}
+
 async function request(
     path: string,
     init: RequestInit = {},
@@ -104,6 +118,20 @@ function person(overrides: Record<string, unknown> = {}) {
     };
 }
 
+test('Person POST accepts dedicated intent key but never exposes key/fingerprint; PATCH rejects it', async t => {
+    authenticateAs(t);
+    const key = '88888888-8888-4888-8888-888888888888';
+    replaceMethod(t, prisma.person, 'create', async ({ data }) => {
+        assert.equal(data.createIntentKey, key); assert.match(data.createIntentFingerprint, /^v1:[a-f0-9]{64}$/);
+        assert.equal(data.displayName, 'Synthetic retry'); return person(data);
+    });
+    const response = await request('/api/persons', authorizedJson('POST', { displayName: ' Synthetic retry ', relationshipType: 'friend', createIntentKey: key }));
+    assert.equal(response.status, 201);
+    assert.equal(Object.hasOwn(response.body.person as object, 'createIntentKey'), false);
+    assert.equal(Object.hasOwn(response.body.person as object, 'createIntentFingerprint'), false);
+    assert.equal((await request(`/api/persons/${PERSON_ID}`, authorizedJson('PATCH', { createIntentKey: key }))).status, 400);
+});
+
 function caseBody(personId = PERSON_ID) {
     return {
         personId,
@@ -132,6 +160,28 @@ test("protected APIs return 401 without a valid authenticated session", async (t
     assert.equal(invalid.status, 401);
     assert.equal((invalid.body.error as { code: string }).code, "UNAUTHENTICATED");
 });
+
+test('rejected auth SDK request returns safe500 with requestId before any business handler', async t => {
+    replaceMethod(t, supabaseAuth.auth, 'getUser', async () => { throw new Error('SYNTHETIC_PRIVATE_AUTH_DETAIL'); });
+    const create = replaceMethod(t, prisma.person, 'create', async () => { throw new Error('Business handler must not run'); });
+    const response = await request('/api/persons', { ...authorizedJson('POST', { displayName: 'Synthetic', relationshipType: 'friend' }),
+        headers: { authorization: 'Bearer SYNTHETIC_PRIVATE_TOKEN', 'x-request-id': 'auth-error-regression' }, signal: AbortSignal.timeout(2000) });
+    assert.equal(response.status, 500); assert.equal(create.mock.callCount(), 0);
+    assert.deepEqual(response.body.error, { code: 'INTERNAL_SERVER_ERROR', message: 'サーバー内部エラーが発生しました。', status: 500, requestId: 'auth-error-regression' });
+    assert.equal(JSON.stringify(response.body).includes('SYNTHETIC_PRIVATE'), false);
+});
+
+for (const rejection of [new AuthApiError('SYNTHETIC_PRIVATE_AUTH_DETAIL', 502, 'PRIVATE_SDK_CODE'), null]) {
+    test('auth SDK error-shaped/falsey rejection stays an internal500, never raw error or success', async t => {
+        replaceMethod(t, supabaseAuth.auth, 'getUser', async () => { throw rejection; });
+        const create = replaceMethod(t, prisma.person, 'create', async () => { throw new Error('Business handler must not run'); });
+        const response = await request('/api/persons', { ...authorizedJson('POST', { displayName: 'Synthetic', relationshipType: 'friend' }),
+            headers: { authorization: 'Bearer SYNTHETIC_PRIVATE_TOKEN', 'x-request-id': 'auth-rejected-value' }, signal: AbortSignal.timeout(2000) });
+        assert.equal(response.status, 500); assert.equal(create.mock.callCount(), 0);
+        assert.deepEqual(response.body.error, { code: 'INTERNAL_SERVER_ERROR', message: 'サーバー内部エラーが発生しました。', status: 500, requestId: 'auth-rejected-value' });
+        assert.equal(JSON.stringify(response.body).includes('PRIVATE'), false);
+    });
+}
 
 test("Person create uses authenticated userId and rejects client user_id", async (t) => {
     authenticateAs(t);
@@ -172,7 +222,7 @@ test("Person list, detail, and update are scoped to authenticated userId", async
         assert.deepEqual(args.where, { userId: USER_ID, archivedAt: null });
         return 1;
     });
-    replaceMethod(t, prisma, "$transaction", async (operations) => Promise.all(operations) as never);
+    mockPersonTransaction(t);
 
     const listed = await request("/api/persons?limit=10&offset=0", authorizedJson("GET"));
     assert.equal(listed.status, 200);
@@ -206,6 +256,7 @@ test("Person list, detail, and update are scoped to authenticated userId", async
 
 test("another user's Person cannot be read or updated", async (t) => {
     authenticateAs(t);
+    mockPersonTransaction(t);
     const findFirst = replaceMethod(t, prisma.person, "findFirst", async (args) => {
         assert.equal(args.where.userId, USER_ID);
         return null;
@@ -227,6 +278,7 @@ test("another user's Person cannot be read or updated", async (t) => {
 
 test("AnalysisCase create saves authenticated userId and Person snapshot", async (t) => {
     authenticateAs(t);
+    mockPersonTransaction(t);
     replaceMethod(t, prisma.person, "findFirst", async (args) => {
         assert.deepEqual(args.where, { id: PERSON_ID, userId: USER_ID, archivedAt: null });
         return person() as never;
@@ -251,6 +303,7 @@ test("AnalysisCase create saves authenticated userId and Person snapshot", async
 
 test("AnalysisCase create rejects another user's Person and client user_id", async (t) => {
     authenticateAs(t);
+    mockPersonTransaction(t);
     replaceMethod(t, prisma.person, "findFirst", async (args) => {
         assert.equal(args.where.userId, USER_ID);
         return null;
@@ -343,3 +396,183 @@ test("another user's resultId returns 404", async (t) => {
     assert.equal(feedback.status, 404);
     assert.equal(findResult.mock.callCount(), 1);
 });
+
+test("Feedback API preserves the 500, 501, and 1000 character contract", async (t) => {
+    authenticateAs(t);
+    replaceMethod(t, prisma.analysisResult, "findFirst", async () => ({
+        id: RESULT_ID, analysisCaseId: CASE_ID, analysisCase: { personId: PERSON_ID },
+    }));
+    replaceMethod(t, prisma.userPrivacySetting, "findUnique", async () => null);
+    const create = replaceMethod(t, prisma.analysisFeedback, "create", async (args) => ({
+        id: "88888888-8888-4888-8888-888888888888", allowPersonalizationUse: false, ...args.data,
+    }));
+    replaceMethod(t, prisma, "$transaction", async (callback) => callback({
+        analysisFeedback: { create },
+    }));
+    for (const length of [500, 501, 1000]) {
+        const outcomeNote = "記".repeat(length);
+        const response = await request("/api/analysis-results/" + RESULT_ID + "/feedback", authorizedJson("POST", {
+            outcomeNote, allowPersonalizationUse: false,
+        }));
+        assert.equal(response.status, 201);
+        assert.equal((response.body.feedback as { outcomeNote: string }).outcomeNote, outcomeNote);
+    }
+    const tooLong = await request("/api/analysis-results/" + RESULT_ID + "/feedback", authorizedJson("POST", {
+        outcomeNote: "記".repeat(1001),
+    }));
+    assert.equal(tooLong.status, 400);
+    assert.equal(create.mock.callCount(), 3);
+});
+
+
+function mockFeedbackStorage(t: test.TestContext, initialFeedback: Record<string, unknown> | null = null, privacyEnabled = true) {
+    let stored = initialFeedback ? { ...initialFeedback } : null;
+    let auxiliaryFails = true;
+    let staleWrites = 0;
+    const create = async (args: { data: Record<string, unknown> }) => {
+        if (stored) throw Object.assign(new Error("unique feedback"), { code: "P2002" });
+        stored = { id: "88888888-8888-4888-8888-888888888888", allowPersonalizationUse: true, ...args.data };
+        return { ...stored };
+    };
+    const update = async (args: { data: Record<string, unknown> }) => {
+        stored = { ...stored, ...args.data };
+        return { ...stored };
+    };
+    const privacy = async () => ({ personalizationEnabled: privacyEnabled, useFeedbackForContext: privacyEnabled });
+    const invalidate = async (_sql: TemplateStringsArray, userId: string, personId: string) => {
+        assert.equal(userId, USER_ID);
+        assert.equal(personId, PERSON_ID);
+        staleWrites += 1;
+        if (auxiliaryFails) throw new Error("private internal failure");
+        return 1;
+    };
+    replaceMethod(t, prisma.analysisResult, "findFirst", async () => ({
+        id: RESULT_ID, analysisCaseId: CASE_ID, analysisCase: { personId: PERSON_ID },
+    }));
+    replaceMethod(t, prisma.analysisFeedback, "findFirst", async () => stored ? {
+        ...stored, analysisCase: { personId: PERSON_ID },
+    } : null);
+    replaceMethod(t, prisma.analysisFeedback, "create", create);
+    replaceMethod(t, prisma.analysisFeedback, "update", update);
+    replaceMethod(t, prisma.userPrivacySetting, "findUnique", privacy);
+    replaceMethod(t, prisma, "$executeRaw", invalidate);
+    const transaction = replaceMethod(t, prisma, "$transaction", async (callback) => {
+        const before = stored ? { ...stored } : null;
+        try {
+            return await callback({
+                analysisFeedback: { create, update },
+                userPrivacySetting: { findUnique: privacy },
+                $executeRaw: invalidate,
+            });
+        } catch (error) {
+            stored = before;
+            throw error;
+        }
+    });
+    return {
+        get stored() { return stored; },
+        get staleWrites() { return staleWrites; },
+        transaction,
+        allowAuxiliarySuccess() { auxiliaryFails = false; },
+    };
+}
+
+test("Feedback POST auxiliary failure rolls back so a retry can create feedback", async (t) => {
+    authenticateAs(t);
+    const storage = mockFeedbackStorage(t);
+    const path = "/api/analysis-results/" + RESULT_ID + "/feedback";
+    const body = { outcomeNote: "翌日は通常どおりでした。", allowPersonalizationUse: true };
+    const failed = await request(path, authorizedJson("POST", body));
+    assert.equal(failed.status, 500);
+    assert.equal(storage.stored, null);
+    assert.equal(JSON.stringify(failed.body).includes("private internal failure"), false);
+    storage.allowAuxiliarySuccess();
+    const retried = await request(path, authorizedJson("POST", body));
+    assert.equal(retried.status, 201);
+    const savedAfterRetry = storage.stored as Record<string, unknown> | null;
+    assert.equal(savedAfterRetry?.outcomeNote, body.outcomeNote);
+    assert.equal(storage.transaction.mock.callCount(), 2);
+    const duplicate = await request(path, authorizedJson("POST", body));
+    assert.equal(duplicate.status, 409);
+    assert.equal((duplicate.body.error as { code: string }).code, "FEEDBACK_ALREADY_EXISTS");
+});
+
+test("Feedback PATCH auxiliary failure preserves old values and consent", async (t) => {
+    authenticateAs(t);
+    const feedbackId = "88888888-8888-4888-8888-888888888888";
+    const storage = mockFeedbackStorage(t, { id: feedbackId, outcomeNote: "以前の記録", allowPersonalizationUse: true });
+    const path = "/api/analysis-feedbacks/" + feedbackId;
+    const failed = await request(path, authorizedJson("PATCH", { outcomeNote: "訂正した記録" }));
+    assert.equal(failed.status, 500);
+    assert.equal(storage.stored?.outcomeNote, "以前の記録");
+    storage.allowAuxiliarySuccess();
+    const retried = await request(path, authorizedJson("PATCH", { outcomeNote: "訂正した記録", allowPersonalizationUse: false }));
+    assert.equal(retried.status, 200);
+    assert.equal(storage.stored?.outcomeNote, "訂正した記録");
+    assert.equal(storage.stored?.allowPersonalizationUse, false);
+    assert.equal(storage.staleWrites, 2);
+    assert.equal(storage.transaction.mock.callCount(), 2);
+});
+
+
+
+test("withdrawing previously allowed Feedback invalidates its Profile even when privacy is OFF", async (t) => {
+    authenticateAs(t);
+    const feedbackId = "88888888-8888-4888-8888-888888888888";
+    const storage = mockFeedbackStorage(t, { id: feedbackId, outcomeNote: "以前の記録", allowPersonalizationUse: true }, false);
+    storage.allowAuxiliarySuccess();
+    const response = await request("/api/analysis-feedbacks/" + feedbackId, authorizedJson("PATCH", { allowPersonalizationUse: false }));
+    assert.equal(response.status, 200);
+    assert.equal(storage.stored?.allowPersonalizationUse, false);
+    assert.equal(storage.staleWrites, 1);
+});
+
+for (const rejection of [new Error('SYNTHETIC_PRIVATE'), new AuthApiError('SYNTHETIC_PRIVATE', 502, 'PRIVATE_CODE'), null]) {
+    test('/me and protected routes preserve safe infrastructure500 and one auth call', async t => {
+        const auth = replaceMethod(t, supabaseAuth.auth, 'getUser', async () => { throw rejection; });
+        for (const path of ['/api/me', '/api/persons']) {
+            const response = await fetch(`${baseUrl}${path}`, { headers: { authorization: 'Bearer SYNTHETIC_PRIVATE_TOKEN', 'x-request-id': 'me-infra-error' }, signal: AbortSignal.timeout(2000) });
+            assert.equal(response.status, 500);
+            assert.equal(response.headers.get('x-request-id'), 'me-infra-error');
+            assert.deepEqual(await response.json(), { error: { code: 'INTERNAL_SERVER_ERROR', message: 'サーバー内部エラーが発生しました。', status: 500, requestId: 'me-infra-error' } });
+        }
+        assert.equal(auth.mock.callCount(), 2);
+    });
+}
+test('/me retains missing/null/invalid identity contract and normal parallel verification', async t => {
+    const auth = replaceMethod(t, supabaseAuth.auth, 'getUser', async (token: string) => token === 'valid-test-token' ? { data: { user: { id: USER_ID, email: 'user@example.com' } }, error: null } : { data: { user: null }, error: token === 'null-user' ? null : new Error('SYNTHETIC_PRIVATE') });
+    assert.deepEqual(await request('/api/me'), { status: 200, body: { user: null } });
+    assert.equal(auth.mock.callCount(), 0);
+    for (const token of ['invalid', 'null-user']) {
+        const response = await request('/api/me', { headers: { authorization: `Bearer ${token}` } });
+        assert.equal(response.status, 401); assert.equal((response.body.error as any).code, 'AUTH_INVALID');
+    }
+    const results = await Promise.all(Array.from({ length: 3 }, () => request('/api/me', authorizedJson('GET'))));
+    for (const response of results) assert.deepEqual(response, { status: 200, body: { user: { id: USER_ID, email: 'user@example.com' } } });
+    assert.equal(auth.mock.callCount(), 5);
+});
+
+for (const sdkError of [...[0, 502, 503, 504].map(status => new AuthRetryableFetchError('SYNTHETIC_PRIVATE_SDK_ERROR', status)), new AuthApiError('SYNTHETIC_PRIVATE_SDK_ERROR', 500, 'PRIVATE_CODE')]) {
+    test('returned known SDK infrastructure error preserves safe500: ' + sdkError.status, async t => {
+        const auth = replaceMethod(t, supabaseAuth.auth, 'getUser', async () => ({ data: { user: null }, error: sdkError }));
+        for (const path of ['/api/me', '/api/persons']) {
+            const response = await fetch(`${baseUrl}${path}`, { headers: { authorization: 'Bearer SYNTHETIC_PRIVATE_TOKEN', 'x-request-id': 'returned-sdk-infra' }, signal: AbortSignal.timeout(2000) });
+            assert.equal(response.status, 500);
+            assert.equal(response.headers.get('x-request-id'), 'returned-sdk-infra');
+            assert.deepEqual(await response.json(), { error: { code: 'INTERNAL_SERVER_ERROR', message: 'サーバー内部エラーが発生しました。', status: 500, requestId: 'returned-sdk-infra' } });
+        }
+        assert.equal(auth.mock.callCount(), 2);
+    });
+}
+for (const sdkError of [new AuthApiError('SYNTHETIC_PRIVATE_INVALID_JWT', 400, 'bad_jwt'), new AuthApiError('SYNTHETIC_PRIVATE_INVALID_JWT', 401, 'bad_jwt'), Object.assign(new Error('SYNTHETIC_PRIVATE_UNKNOWN'), { name: 'AuthRetryableFetchError', status: 503 })]) {
+    test('returned invalid credentials or unrecognized ordinary error preserves401: ' + sdkError.status, async t => {
+        const auth = replaceMethod(t, supabaseAuth.auth, 'getUser', async () => ({ data: { user: null }, error: sdkError }));
+        for (const [path, code] of [['/api/me', 'AUTH_INVALID'], ['/api/persons', 'UNAUTHENTICATED']]) {
+            const response = await request(path, authorizedJson('GET'));
+            assert.equal(response.status, 401);
+            assert.equal((response.body.error as { code: string }).code, code);
+            assert.equal(JSON.stringify(response.body).includes('SYNTHETIC_PRIVATE'), false);
+        }
+        assert.equal(auth.mock.callCount(), 2);
+    });
+}

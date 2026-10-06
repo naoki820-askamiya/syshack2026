@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { requireAuth } from "../middlewares/requireAuth.js";
 import { prisma } from "../prisma/client.js";
+import type { Prisma } from "../generated/prisma/client.js";
 import { AppError } from "../utils/index.js";
 import {
     asyncHandler,
@@ -36,15 +37,18 @@ router.post("/analysis-results/:resultId/feedback", asyncHandler(async (req, res
     if (!result) throw resourceNotFound();
 
     try {
-        const feedback = await prisma.analysisFeedback.create({
-            data: {
-                userId,
-                analysisCaseId: result.analysisCaseId,
-                analysisResultId: result.id,
-                ...data,
-            },
+        const feedback = await prisma.$transaction(async (tx) => {
+            const saved = await tx.analysisFeedback.create({
+                data: {
+                    userId,
+                    analysisCaseId: result.analysisCaseId,
+                    analysisResultId: result.id,
+                    ...data,
+                },
+            });
+            await markProfileStaleForFeedback(tx, userId, result.analysisCase.personId, saved.allowPersonalizationUse);
+            return saved;
         });
-        await markProfileStaleIfAllowed(userId, result.analysisCase.personId, feedback.allowPersonalizationUse);
         res.status(201).json({ feedback });
     } catch (error) {
         if (isUniqueViolation(error)) {
@@ -76,23 +80,34 @@ router.patch("/analysis-feedbacks/:feedbackId", asyncHandler(async (req, res) =>
     const data = parseOrThrow(feedbackSchema, req.body);
     const existing = await prisma.analysisFeedback.findFirst({
         where: { id: feedbackId, userId },
-        select: { id: true, analysisCase: { select: { personId: true } } },
+        select: { id: true, allowPersonalizationUse: true, analysisCase: { select: { personId: true } } },
     });
     if (!existing) throw resourceNotFound();
-    const feedback = await prisma.analysisFeedback.update({
-        where: { id: existing.id },
-        data,
+    const feedback = await prisma.$transaction(async (tx) => {
+        const saved = await tx.analysisFeedback.update({
+            where: { id: existing.id },
+            data,
+        });
+        await markProfileStaleForFeedback(
+            tx, userId, existing.analysisCase.personId,
+            saved.allowPersonalizationUse, existing.allowPersonalizationUse,
+        );
+        return saved;
     });
-    await markProfileStaleIfAllowed(userId, existing.analysisCase.personId, feedback.allowPersonalizationUse);
     res.json({ feedback });
 }));
 
-async function markProfileStaleIfAllowed(userId: string, personId: string, feedbackAllows: boolean) {
-    // Feedback単体とユーザー設定の両方で許可された場合だけ、次回集計の対象にします。
-    if (!feedbackAllows) return;
-    const privacy = await prisma.userPrivacySetting.findUnique({ where: { userId } });
-    if (!privacy?.personalizationEnabled || !privacy.useFeedbackForContext) return;
-    await prisma.$executeRaw`
+async function markProfileStaleForFeedback(
+    tx: Prisma.TransactionClient, userId: string, personId: string,
+    feedbackAllows: boolean, previouslyAllowed = false,
+) {
+    // 既に許可されたFeedbackの訂正や撤回は、現在の設定がOFFでも既存Profileを無効化します。
+    if (!feedbackAllows && !previouslyAllowed) return;
+    if (!previouslyAllowed) {
+        const privacy = await tx.userPrivacySetting.findUnique({ where: { userId } });
+        if (!privacy?.personalizationEnabled || !privacy.useFeedbackForContext) return;
+    }
+    await tx.$executeRaw`
         UPDATE person_profiles
         SET needs_refresh = true, stale_since = COALESCE(stale_since, now())
         WHERE user_id = ${userId}::uuid AND person_id = ${personId}::uuid

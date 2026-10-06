@@ -155,6 +155,7 @@ erDiagram
 - index: `(user_id, updated_at)`, `(user_id, archived_at)`
 - 削除方針: `auth.users` 削除時は `on delete cascade` で削除される。人物非表示は `archived_at` によるアーカイブを使う。
 - 注意点: `Person` 更新後も過去の `AnalysisCase.person_snapshot` は書き換えない。
+- 現行追加: nullable `create_intent_key`（UUID）と`create_intent_fingerprint`（v1 hash）を同時保存し、`(user_id, create_intent_key)`を一意とする。旧NULL行をbackfillせず、PATCHで変更しない。metadataの寿命はresourceに従い、API応答に含めない。
 
 ### analysis_cases
 
@@ -167,6 +168,11 @@ erDiagram
 - index: `(user_id, created_at)`, `(user_id, person_id, created_at)`, `(user_id, person_id, status, created_at)`, `(user_id, status)`, stale検出用partial index。
 - 削除方針: `auth.users` 削除時は `on delete cascade` で削除される。ケース削除APIは現時点でスコープ外。
 - 注意点: 最新結果IDは持たない。最新結果は `analysis_results` を `version DESC` で取得する。
+- 現行追加: Personと同じnullable作成key/fingerprintとowner/key一意性を持つ。保存時にactive owned Personを共有row lockしてsnapshotを作成する。同一作成intentのreplayでは元のsnapshot・run/resultを更新しない。
+
+### api_usage_events の実行紐付け
+
+分析予約はnullable `analysis_case_id`・`analyze_run_id`の対で元のrunに紐づく。開始更新と予約INSERTは同一transaction。精算はowner・event・case・元のrunを照合し、既知attempt数のみ反映する。旧NULL予約、未知attempt、crash後のrefundやschedulerは自動推測しない。既存user削除時のowner SET NULLを維持し、mutableな現在runへの外部キーは追加しない。`cost_units`はquotaのattempt単位で、provider請求額ではない。
 
 ### analysis_results
 

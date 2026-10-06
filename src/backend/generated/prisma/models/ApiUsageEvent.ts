@@ -38,6 +38,8 @@ export type ApiUsageEventMinAggregateOutputType = {
   id: string | null
   userId: string | null
   guestTrialAttemptId: string | null
+  analysisCaseId: string | null
+  analyzeRunId: string | null
   routeKey: string | null
   ipHash: string | null
   userAgentHash: string | null
@@ -50,6 +52,8 @@ export type ApiUsageEventMaxAggregateOutputType = {
   id: string | null
   userId: string | null
   guestTrialAttemptId: string | null
+  analysisCaseId: string | null
+  analyzeRunId: string | null
   routeKey: string | null
   ipHash: string | null
   userAgentHash: string | null
@@ -62,6 +66,8 @@ export type ApiUsageEventCountAggregateOutputType = {
   id: number
   userId: number
   guestTrialAttemptId: number
+  analysisCaseId: number
+  analyzeRunId: number
   routeKey: number
   ipHash: number
   userAgentHash: number
@@ -84,6 +90,8 @@ export type ApiUsageEventMinAggregateInputType = {
   id?: true
   userId?: true
   guestTrialAttemptId?: true
+  analysisCaseId?: true
+  analyzeRunId?: true
   routeKey?: true
   ipHash?: true
   userAgentHash?: true
@@ -96,6 +104,8 @@ export type ApiUsageEventMaxAggregateInputType = {
   id?: true
   userId?: true
   guestTrialAttemptId?: true
+  analysisCaseId?: true
+  analyzeRunId?: true
   routeKey?: true
   ipHash?: true
   userAgentHash?: true
@@ -108,6 +118,8 @@ export type ApiUsageEventCountAggregateInputType = {
   id?: true
   userId?: true
   guestTrialAttemptId?: true
+  analysisCaseId?: true
+  analyzeRunId?: true
   routeKey?: true
   ipHash?: true
   userAgentHash?: true
@@ -207,6 +219,8 @@ export type ApiUsageEventGroupByOutputType = {
   id: string
   userId: string | null
   guestTrialAttemptId: string | null
+  analysisCaseId: string | null
+  analyzeRunId: string | null
   routeKey: string
   ipHash: string | null
   userAgentHash: string | null
@@ -242,6 +256,8 @@ export type ApiUsageEventWhereInput = {
   id?: Prisma.UuidFilter<"ApiUsageEvent"> | string
   userId?: Prisma.UuidNullableFilter<"ApiUsageEvent"> | string | null
   guestTrialAttemptId?: Prisma.UuidNullableFilter<"ApiUsageEvent"> | string | null
+  analysisCaseId?: Prisma.UuidNullableFilter<"ApiUsageEvent"> | string | null
+  analyzeRunId?: Prisma.UuidNullableFilter<"ApiUsageEvent"> | string | null
   routeKey?: Prisma.StringFilter<"ApiUsageEvent"> | string
   ipHash?: Prisma.StringNullableFilter<"ApiUsageEvent"> | string | null
   userAgentHash?: Prisma.StringNullableFilter<"ApiUsageEvent"> | string | null
@@ -255,6 +271,8 @@ export type ApiUsageEventOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrderInput | Prisma.SortOrder
   guestTrialAttemptId?: Prisma.SortOrderInput | Prisma.SortOrder
+  analysisCaseId?: Prisma.SortOrderInput | Prisma.SortOrder
+  analyzeRunId?: Prisma.SortOrderInput | Prisma.SortOrder
   routeKey?: Prisma.SortOrder
   ipHash?: Prisma.SortOrderInput | Prisma.SortOrder
   userAgentHash?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -271,6 +289,8 @@ export type ApiUsageEventWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.ApiUsageEventWhereInput | Prisma.ApiUsageEventWhereInput[]
   userId?: Prisma.UuidNullableFilter<"ApiUsageEvent"> | string | null
   guestTrialAttemptId?: Prisma.UuidNullableFilter<"ApiUsageEvent"> | string | null
+  analysisCaseId?: Prisma.UuidNullableFilter<"ApiUsageEvent"> | string | null
+  analyzeRunId?: Prisma.UuidNullableFilter<"ApiUsageEvent"> | string | null
   routeKey?: Prisma.StringFilter<"ApiUsageEvent"> | string
   ipHash?: Prisma.StringNullableFilter<"ApiUsageEvent"> | string | null
   userAgentHash?: Prisma.StringNullableFilter<"ApiUsageEvent"> | string | null
@@ -284,6 +304,8 @@ export type ApiUsageEventOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrderInput | Prisma.SortOrder
   guestTrialAttemptId?: Prisma.SortOrderInput | Prisma.SortOrder
+  analysisCaseId?: Prisma.SortOrderInput | Prisma.SortOrder
+  analyzeRunId?: Prisma.SortOrderInput | Prisma.SortOrder
   routeKey?: Prisma.SortOrder
   ipHash?: Prisma.SortOrderInput | Prisma.SortOrder
   userAgentHash?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -304,6 +326,8 @@ export type ApiUsageEventScalarWhereWithAggregatesInput = {
   id?: Prisma.UuidWithAggregatesFilter<"ApiUsageEvent"> | string
   userId?: Prisma.UuidNullableWithAggregatesFilter<"ApiUsageEvent"> | string | null
   guestTrialAttemptId?: Prisma.UuidNullableWithAggregatesFilter<"ApiUsageEvent"> | string | null
+  analysisCaseId?: Prisma.UuidNullableWithAggregatesFilter<"ApiUsageEvent"> | string | null
+  analyzeRunId?: Prisma.UuidNullableWithAggregatesFilter<"ApiUsageEvent"> | string | null
   routeKey?: Prisma.StringWithAggregatesFilter<"ApiUsageEvent"> | string
   ipHash?: Prisma.StringNullableWithAggregatesFilter<"ApiUsageEvent"> | string | null
   userAgentHash?: Prisma.StringNullableWithAggregatesFilter<"ApiUsageEvent"> | string | null
@@ -315,6 +339,8 @@ export type ApiUsageEventScalarWhereWithAggregatesInput = {
 export type ApiUsageEventCreateInput = {
   id?: string
   userId?: string | null
+  analysisCaseId?: string | null
+  analyzeRunId?: string | null
   routeKey: string
   ipHash?: string | null
   userAgentHash?: string | null
@@ -328,6 +354,8 @@ export type ApiUsageEventUncheckedCreateInput = {
   id?: string
   userId?: string | null
   guestTrialAttemptId?: string | null
+  analysisCaseId?: string | null
+  analyzeRunId?: string | null
   routeKey: string
   ipHash?: string | null
   userAgentHash?: string | null
@@ -339,6 +367,8 @@ export type ApiUsageEventUncheckedCreateInput = {
 export type ApiUsageEventUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  analysisCaseId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  analyzeRunId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   routeKey?: Prisma.StringFieldUpdateOperationsInput | string
   ipHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   userAgentHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -352,6 +382,8 @@ export type ApiUsageEventUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   guestTrialAttemptId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  analysisCaseId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  analyzeRunId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   routeKey?: Prisma.StringFieldUpdateOperationsInput | string
   ipHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   userAgentHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -364,6 +396,8 @@ export type ApiUsageEventCreateManyInput = {
   id?: string
   userId?: string | null
   guestTrialAttemptId?: string | null
+  analysisCaseId?: string | null
+  analyzeRunId?: string | null
   routeKey: string
   ipHash?: string | null
   userAgentHash?: string | null
@@ -375,6 +409,8 @@ export type ApiUsageEventCreateManyInput = {
 export type ApiUsageEventUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  analysisCaseId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  analyzeRunId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   routeKey?: Prisma.StringFieldUpdateOperationsInput | string
   ipHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   userAgentHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -387,6 +423,8 @@ export type ApiUsageEventUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   guestTrialAttemptId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  analysisCaseId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  analyzeRunId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   routeKey?: Prisma.StringFieldUpdateOperationsInput | string
   ipHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   userAgentHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -409,6 +447,8 @@ export type ApiUsageEventCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   guestTrialAttemptId?: Prisma.SortOrder
+  analysisCaseId?: Prisma.SortOrder
+  analyzeRunId?: Prisma.SortOrder
   routeKey?: Prisma.SortOrder
   ipHash?: Prisma.SortOrder
   userAgentHash?: Prisma.SortOrder
@@ -425,6 +465,8 @@ export type ApiUsageEventMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   guestTrialAttemptId?: Prisma.SortOrder
+  analysisCaseId?: Prisma.SortOrder
+  analyzeRunId?: Prisma.SortOrder
   routeKey?: Prisma.SortOrder
   ipHash?: Prisma.SortOrder
   userAgentHash?: Prisma.SortOrder
@@ -437,6 +479,8 @@ export type ApiUsageEventMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   guestTrialAttemptId?: Prisma.SortOrder
+  analysisCaseId?: Prisma.SortOrder
+  analyzeRunId?: Prisma.SortOrder
   routeKey?: Prisma.SortOrder
   ipHash?: Prisma.SortOrder
   userAgentHash?: Prisma.SortOrder
@@ -494,6 +538,8 @@ export type ApiUsageEventUncheckedUpdateManyWithoutGuestTrialAttemptNestedInput 
 export type ApiUsageEventCreateWithoutGuestTrialAttemptInput = {
   id?: string
   userId?: string | null
+  analysisCaseId?: string | null
+  analyzeRunId?: string | null
   routeKey: string
   ipHash?: string | null
   userAgentHash?: string | null
@@ -505,6 +551,8 @@ export type ApiUsageEventCreateWithoutGuestTrialAttemptInput = {
 export type ApiUsageEventUncheckedCreateWithoutGuestTrialAttemptInput = {
   id?: string
   userId?: string | null
+  analysisCaseId?: string | null
+  analyzeRunId?: string | null
   routeKey: string
   ipHash?: string | null
   userAgentHash?: string | null
@@ -546,6 +594,8 @@ export type ApiUsageEventScalarWhereInput = {
   id?: Prisma.UuidFilter<"ApiUsageEvent"> | string
   userId?: Prisma.UuidNullableFilter<"ApiUsageEvent"> | string | null
   guestTrialAttemptId?: Prisma.UuidNullableFilter<"ApiUsageEvent"> | string | null
+  analysisCaseId?: Prisma.UuidNullableFilter<"ApiUsageEvent"> | string | null
+  analyzeRunId?: Prisma.UuidNullableFilter<"ApiUsageEvent"> | string | null
   routeKey?: Prisma.StringFilter<"ApiUsageEvent"> | string
   ipHash?: Prisma.StringNullableFilter<"ApiUsageEvent"> | string | null
   userAgentHash?: Prisma.StringNullableFilter<"ApiUsageEvent"> | string | null
@@ -557,6 +607,8 @@ export type ApiUsageEventScalarWhereInput = {
 export type ApiUsageEventCreateManyGuestTrialAttemptInput = {
   id?: string
   userId?: string | null
+  analysisCaseId?: string | null
+  analyzeRunId?: string | null
   routeKey: string
   ipHash?: string | null
   userAgentHash?: string | null
@@ -568,6 +620,8 @@ export type ApiUsageEventCreateManyGuestTrialAttemptInput = {
 export type ApiUsageEventUpdateWithoutGuestTrialAttemptInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  analysisCaseId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  analyzeRunId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   routeKey?: Prisma.StringFieldUpdateOperationsInput | string
   ipHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   userAgentHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -579,6 +633,8 @@ export type ApiUsageEventUpdateWithoutGuestTrialAttemptInput = {
 export type ApiUsageEventUncheckedUpdateWithoutGuestTrialAttemptInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  analysisCaseId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  analyzeRunId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   routeKey?: Prisma.StringFieldUpdateOperationsInput | string
   ipHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   userAgentHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -590,6 +646,8 @@ export type ApiUsageEventUncheckedUpdateWithoutGuestTrialAttemptInput = {
 export type ApiUsageEventUncheckedUpdateManyWithoutGuestTrialAttemptInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  analysisCaseId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  analyzeRunId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   routeKey?: Prisma.StringFieldUpdateOperationsInput | string
   ipHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   userAgentHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -604,6 +662,8 @@ export type ApiUsageEventSelect<ExtArgs extends runtime.Types.Extensions.Interna
   id?: boolean
   userId?: boolean
   guestTrialAttemptId?: boolean
+  analysisCaseId?: boolean
+  analyzeRunId?: boolean
   routeKey?: boolean
   ipHash?: boolean
   userAgentHash?: boolean
@@ -617,6 +677,8 @@ export type ApiUsageEventSelectCreateManyAndReturn<ExtArgs extends runtime.Types
   id?: boolean
   userId?: boolean
   guestTrialAttemptId?: boolean
+  analysisCaseId?: boolean
+  analyzeRunId?: boolean
   routeKey?: boolean
   ipHash?: boolean
   userAgentHash?: boolean
@@ -630,6 +692,8 @@ export type ApiUsageEventSelectUpdateManyAndReturn<ExtArgs extends runtime.Types
   id?: boolean
   userId?: boolean
   guestTrialAttemptId?: boolean
+  analysisCaseId?: boolean
+  analyzeRunId?: boolean
   routeKey?: boolean
   ipHash?: boolean
   userAgentHash?: boolean
@@ -643,6 +707,8 @@ export type ApiUsageEventSelectScalar = {
   id?: boolean
   userId?: boolean
   guestTrialAttemptId?: boolean
+  analysisCaseId?: boolean
+  analyzeRunId?: boolean
   routeKey?: boolean
   ipHash?: boolean
   userAgentHash?: boolean
@@ -651,7 +717,7 @@ export type ApiUsageEventSelectScalar = {
   createdAt?: boolean
 }
 
-export type ApiUsageEventOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "guestTrialAttemptId" | "routeKey" | "ipHash" | "userAgentHash" | "costUnits" | "status" | "createdAt", ExtArgs["result"]["apiUsageEvent"]>
+export type ApiUsageEventOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "guestTrialAttemptId" | "analysisCaseId" | "analyzeRunId" | "routeKey" | "ipHash" | "userAgentHash" | "costUnits" | "status" | "createdAt", ExtArgs["result"]["apiUsageEvent"]>
 export type ApiUsageEventInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   guestTrialAttempt?: boolean | Prisma.ApiUsageEvent$guestTrialAttemptArgs<ExtArgs>
 }
@@ -671,6 +737,8 @@ export type $ApiUsageEventPayload<ExtArgs extends runtime.Types.Extensions.Inter
     id: string
     userId: string | null
     guestTrialAttemptId: string | null
+    analysisCaseId: string | null
+    analyzeRunId: string | null
     routeKey: string
     ipHash: string | null
     userAgentHash: string | null
@@ -1104,6 +1172,8 @@ export interface ApiUsageEventFieldRefs {
   readonly id: Prisma.FieldRef<"ApiUsageEvent", 'String'>
   readonly userId: Prisma.FieldRef<"ApiUsageEvent", 'String'>
   readonly guestTrialAttemptId: Prisma.FieldRef<"ApiUsageEvent", 'String'>
+  readonly analysisCaseId: Prisma.FieldRef<"ApiUsageEvent", 'String'>
+  readonly analyzeRunId: Prisma.FieldRef<"ApiUsageEvent", 'String'>
   readonly routeKey: Prisma.FieldRef<"ApiUsageEvent", 'String'>
   readonly ipHash: Prisma.FieldRef<"ApiUsageEvent", 'String'>
   readonly userAgentHash: Prisma.FieldRef<"ApiUsageEvent", 'String'>

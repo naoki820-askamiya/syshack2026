@@ -1,3 +1,4 @@
+import type { AnalysisEvidenceView, EvidenceSource, EvidenceStrength } from '../utils/analysisViewModel';
 import { useNavigate, useParams } from 'react-router';
 import { AlertCircle, ArrowLeft, ArrowRight, Info } from 'lucide-react';
 import { AnalysisScoreRadar } from '../components/AnalysisScoreRadar';
@@ -6,6 +7,7 @@ import { Navigation } from '../components/Navigation';
 import { useHydratedAnalysis } from '../hooks/useHydratedAnalysis';
 
 const CONFIDENCE = {
+  unknown: { label: '記録なし', className: 'bg-slate-50 text-slate-700 border-slate-200' },
   low: { label: '低い', className: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
   medium: { label: '中程度', className: 'bg-orange-50 text-orange-700 border-orange-200' },
   high: { label: '高い', className: 'bg-green-50 text-green-700 border-green-200' },
@@ -27,10 +29,22 @@ export function AnalysisV17() {
   const { id, caseId } = useParams<{ id?: string; caseId?: string }>();
   const navigate = useNavigate();
   const resolvedId = id ?? caseId;
-  const { consultation, view, loading, error } = useHydratedAnalysis(resolvedId);
+  const { consultation, view, loading, error, status, retry } = useHydratedAnalysis(resolvedId);
 
-  if (loading) return <MissingResult message="分析結果を読み込んでいます..." />;
-  if (!consultation || !view) return <MissingResult message={error || undefined} />;
+  if (!view) return (
+    <div className="min-h-screen bg-[#F7F9FC]">
+      <Navigation />
+      <main className="lg:ml-64 mx-auto max-w-3xl space-y-4 p-6 pb-24">
+        <h1 className="text-xl font-semibold">保存した相談の分析</h1>
+        <p role="status" aria-live="polite">{loading ? '相談の状態を確認し、状況を整理しています。結果は検証後に表示します。' : status === 'analyzing' ? '分析処理が続いています。画面を閉じても保存した相談から状態を確認できます。' : '相談の状態を確認して、同じ相談から分析を開始・再試行できます。'}</p>
+        {consultation && <p className="text-sm">相談を保存しました。</p>}
+        {error && <p role="alert" className="text-red-700">{error}</p>}
+        <button type="button" disabled={loading} onClick={retry} className="rounded-xl bg-[#0F4C81] px-4 py-3 text-white disabled:opacity-50">{status === 'analyzing' ? '分析状態を再取得' : '同じ相談で分析・再試行'}</button>
+        <button type="button" onClick={() => navigate('/history')} className="block text-[#0F4C81]">相談履歴へ戻る</button>
+      </main>
+    </div>
+  );
+  if (!consultation) return <MissingResult message={error || undefined} />;
   const conf = CONFIDENCE[view.confidenceLevel];
 
   return (
@@ -64,7 +78,7 @@ export function AnalysisV17() {
                 分析の確信度：{conf.label}
               </span>
             </div>
-            <p className="mt-3 text-xs text-[#5B6573]">確信度も事実認定ではなく、入力情報に基づく出力の安定性の目安です。</p>
+            <p className="mt-3 text-xs text-[#5B6573]">{view.confidenceLevel === 'unknown' ? 'この結果には確信度の記録がありません。' : '確信度はAI自身の評価です。正解率や出力の安定性を実測した値ではなく、相手の感情を事実として認定するものでもありません。'}</p>
           </section>
 
           <section className="rounded-2xl border border-[#D9E1EA] bg-white p-5 shadow-sm">
@@ -85,7 +99,7 @@ export function AnalysisV17() {
               <div className="mt-4 space-y-2">
                 {view.scores.map((score) => score.reason && (
                   <div key={score.key} className="rounded-lg bg-[#F7F9FC] p-3 text-sm">
-                    <span className="font-medium text-[#1F2A37]">{score.label}：</span>
+                    <span className="font-medium text-[#1F2A37]">{score.label}（{score.category === 'context' ? '状況の材料' : score.category === 'reassurance' ? '心配を弱める材料' : score.category === 'concern' ? '気になる材料' : '分類情報なし'}）：</span>
                     <span className="text-[#5B6573]">{score.reason}</span>
                   </div>
                 ))}
@@ -139,6 +153,38 @@ export function AnalysisV17() {
             <h2 className="font-semibold text-[#1F2A37]">普段との比較</h2>
             <p className="mt-2 text-sm text-[#5B6573]">{view.contextComparison.conclusion}</p>
             <p className="mt-2 text-xs text-[#8A94A6]">{view.contextComparison.enabled ? "許可された過去情報を実際に参照した比較です。" : "比較に十分な許可済み情報がないため、今回の入力を中心に整理しています。"}</p>
+            {view.contextComparison.enabled && (
+              <div className="mt-4 grid gap-4 md:grid-cols-3">
+                <div>
+                  <h3 className="text-sm font-medium">比較に使った過去情報</h3>
+                  <ul className="mt-2 space-y-3 text-sm text-[#5B6573]">
+                    {view.contextComparison.patterns.map((item, index) => <li key={index}>
+                      <p>{item.label}</p>
+                      <p className="mt-1 text-xs">出典：{sourceLabel(item.source)}</p>
+                      <p className="text-xs">今回との関連度（AI評価）：{strengthLabel(item.relevance)}</p>
+                    </li>)}
+                  </ul>
+                  {view.contextComparison.patterns.length === 0 && <p className="mt-2 text-sm text-[#5B6573]">詳細は記録されていません。</p>}
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium">普段と同じように見える点</h3>
+                  <ul className="mt-2 space-y-3 text-sm text-[#5B6573]">
+                    {view.contextComparison.sameAsUsual.map((item, index) => <li key={index}><p>{item.label}</p><p className="mt-1">理由：{item.reason || '理由は記録されていません。'}</p></li>)}
+                  </ul>
+                  {view.contextComparison.sameAsUsual.length === 0 && <p className="mt-2 text-sm text-[#5B6573]">明確な共通点は記録されていません。</p>}
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium">今回だけ違って見える点</h3>
+                  <ul className="mt-2 space-y-3 text-sm text-[#5B6573]">
+                    {view.contextComparison.deviations.map((item, index) => <li key={index}>
+                      <p>{item.label}</p><p className="mt-1">理由：{item.reason || '理由は記録されていません。'}</p>
+                      <p className="text-xs">根拠の強さ（AI評価）：{strengthLabel(item.strength)}</p>
+                    </li>)}
+                  </ul>
+                  {view.contextComparison.deviations.length === 0 && <p className="mt-2 text-sm text-[#5B6573]">明確な違いは記録されていません。</p>}
+                </div>
+              </div>
+            )}
           </section>
 
           {view.resultId && <AnalysisFeedbackForm resultId={view.resultId} />}
@@ -159,15 +205,36 @@ export function AnalysisV17() {
   );
 }
 
-function Evidence({ title, items, empty }: { title: string; items: string[]; empty: string }) {
+function Evidence({ title, items, empty }: { title: string; items: (string | AnalysisEvidenceView)[]; empty: string }) {
   return (
     <div>
       <h3 className="text-sm font-medium text-[#1F2A37]">{title}</h3>
       {items.length > 0 ? (
         <ul className="mt-2 space-y-2 text-sm text-[#5B6573]">
-          {items.map((item, index) => <li key={`${item}-${index}`}>・{item}</li>)}
+          {items.map((item, index) => <li key={index}>
+            {typeof item === 'string' ? item : <>
+              <p>{item.text}</p>
+              <p className="mt-1 text-xs">出典：{sourceLabel(item.source)}</p>
+              <p className="text-xs">根拠の強さ（AI評価）：{strengthLabel(item.strength)}</p>
+            </>}
+          </li>)}
         </ul>
       ) : <p className="mt-2 text-sm text-[#8A94A6]">{empty}</p>}
     </div>
   );
+}
+
+function sourceLabel(source: EvidenceSource): string {
+  const labels: Record<EvidenceSource, string> = {
+    current_case: '今回の入力（ユーザー記入）',
+    recent_case: '過去のAI要約（推測を含む）',
+    feedback: 'ユーザーの振り返り（本人の報告）',
+    person_profile: '保存された人物要約（推測を含む）',
+    unknown: '出典情報なし',
+  };
+  return labels[source];
+}
+
+function strengthLabel(strength: EvidenceStrength): string {
+  return strength === 'high' ? '高い' : strength === 'medium' ? '中程度' : strength === 'low' ? '低い' : '評価情報なし';
 }

@@ -1,0 +1,57 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    {
+      "source": "/new",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/analysis/:id",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/action/:id",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/history",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/login",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/register",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/signup",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/persons",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/persons/:personId",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/analysis-cases/:caseId",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/settings",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/privacy-settings",
+      "destination": "/index.html"
+    }
+  ]
+}

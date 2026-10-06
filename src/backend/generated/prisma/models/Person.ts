@@ -30,6 +30,8 @@ export type PersonMinAggregateOutputType = {
   displayName: string | null
   relationshipType: $Enums.RelationshipType | null
   notes: string | null
+  createIntentKey: string | null
+  createIntentFingerprint: string | null
   archivedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -41,6 +43,8 @@ export type PersonMaxAggregateOutputType = {
   displayName: string | null
   relationshipType: $Enums.RelationshipType | null
   notes: string | null
+  createIntentKey: string | null
+  createIntentFingerprint: string | null
   archivedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -52,6 +56,8 @@ export type PersonCountAggregateOutputType = {
   displayName: number
   relationshipType: number
   notes: number
+  createIntentKey: number
+  createIntentFingerprint: number
   archivedAt: number
   createdAt: number
   updatedAt: number
@@ -65,6 +71,8 @@ export type PersonMinAggregateInputType = {
   displayName?: true
   relationshipType?: true
   notes?: true
+  createIntentKey?: true
+  createIntentFingerprint?: true
   archivedAt?: true
   createdAt?: true
   updatedAt?: true
@@ -76,6 +84,8 @@ export type PersonMaxAggregateInputType = {
   displayName?: true
   relationshipType?: true
   notes?: true
+  createIntentKey?: true
+  createIntentFingerprint?: true
   archivedAt?: true
   createdAt?: true
   updatedAt?: true
@@ -87,6 +97,8 @@ export type PersonCountAggregateInputType = {
   displayName?: true
   relationshipType?: true
   notes?: true
+  createIntentKey?: true
+  createIntentFingerprint?: true
   archivedAt?: true
   createdAt?: true
   updatedAt?: true
@@ -171,6 +183,8 @@ export type PersonGroupByOutputType = {
   displayName: string
   relationshipType: $Enums.RelationshipType
   notes: string | null
+  createIntentKey: string | null
+  createIntentFingerprint: string | null
   archivedAt: Date | null
   createdAt: Date
   updatedAt: Date
@@ -203,6 +217,8 @@ export type PersonWhereInput = {
   displayName?: Prisma.StringFilter<"Person"> | string
   relationshipType?: Prisma.EnumRelationshipTypeFilter<"Person"> | $Enums.RelationshipType
   notes?: Prisma.StringNullableFilter<"Person"> | string | null
+  createIntentKey?: Prisma.UuidNullableFilter<"Person"> | string | null
+  createIntentFingerprint?: Prisma.StringNullableFilter<"Person"> | string | null
   archivedAt?: Prisma.DateTimeNullableFilter<"Person"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Person"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Person"> | Date | string
@@ -216,6 +232,8 @@ export type PersonOrderByWithRelationInput = {
   displayName?: Prisma.SortOrder
   relationshipType?: Prisma.SortOrder
   notes?: Prisma.SortOrderInput | Prisma.SortOrder
+  createIntentKey?: Prisma.SortOrderInput | Prisma.SortOrder
+  createIntentFingerprint?: Prisma.SortOrderInput | Prisma.SortOrder
   archivedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -226,6 +244,7 @@ export type PersonOrderByWithRelationInput = {
 export type PersonWhereUniqueInput = Prisma.AtLeast<{
   id?: string
   userId_id?: Prisma.PersonUserIdIdCompoundUniqueInput
+  userId_createIntentKey?: Prisma.PersonUserIdCreateIntentKeyCompoundUniqueInput
   AND?: Prisma.PersonWhereInput | Prisma.PersonWhereInput[]
   OR?: Prisma.PersonWhereInput[]
   NOT?: Prisma.PersonWhereInput | Prisma.PersonWhereInput[]
@@ -233,12 +252,14 @@ export type PersonWhereUniqueInput = Prisma.AtLeast<{
   displayName?: Prisma.StringFilter<"Person"> | string
   relationshipType?: Prisma.EnumRelationshipTypeFilter<"Person"> | $Enums.RelationshipType
   notes?: Prisma.StringNullableFilter<"Person"> | string | null
+  createIntentKey?: Prisma.UuidNullableFilter<"Person"> | string | null
+  createIntentFingerprint?: Prisma.StringNullableFilter<"Person"> | string | null
   archivedAt?: Prisma.DateTimeNullableFilter<"Person"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Person"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Person"> | Date | string
   analysisCases?: Prisma.AnalysisCaseListRelationFilter
   profile?: Prisma.XOR<Prisma.PersonProfileNullableScalarRelationFilter, Prisma.PersonProfileWhereInput> | null
-}, "id" | "userId_id">
+}, "id" | "userId_id" | "userId_createIntentKey">
 
 export type PersonOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
@@ -246,6 +267,8 @@ export type PersonOrderByWithAggregationInput = {
   displayName?: Prisma.SortOrder
   relationshipType?: Prisma.SortOrder
   notes?: Prisma.SortOrderInput | Prisma.SortOrder
+  createIntentKey?: Prisma.SortOrderInput | Prisma.SortOrder
+  createIntentFingerprint?: Prisma.SortOrderInput | Prisma.SortOrder
   archivedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -263,6 +286,8 @@ export type PersonScalarWhereWithAggregatesInput = {
   displayName?: Prisma.StringWithAggregatesFilter<"Person"> | string
   relationshipType?: Prisma.EnumRelationshipTypeWithAggregatesFilter<"Person"> | $Enums.RelationshipType
   notes?: Prisma.StringNullableWithAggregatesFilter<"Person"> | string | null
+  createIntentKey?: Prisma.UuidNullableWithAggregatesFilter<"Person"> | string | null
+  createIntentFingerprint?: Prisma.StringNullableWithAggregatesFilter<"Person"> | string | null
   archivedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Person"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Person"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Person"> | Date | string
@@ -274,6 +299,8 @@ export type PersonCreateInput = {
   displayName: string
   relationshipType: $Enums.RelationshipType
   notes?: string | null
+  createIntentKey?: string | null
+  createIntentFingerprint?: string | null
   archivedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -287,6 +314,8 @@ export type PersonUncheckedCreateInput = {
   displayName: string
   relationshipType: $Enums.RelationshipType
   notes?: string | null
+  createIntentKey?: string | null
+  createIntentFingerprint?: string | null
   archivedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -300,6 +329,8 @@ export type PersonUpdateInput = {
   displayName?: Prisma.StringFieldUpdateOperationsInput | string
   relationshipType?: Prisma.EnumRelationshipTypeFieldUpdateOperationsInput | $Enums.RelationshipType
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createIntentKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createIntentFingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -313,6 +344,8 @@ export type PersonUncheckedUpdateInput = {
   displayName?: Prisma.StringFieldUpdateOperationsInput | string
   relationshipType?: Prisma.EnumRelationshipTypeFieldUpdateOperationsInput | $Enums.RelationshipType
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createIntentKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createIntentFingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -326,6 +359,8 @@ export type PersonCreateManyInput = {
   displayName: string
   relationshipType: $Enums.RelationshipType
   notes?: string | null
+  createIntentKey?: string | null
+  createIntentFingerprint?: string | null
   archivedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -337,6 +372,8 @@ export type PersonUpdateManyMutationInput = {
   displayName?: Prisma.StringFieldUpdateOperationsInput | string
   relationshipType?: Prisma.EnumRelationshipTypeFieldUpdateOperationsInput | $Enums.RelationshipType
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createIntentKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createIntentFingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -348,6 +385,8 @@ export type PersonUncheckedUpdateManyInput = {
   displayName?: Prisma.StringFieldUpdateOperationsInput | string
   relationshipType?: Prisma.EnumRelationshipTypeFieldUpdateOperationsInput | $Enums.RelationshipType
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createIntentKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createIntentFingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -358,12 +397,19 @@ export type PersonUserIdIdCompoundUniqueInput = {
   id: string
 }
 
+export type PersonUserIdCreateIntentKeyCompoundUniqueInput = {
+  userId: string
+  createIntentKey: string
+}
+
 export type PersonCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   displayName?: Prisma.SortOrder
   relationshipType?: Prisma.SortOrder
   notes?: Prisma.SortOrder
+  createIntentKey?: Prisma.SortOrder
+  createIntentFingerprint?: Prisma.SortOrder
   archivedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -375,6 +421,8 @@ export type PersonMaxOrderByAggregateInput = {
   displayName?: Prisma.SortOrder
   relationshipType?: Prisma.SortOrder
   notes?: Prisma.SortOrder
+  createIntentKey?: Prisma.SortOrder
+  createIntentFingerprint?: Prisma.SortOrder
   archivedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -386,6 +434,8 @@ export type PersonMinOrderByAggregateInput = {
   displayName?: Prisma.SortOrder
   relationshipType?: Prisma.SortOrder
   notes?: Prisma.SortOrder
+  createIntentKey?: Prisma.SortOrder
+  createIntentFingerprint?: Prisma.SortOrder
   archivedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -450,6 +500,8 @@ export type PersonCreateWithoutAnalysisCasesInput = {
   displayName: string
   relationshipType: $Enums.RelationshipType
   notes?: string | null
+  createIntentKey?: string | null
+  createIntentFingerprint?: string | null
   archivedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -462,6 +514,8 @@ export type PersonUncheckedCreateWithoutAnalysisCasesInput = {
   displayName: string
   relationshipType: $Enums.RelationshipType
   notes?: string | null
+  createIntentKey?: string | null
+  createIntentFingerprint?: string | null
   archivedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -490,6 +544,8 @@ export type PersonUpdateWithoutAnalysisCasesInput = {
   displayName?: Prisma.StringFieldUpdateOperationsInput | string
   relationshipType?: Prisma.EnumRelationshipTypeFieldUpdateOperationsInput | $Enums.RelationshipType
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createIntentKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createIntentFingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -502,6 +558,8 @@ export type PersonUncheckedUpdateWithoutAnalysisCasesInput = {
   displayName?: Prisma.StringFieldUpdateOperationsInput | string
   relationshipType?: Prisma.EnumRelationshipTypeFieldUpdateOperationsInput | $Enums.RelationshipType
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createIntentKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createIntentFingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -514,6 +572,8 @@ export type PersonCreateWithoutProfileInput = {
   displayName: string
   relationshipType: $Enums.RelationshipType
   notes?: string | null
+  createIntentKey?: string | null
+  createIntentFingerprint?: string | null
   archivedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -526,6 +586,8 @@ export type PersonUncheckedCreateWithoutProfileInput = {
   displayName: string
   relationshipType: $Enums.RelationshipType
   notes?: string | null
+  createIntentKey?: string | null
+  createIntentFingerprint?: string | null
   archivedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -554,6 +616,8 @@ export type PersonUpdateWithoutProfileInput = {
   displayName?: Prisma.StringFieldUpdateOperationsInput | string
   relationshipType?: Prisma.EnumRelationshipTypeFieldUpdateOperationsInput | $Enums.RelationshipType
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createIntentKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createIntentFingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -566,6 +630,8 @@ export type PersonUncheckedUpdateWithoutProfileInput = {
   displayName?: Prisma.StringFieldUpdateOperationsInput | string
   relationshipType?: Prisma.EnumRelationshipTypeFieldUpdateOperationsInput | $Enums.RelationshipType
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createIntentKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createIntentFingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -609,6 +675,8 @@ export type PersonSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   displayName?: boolean
   relationshipType?: boolean
   notes?: boolean
+  createIntentKey?: boolean
+  createIntentFingerprint?: boolean
   archivedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -623,6 +691,8 @@ export type PersonSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extens
   displayName?: boolean
   relationshipType?: boolean
   notes?: boolean
+  createIntentKey?: boolean
+  createIntentFingerprint?: boolean
   archivedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -634,6 +704,8 @@ export type PersonSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extens
   displayName?: boolean
   relationshipType?: boolean
   notes?: boolean
+  createIntentKey?: boolean
+  createIntentFingerprint?: boolean
   archivedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -645,12 +717,14 @@ export type PersonSelectScalar = {
   displayName?: boolean
   relationshipType?: boolean
   notes?: boolean
+  createIntentKey?: boolean
+  createIntentFingerprint?: boolean
   archivedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type PersonOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "displayName" | "relationshipType" | "notes" | "archivedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["person"]>
+export type PersonOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "displayName" | "relationshipType" | "notes" | "createIntentKey" | "createIntentFingerprint" | "archivedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["person"]>
 export type PersonInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   analysisCases?: boolean | Prisma.Person$analysisCasesArgs<ExtArgs>
   profile?: boolean | Prisma.Person$profileArgs<ExtArgs>
@@ -671,6 +745,8 @@ export type $PersonPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
     displayName: string
     relationshipType: $Enums.RelationshipType
     notes: string | null
+    createIntentKey: string | null
+    createIntentFingerprint: string | null
     archivedAt: Date | null
     createdAt: Date
     updatedAt: Date
@@ -1104,6 +1180,8 @@ export interface PersonFieldRefs {
   readonly displayName: Prisma.FieldRef<"Person", 'String'>
   readonly relationshipType: Prisma.FieldRef<"Person", 'RelationshipType'>
   readonly notes: Prisma.FieldRef<"Person", 'String'>
+  readonly createIntentKey: Prisma.FieldRef<"Person", 'String'>
+  readonly createIntentFingerprint: Prisma.FieldRef<"Person", 'String'>
   readonly archivedAt: Prisma.FieldRef<"Person", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"Person", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Person", 'DateTime'>

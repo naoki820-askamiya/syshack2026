@@ -1,10 +1,10 @@
-import { useState, useEffect, useSyncExternalStore } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
-import { MessageCircle, History, ChevronRight, ChevronDown, House, LogIn, LogOut, UserPlus } from 'lucide-react';
-import { clearCachedConsultations, getConsultations } from '../utils/storage';
+import { MessageCircle, History, ChevronRight, ChevronDown, House, LogIn, LogOut, UserPlus, Settings } from 'lucide-react';
+import { getCacheRevision, getConsultations, subscribeCache } from '../utils/storage';
 import { getRelationStyle } from '../utils/relationStyles';
-import { ConsultationData } from '../types';
 import { useAuth } from '../auth/AuthContext';
+import { captureAuthBoundary, isCurrentAuthBoundary } from '../utils/authBoundary';
 import { getLatestConsultationsByPerson } from '../utils/consultationHistory';
 import {
   getExpandedPerson,
@@ -16,26 +16,36 @@ export function Navigation() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const [persons, setPersons] = useState<ConsultationData[]>([]);
+  const [signOutState, setSignOutState] = useState(() => ({ boundary: captureAuthBoundary(), pending: false, error: '' }));
+  const currentBoundary = captureAuthBoundary();
+  const signOutStatus = signOutState.boundary.userId === currentBoundary.userId && signOutState.boundary.epoch === currentBoundary.epoch
+    ? signOutState : { pending: false, error: '' };
+  useSyncExternalStore(subscribeCache, getCacheRevision);
+  const persons = user ? getLatestConsultationsByPerson(getConsultations()) : [];
 
   const expandedPerson = useSyncExternalStore(
     subscribeExpandedPerson,
     getExpandedPerson
   );
 
-  useEffect(() => {
-    setPersons(user ? getLatestConsultationsByPerson(getConsultations()) : []);
-  }, [location.pathname, user]);
-
   const handleSignOut = async () => {
-    await signOut();
-    clearCachedConsultations();
-    navigate('/');
+    if (signOutStatus.pending) return;
+    const boundary = captureAuthBoundary();
+    setSignOutState({ boundary, pending: true, error: '' });
+    try {
+      await signOut();
+      navigate('/');
+    } catch {
+      if (isCurrentAuthBoundary(boundary)) setSignOutState({ boundary, pending: false, error: 'ログアウトに失敗しました。時間をおいて再試行してください。' });
+    } finally {
+      if (isCurrentAuthBoundary(boundary)) setSignOutState(current => ({ ...current, pending: false }));
+    }
   };
 
   const sideNavItems = [
     { path: '/new', icon: MessageCircle, label: '新しい相談を作成' },
     { path: '/history', icon: History, label: '履歴' },
+    { path: '/privacy-settings', icon: Settings, label: 'プライバシー設定' },
   ];
   const guestSideNavItems = [
     { path: '/login', icon: LogIn, label: 'ログイン' },
@@ -46,6 +56,7 @@ export function Navigation() {
     { path: '/', icon: House, label: 'ホーム' },
     { path: '/new', icon: MessageCircle, label: '新しい相談を作成' },
     { path: '/history', icon: History, label: '履歴' },
+    { path: '/privacy-settings', icon: Settings, label: '設定' },
   ];
   const guestBottomNavItems = [
     { path: '/', icon: House, label: 'ホーム' },
@@ -55,7 +66,7 @@ export function Navigation() {
 
   return (
     <>
-      <nav className="hidden lg:flex lg:fixed lg:left-0 lg:top-0 lg:h-screen lg:w-64 lg:flex-col lg:bg-white lg:border-r lg:border-[#D9E1EA] lg:z-50">
+      <nav aria-label="メインナビゲーション" className="hidden lg:flex lg:fixed lg:left-0 lg:top-0 lg:h-screen lg:w-64 lg:flex-col lg:bg-white lg:border-r lg:border-[#D9E1EA] lg:z-50">
         <div className="flex items-center justify-center h-32 border-b border-[#D9E1EA] bg-[#F7F9FC]">
           <Link to="/">
             <img src="/kigen404_title_b_transparent.png" alt="KIGEN404" className="h-20" />
@@ -70,11 +81,14 @@ export function Navigation() {
               <button
                 type="button"
                 onClick={handleSignOut}
+                disabled={signOutStatus.pending}
                 className="flex w-full items-center gap-2 rounded-lg border border-[#D9E1EA] px-3 py-2 text-sm font-medium text-[#5B6573] transition-colors hover:bg-[#F1F4F8]"
               >
                 <LogOut className="h-4 w-4" />
-                ログアウト
+                {signOutStatus.pending ? 'ログアウト中…' : 'ログアウト'}
               </button>
+              {signOutStatus.pending && <p role="status" className="text-sm text-[#5B6573]">ログアウトしています…</p>}
+              {signOutStatus.error && <p role="alert" className="text-sm text-red-700">{signOutStatus.error}</p>}
             </div>
           ) : (
             <p className="text-sm text-[#5B6573]">ログインすると相談履歴を保存できます。</p>
@@ -89,6 +103,8 @@ export function Navigation() {
               <Link
                 key={item.path}
                 to={item.path}
+                aria-label={item.path === '/privacy-settings' ? 'プライバシー設定' : item.label}
+                aria-current={isActive ? 'page' : undefined}
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                   isActive
                     ? 'bg-[#0F4C81] text-white'
@@ -110,13 +126,14 @@ export function Navigation() {
                 {persons.map((person) => {
                   const style = getRelationStyle(person.relation);
                   const RelationIcon = style.lucideIcon;
-                  const isExpanded = expandedPerson === person.personName;
+                  const isExpanded = expandedPerson === (person.personId ?? person.id);
                   return (
                     <div key={person.id}>
                       <button
                         onClick={() =>
-                          setExpandedPerson(isExpanded ? null : person.personName)
+                          setExpandedPerson(isExpanded ? null : (person.personId ?? person.id))
                         }
+                        aria-expanded={isExpanded}
                         className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors group text-[#5B6573] hover:bg-[#F1F4F8]"
                       >
                         <div className={`w-7 h-7 rounded-full flex items-center justify-center text-sm flex-shrink-0 ${style.badge}`}>
@@ -139,14 +156,14 @@ export function Navigation() {
                       {isExpanded && (
                         <div className="ml-10 mt-0.5 mb-1 space-y-0.5">
                           <Link
-                            to={`/new?person=${encodeURIComponent(person.personName)}`}
+                            to={person.personId ? `/new?personId=${encodeURIComponent(person.personId)}` : '/new'}
                             className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm text-[#E67300] hover:bg-[#E8F1F8] transition-colors font-medium"
                           >
                             <MessageCircle className="w-3.5 h-3.5" />
                             その人について相談
                           </Link>
                           <Link
-                            to={`/history?person=${encodeURIComponent(person.personName)}`}
+                            to={person.personId ? `/history?personId=${encodeURIComponent(person.personId)}` : '/history'}
                             className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm text-[#004D99] hover:bg-[#E8F1F8] transition-colors font-medium"
                           >
                             <History className="w-3.5 h-3.5" />
@@ -163,7 +180,7 @@ export function Navigation() {
         </div>
       </nav>
 
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[#D9E1EA] p-4 z-50">
+      <nav aria-label="モバイルナビゲーション" className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[#D9E1EA] p-4 z-50">
         <div className="max-w-2xl mx-auto flex justify-around">
           {(user ? bottomNavItems : guestBottomNavItems).map((item) => {
             const Icon = item.icon;
@@ -172,6 +189,8 @@ export function Navigation() {
               <Link
                 key={item.path}
                 to={item.path}
+                aria-label={item.path === '/privacy-settings' ? 'プライバシー設定' : item.label}
+                aria-current={isActive ? 'page' : undefined}
                 className={`flex flex-col items-center gap-1 transition-colors ${
                   isActive ? 'text-[#0F4C81]' : 'text-[#8A94A6] hover:text-[#5B6573]'
                 }`}

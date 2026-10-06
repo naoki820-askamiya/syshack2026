@@ -3,6 +3,7 @@ import test from 'node:test';
 import type { ConsultationData } from '../../app/types.js';
 import {
   findLatestConsultationByPersonName,
+  findLatestConsultationByPersonId,
   getLatestConsultationsByPerson,
 } from '../../app/utils/consultationHistory.js';
 
@@ -34,4 +35,25 @@ test('recent person list contains one latest consultation per person', () => {
     getLatestConsultationsByPerson(consultations).map((consultation) => consultation.id),
     ['case-a-new', 'case-b'],
   );
+});
+
+
+test('same display name does not merge different person IDs or select one by name', () => {
+  const sameName = consultations.map(c => ({ ...c, personName: '同名さん' }));
+  assert.deepEqual(getLatestConsultationsByPerson(sameName).map(c => c.personId), ['person-a', 'person-b']);
+  assert.equal(findLatestConsultationByPersonName(sameName, '同名さん'), undefined);
+});
+
+
+test('selection by personId keeps identity across rename and duplicate display names', () => {
+  const renamed = consultations.map(c => ({ ...c, personName: '同名さん' }));
+  assert.equal(findLatestConsultationByPersonId(renamed, 'person-b')?.id, 'case-b');
+  assert.equal(findLatestConsultationByPersonId(renamed, 'person-a')?.id, 'case-a-new');
+  assert.equal(findLatestConsultationByPersonId(renamed, 'missing'), undefined);
+});
+
+test('legacy cases without an ID never merge just because names match', () => {
+  const legacy = consultations.map(c => ({ ...c, personId: undefined, personName: '同名さん' }));
+  assert.equal(getLatestConsultationsByPerson(legacy).length, 3);
+  assert.equal(findLatestConsultationByPersonName(legacy, '同名さん'), undefined);
 });

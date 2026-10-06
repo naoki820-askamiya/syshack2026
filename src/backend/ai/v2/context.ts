@@ -1,11 +1,13 @@
+import { assertProfileBounds, serializeBoundedAiInput } from "./input-bounds.js";
 import { CONTEXT_SCHEMA_VERSION } from "./constants.js";
 import type { AiAnalysisInput, ReferenceContext } from "./input.schema.js";
 
-export interface AnalysisContextSnapshotV4 {
+export interface AnalysisContextSnapshotV5 {
     schemaVersion: typeof CONTEXT_SCHEMA_VERSION;
     personalizationUsed: boolean;
     referenceContextSnapshot: {
         personProfileSnapshot: unknown | null;
+        provenance: ReferenceContext["provenance"] | null;
         userPatternSummarySnapshot: null;
         usedFeedbacksSnapshot: ReferenceContext["recentFeedbacks"];
         usedCaseSummariesSnapshot: ReferenceContext["recentCaseSummaries"];
@@ -20,12 +22,13 @@ export interface AnalysisContextSnapshotV4 {
 }
 
 export function buildAiInput(input: AiAnalysisInput): string {
-    return JSON.stringify(input);
+    return serializeBoundedAiInput(input);
 }
 
 export function buildContextSnapshot(
     referenceContext: ReferenceContext,
-): AnalysisContextSnapshotV4 {
+): AnalysisContextSnapshotV5 {
+    assertProfileBounds(referenceContext.personProfile);
     const personProfileUsed = referenceContext.personProfile !== null;
     const feedbackCount = referenceContext.recentFeedbacks.length;
     const recentCaseCount = referenceContext.recentCaseSummaries.length;
@@ -37,6 +40,7 @@ export function buildContextSnapshot(
         personalizationUsed,
         referenceContextSnapshot: {
             personProfileSnapshot: referenceContext.personProfile,
+            provenance: referenceContext.provenance ? structuredClone(referenceContext.provenance) : null,
             userPatternSummarySnapshot: null,
             usedFeedbacksSnapshot: structuredClone(referenceContext.recentFeedbacks),
             usedCaseSummariesSnapshot: structuredClone(referenceContext.recentCaseSummaries),

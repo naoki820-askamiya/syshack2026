@@ -27,6 +27,7 @@ export interface ApiPerson {
 }
 
 export interface ApiAnalysisCase {
+  personSnapshot?: unknown;
   id: string;
   personId: string;
   eventFacts: string;
@@ -38,6 +39,20 @@ export interface ApiAnalysisCase {
   createdAt: string;
 }
 
+export function personFromCaseSnapshot(value: unknown): Pick<ApiPerson, 'displayName' | 'relationshipType'> | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const snapshot = value as Record<string, unknown>;
+  if (snapshot.schemaVersion !== 'person-snapshot-v1' || !snapshot.person || typeof snapshot.person !== 'object' || Array.isArray(snapshot.person)) return null;
+  const person = snapshot.person as Record<string, unknown>;
+  return typeof person.displayName === 'string' && typeof person.relationshipType === 'string' &&
+    Object.hasOwn(RELATIONSHIP_TYPES_FROM_API, person.relationshipType)
+    ? { displayName: person.displayName, relationshipType: person.relationshipType } : null;
+}
+
+export function relationshipLabel(value: string): RelationType {
+  return RELATIONSHIP_TYPES_FROM_API[value] ?? 'その他';
+}
+
 export function toConsultation(
   analysisCase: ApiAnalysisCase,
   person: ApiPerson,
@@ -46,7 +61,7 @@ export function toConsultation(
     id: analysisCase.id,
     personId: analysisCase.personId,
     personName: person.displayName,
-    relation: RELATIONSHIP_TYPES_FROM_API[person.relationshipType] ?? 'その他',
+    relation: relationshipLabel(person.relationshipType),
     event: analysisCase.eventFacts,
     reaction: REACTIONS.has(analysisCase.perceivedPartnerReaction as Reaction)
       ? analysisCase.perceivedPartnerReaction as Reaction

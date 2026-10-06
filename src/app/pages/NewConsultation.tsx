@@ -1,13 +1,18 @@
 import { useState, useRef, useEffect } from 'react';
+import { clientTiming, type TimingToken } from '../utils/clientTiming';
 import { useNavigate, useSearchParams } from 'react-router';
 import { ArrowLeft, Send, MessageSquare, PenLine, X, ChevronDown, AlertCircle, UserCheck } from 'lucide-react';
 import type { ConsultationData, RelationType } from '../types';
-import { createPerson, createAnalysisCase, analyze } from '../api/sessionV17';
+import { createPerson, createAnalysisCase } from '../api/sessionV17';
+import { fetchApiJson } from '../api/client';
+import { captureAuthBoundary, isCurrentAuthBoundary, assertCurrentAuthBoundary } from '../utils/authBoundary';
+import { relationshipLabel, personFromCaseSnapshot, type ApiPerson } from '../api/consultationMapper';
 import { saveConsultation, getConsultations } from '../utils/storage';
 import { getRelationStyle } from '../utils/relationStyles';
 import { Navigation } from '../components/Navigation';
+import { PersonEditor } from '../components/PersonEditor';
 import {
-  findLatestConsultationByPersonName,
+  findLatestConsultationByPersonId,
   getLatestConsultationsByPerson,
 } from '../utils/consultationHistory';
 import {
@@ -33,31 +38,27 @@ export function NewConsultation() {
   const [searchParams] = useSearchParams();
   const chatEndRef = useRef<HTMLDivElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
+  const timingRef = useRef<TimingToken | null>(null);
+  useEffect(() => () => clientTiming.cancelSubmit(timingRef.current), []);
 
   const resolveInitialData = () => {
-    const nameParam = searchParams.get('person');
-    if (nameParam) {
-      const past = findLatestConsultationByPersonName(getConsultations(), nameParam);
+    const personIdParam = searchParams.get('personId');
+    if (personIdParam) {
+      const past = findLatestConsultationByPersonId(getConsultations(), personIdParam);
       if (past) {
         return {
           ...EMPTY_CONSULTATION_FORM,
-          personId: past.personId ?? '',
-          personName: past.personName,
-          relation: past.relation as RelationType,
           ageGroup: past.ageGroup ?? EMPTY_CONSULTATION_FORM.ageGroup,
           gender: past.gender ?? EMPTY_CONSULTATION_FORM.gender,
         };
       }
-      return { ...EMPTY_CONSULTATION_FORM, personName: nameParam };
+      return { ...EMPTY_CONSULTATION_FORM };
     }
     return { ...EMPTY_CONSULTATION_FORM };
   };
 
   const [formData, setFormData] = useState(resolveInitialData);
-  const [prefilled, setPrefilled] = useState(() => {
-    const name = searchParams.get('person');
-    return !!name && !!findLatestConsultationByPersonName(getConsultations(), name);
-  });
+  const [prefilled, setPrefilled] = useState(false);
 
   const [actionMode, setActionMode] = useState<ActionMode>('text');
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -69,6 +70,48 @@ export function NewConsultation() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [apiError, setApiError] = useState("");
 
+  const selectedPersonId = searchParams.get('personId');
+  const [personLoading, setPersonLoading] = useState(!!selectedPersonId);
+  const [personLoadFailed, setPersonLoadFailed] = useState(false);
+  const [loadedPerson, setLoadedPerson] = useState<ApiPerson | null>(null);
+  const [personEditing, setPersonEditing] = useState(false);
+  const personLoadGeneration = useRef(0);
+  const requestedPersonId = useRef<string | null>(selectedPersonId);
+  const submitBusy = useRef(false);
+  const createIntents = useRef<{ person?: { payload: string; key: string; userId: string | null; epoch: number }; analysisCase?: { payload: string; key: string; userId: string | null; epoch: number } }>({});
+  const intentKey = (kind: 'person' | 'analysisCase', payload: object, boundary: ReturnType<typeof captureAuthBoundary>) => {
+    const serialized = JSON.stringify(payload);
+    const previous = createIntents.current[kind];
+    if (previous?.payload === serialized && previous.userId === boundary.userId && previous.epoch === boundary.epoch) return previous.key;
+    const key = crypto.randomUUID();
+    createIntents.current[kind] = { payload: serialized, key, userId: boundary.userId, epoch: boundary.epoch };
+    return key;
+  };
+
+  const loadPerson = (personId: string) => {
+    requestedPersonId.current = personId;
+    const attempt = ++personLoadGeneration.current;
+    const boundary = captureAuthBoundary();
+    const current = () => attempt === personLoadGeneration.current && isCurrentAuthBoundary(boundary);
+    setPersonLoading(true); setPersonLoadFailed(false); setLoadedPerson(null); setPersonEditing(false);
+    void fetchApiJson<{ person: ApiPerson }>(`/api/persons/${encodeURIComponent(personId)}`)
+      .then(({ person }) => {
+        if (!current()) return;
+        if (person.id !== personId) throw new Error('相手の情報を確認できませんでした。');
+        setFormData(prev => ({ ...prev, personId: person.id, personName: person.displayName, relation: relationshipLabel(person.relationshipType), relationOther: '' }));
+        setLoadedPerson(person); setPrefilled(true);
+      })
+      .catch((error: unknown) => { if (current()) { setPersonLoadFailed(true); setApiError(error instanceof Error ? error.message : '相手の情報を取得できませんでした。'); } })
+      .finally(() => { if (current()) setPersonLoading(false); });
+  };
+
+  useEffect(() => {
+    setPersonLoadFailed(false);
+    if (selectedPersonId) loadPerson(selectedPersonId);
+    else setPersonLoading(false);
+    return () => { personLoadGeneration.current++; };
+  }, [selectedPersonId]);
+
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestions, setSuggestions] = useState<ConsultationData[]>([]);
 
@@ -77,9 +120,15 @@ export function NewConsultation() {
   }, [chatMessages]);
 
   const handleNameChange = (value: string) => {
+    if (personLoading || isAnalyzing || personEditing) return;
     // 手入力で名前を変えた場合、別人に以前のpersonIdを流用しない。
+    if (formData.personId) delete createIntents.current.person;
     setFormData(prev => ({ ...prev, personId: '', personName: value }));
     setPrefilled(false);
+    setLoadedPerson(null);
+    requestedPersonId.current = null;
+    setPersonLoadFailed(false);
+    setApiError('');
     if (value.trim().length > 0) {
       const matched = getLatestConsultationsByPerson(getConsultations()).filter(c =>
         c.personName.toLowerCase().includes(value.toLowerCase())
@@ -93,6 +142,7 @@ export function NewConsultation() {
   };
 
   const applyPerson = (person: ConsultationData) => {
+    if (personLoading || isAnalyzing || personEditing) return;
     setFormData(prev => ({
       ...prev,
       personId: person.personId ?? '',
@@ -104,6 +154,7 @@ export function NewConsultation() {
     setPrefilled(true);
     setShowSuggestions(false);
     setSuggestions([]);
+    if (person.personId) loadPerson(person.personId);
   };
 
   const addChatMessage = () => {
@@ -127,6 +178,7 @@ export function NewConsultation() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitBusy.current || isAnalyzing || personLoading || personLoadFailed || personEditing) return;
     setSubmitted(true);
     setApiError("");
     const errors = getErrors();
@@ -142,37 +194,54 @@ export function NewConsultation() {
       otherChatText,
     );
 
+    const boundary = captureAuthBoundary();
+    submitBusy.current = true;
+    const timing = clientTiming.begin('submit', boundary);
+    timingRef.current = timing;
     setIsAnalyzing(true);
     
     try {
       // 履歴から選んだ相手は所有中のPersonを再利用し、新規入力時だけ作成します。
+      assertCurrentAuthBoundary(boundary);
       let personId = formData.personId;
+      let confirmedPerson = loadedPerson;
       if (!personId) {
-        const personRes = await createPerson({
-          displayName: formData.personName,
+        const personPayload = {
+          displayName: formData.personName.trim(),
           relationshipType: effectiveRelation,
-        });
+        };
+        const personRes = await createPerson({ ...personPayload, createIntentKey: intentKey('person', personPayload, boundary) });
+        assertCurrentAuthBoundary(boundary);
         personId = personRes.person.id;
+        setLoadedPerson(personRes.person);
+        confirmedPerson = personRes.person;
+        // Acknowledged identity survives a later Case failure; do not infer unknown server outcomes.
+        setFormData(prev => prev.personName === formData.personName && resolveRelation(prev) === effectiveRelation && !prev.personId
+          ? { ...prev, personId, personName: personRes.person.displayName, relation: relationshipLabel(personRes.person.relationshipType), relationOther: '' } : prev);
       }
 
-      const caseRes = await createAnalysisCase({
+      const casePayload = {
         personId,
-        userAgeRange: formData.ageGroup,
-        userGender: formData.gender,
-        perceivedPartnerReaction: effectiveReaction,
-        elapsedTimeType: formData.timing,
-        eventFacts: formData.event,
-        userResponseType: actionMode === 'text' ? 'action' : actionMode === 'chat' ? 'conversation' : 'none',
-        userResponseText: effectiveUserAction,
-      });
+        userAgeRange: formData.ageGroup.trim(),
+        userGender: formData.gender.trim(),
+        perceivedPartnerReaction: effectiveReaction.trim(),
+        elapsedTimeType: formData.timing.trim(),
+        eventFacts: formData.event.trim(),
+        userResponseType: (actionMode === 'text' ? 'action' : actionMode === 'chat' ? 'conversation' : 'none') as 'action' | 'conversation' | 'none',
+        userResponseText: effectiveUserAction?.trim() ?? null,
+      };
+      const caseRes = await createAnalysisCase({ ...casePayload, createIntentKey: intentKey('analysisCase', casePayload, boundary) });
+      assertCurrentAuthBoundary(boundary);
       const caseId = caseRes.analysisCase.id;
+      const savedIdentity = personFromCaseSnapshot(caseRes.analysisCase.personSnapshot) ?? confirmedPerson;
+      clientTiming.ack(timing, caseId);
 
       // DBが正本であり、このキャッシュは直後の画面遷移を滑らかにする目的に限定します。
       const consultation: ConsultationData = {
         id: caseId,
         personId,
-        personName: formData.personName,
-        relation: effectiveRelation,
+        personName: savedIdentity?.displayName ?? formData.personName,
+        relation: savedIdentity ? relationshipLabel(savedIdentity.relationshipType) : effectiveRelation,
         event: formData.event,
         reaction: effectiveReaction,
         userAction: effectiveUserAction ?? '',
@@ -181,16 +250,16 @@ export function NewConsultation() {
         ageGroup: formData.ageGroup,
         gender: formData.gender,
       };
-      saveConsultation(consultation);
-
-      await analyze(caseId);
-
-      navigate(`/analysis/${caseId}`);
+      saveConsultation(consultation, boundary);
+      clientTiming.handoff(timing);
+      navigate(`/analysis/${caseId}`, { state: { startAnalysis: true } });
 
     } catch (error: unknown) {
-      setApiError(error instanceof Error ? error.message : "サーバーとの通信に失敗しました。時間をおいて再試行してください。");
+      clientTiming.fail(timing);
+      if (isCurrentAuthBoundary(boundary)) setApiError(error instanceof Error ? error.message : "サーバーとの通信に失敗しました。時間をおいて再試行してください。");
     } finally {
-      setIsAnalyzing(false);
+      submitBusy.current = false;
+      if (isCurrentAuthBoundary(boundary)) setIsAnalyzing(false);
     }
   };
 
@@ -210,6 +279,7 @@ export function NewConsultation() {
     <button
       type="button"
       onClick={() => setFormData({ ...formData, relation, relationOther: '' })}
+      aria-pressed={formData.relation === relation}
       className={`py-2.5 px-3 rounded-lg border-2 transition-colors text-sm ${
         formData.relation === relation ? selectedBtn : unselectedBtn
       }`}
@@ -225,7 +295,7 @@ export function NewConsultation() {
       <div className="lg:ml-64 pb-24 lg:pb-8">
         <div className="bg-white border-b border-[#D9E1EA] p-4 lg:px-8 sticky top-0 z-10">
           <div className="max-w-4xl mx-auto flex items-center gap-3">
-            <button onClick={() => navigate('/')} className="text-[#5B6573] hover:text-[#1F2A37]">
+            <button aria-label="ホームに戻る" onClick={() => navigate('/')} className="text-[#5B6573] hover:text-[#1F2A37]">
               <ArrowLeft className="w-6 h-6" />
             </button>
             <h1 className="text-xl lg:text-2xl font-semibold">状況を入力</h1>
@@ -233,39 +303,42 @@ export function NewConsultation() {
         </div>
 
         <div className="max-w-4xl mx-auto p-4 lg:p-8">
+          {personLoading && <p role="status" className="mb-4">相手の情報を確認しています...</p>}
+          {personLoadFailed && <button type="button" className="mb-4 text-[#0F4C81]" onClick={() => { if (requestedPersonId.current) loadPerson(requestedPersonId.current); }}>相手の情報を再取得</button>}
           {prefilled && (
             <div className="mb-6 flex items-center gap-2 bg-[#E8F1F8] border border-[#D9E1EA] text-[#0F4C81] rounded-lg px-4 py-3 text-sm">
               <UserCheck className="w-4 h-4 flex-shrink-0" />
               <span>
-                過去の相談から <strong>{formData.personName}</strong> さんの情報を自動で入力しました。内容を確認してください。
+                保存済みの <strong>{formData.personName}</strong> さんの情報を入力しました。内容を確認してください。
               </span>
             </div>
           )}
 
           {submitted && Object.values(errors).some(Boolean) && (
-            <div className="mb-6 flex items-center gap-2 bg-red-50 border border-red-300 text-red-700 rounded-lg px-4 py-3 text-sm">
+            <div role="alert" className="mb-6 flex items-center gap-2 bg-red-50 border border-red-300 text-red-700 rounded-lg px-4 py-3 text-sm">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               <span>入力されていない必須項目があります。赤くなっている欄を確認してください。</span>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6 lg:space-y-8" noValidate>
+          <form aria-busy={isAnalyzing} onSubmit={handleSubmit} className="space-y-6 lg:space-y-8" noValidate>
             <div className="lg:grid lg:grid-cols-2 lg:gap-8 space-y-6 lg:space-y-0">
 
               <div className="space-y-6">
 
                 <div>
-                  <label className="block text-sm font-medium text-[#5B6573] mb-1">
+                  <label htmlFor="person-name" className="block text-sm font-medium text-[#5B6573] mb-1">
                     ニックネーム<span className="text-red-500 ml-0.5">*</span>
                   </label>
                   <p className="text-xs text-[#8A94A6] mb-2">本名は入力しないでください</p>
-                  <div className="relative">
+                  <div className="relative" onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setShowSuggestions(false); }}>
                     <input
                       ref={nameInputRef}
                       type="text"
+                      id="person-name"
+                      disabled={personLoading || isAnalyzing || personEditing}
                       value={formData.personName}
                       onChange={(e) => handleNameChange(e.target.value)}
-                      onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
                       onFocus={() => {
                         if (suggestions.length > 0) setShowSuggestions(true);
                       }}
@@ -283,7 +356,9 @@ export function NewConsultation() {
                             <button
                               key={person.id}
                               type="button"
-                              onMouseDown={() => applyPerson(person)}
+                              onMouseDown={(e) => e.preventDefault()}
+                              disabled={personLoading || isAnalyzing || personEditing}
+                              onClick={() => applyPerson(person)}
                               className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-[#F1F4F8] transition-colors text-left"
                             >
                               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm flex-shrink-0 ${style.badge}`}>
@@ -302,6 +377,12 @@ export function NewConsultation() {
                       </div>
                     )}
                   </div>
+                  {loadedPerson && formData.personId === loadedPerson.id && <PersonEditor key={loadedPerson.id}
+                    person={loadedPerson} disabled={personLoading || isAnalyzing} onEditingChange={setPersonEditing}
+                    onSaved={person => {
+                      setLoadedPerson(person);
+                      setFormData(prev => prev.personId === person.id ? { ...prev, personName: person.displayName, relation: relationshipLabel(person.relationshipType), relationOther: '' } : prev);
+                    }} />}
                   {errors.personName && (
                     <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
                       <AlertCircle className="w-3 h-3" />入力してください
@@ -311,11 +392,12 @@ export function NewConsultation() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-[#5B6573] mb-2">
+                    <label htmlFor="age-group" className="block text-sm font-medium text-[#5B6573] mb-2">
                       あなたの年代<span className="text-red-500 ml-0.5">*</span>
                     </label>
                     <div className="relative">
                       <select
+                        id="age-group"
                         value={formData.ageGroup}
                         onChange={(e) => setFormData({ ...formData, ageGroup: e.target.value })}
                         className={`${inputClass()} appearance-none pr-10 cursor-pointer`}
@@ -328,11 +410,12 @@ export function NewConsultation() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-[#5B6573] mb-2">
+                    <label htmlFor="gender" className="block text-sm font-medium text-[#5B6573] mb-2">
                       あなたの性別<span className="text-red-500 ml-0.5">*</span>
                     </label>
                     <div className="relative">
                       <select
+                        id="gender"
                         value={formData.gender}
                         onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
                         className={`${inputClass()} appearance-none pr-10 cursor-pointer`}
@@ -346,10 +429,10 @@ export function NewConsultation() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-[#5B6573] mb-2">
+                <fieldset disabled={personLoading || isAnalyzing || personEditing || !!formData.personId}>
+                  <legend className="block text-sm font-medium text-[#5B6573] mb-2">
                     相手との関係<span className="text-red-500 ml-0.5">*</span>
-                  </label>
+                  </legend>
                   <div className="mb-2">
                     <p className="text-xs text-[#8A94A6] mb-1.5 flex items-center gap-1">
                       <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#0F4C81]"></span>
@@ -372,10 +455,12 @@ export function NewConsultation() {
                       ))}
                     </div>
                   </div>
-                  {formData.relation === 'その他' && (
+                  {formData.relation === 'その他' && !formData.personId && (
                     <div className="mt-3">
+                      <label htmlFor="relation-other" className="sr-only">その他の関係性</label>
                       <input
                         type="text"
+                        id="relation-other"
                         value={formData.relationOther}
                         onChange={(e) => setFormData({ ...formData, relationOther: e.target.value })}
                         className={inputClass(errors.relationOther)}
@@ -388,13 +473,14 @@ export function NewConsultation() {
                       )}
                     </div>
                   )}
-                </div>
+                </fieldset>
 
                 <div>
-                  <label className="block text-sm font-medium text-[#5B6573] mb-2">
+                  <label htmlFor="event-facts" className="block text-sm font-medium text-[#5B6573] mb-2">
                     起きた出来事<span className="text-red-500 ml-0.5">*</span>
                   </label>
                   <textarea
+                    id="event-facts"
                     value={formData.event}
                     onChange={(e) => setFormData({ ...formData, event: e.target.value })}
                     className={inputClass(errors.event)}
@@ -411,16 +497,17 @@ export function NewConsultation() {
 
               <div className="space-y-6">
 
-                <div>
-                  <label className="block text-sm font-medium text-[#5B6573] mb-2">
+                <fieldset>
+                  <legend className="block text-sm font-medium text-[#5B6573] mb-2">
                     相手の反応<span className="text-red-500 ml-0.5">*</span>
-                  </label>
+                  </legend>
                   <div className="grid grid-cols-3 gap-2">
                     {REACTIONS.map((reaction) => (
                       <button
                         key={reaction}
                         type="button"
                         onClick={() => setFormData({ ...formData, reaction, reactionOther: '' })}
+                        aria-pressed={formData.reaction === reaction}
                         className={`py-2.5 px-2 rounded-lg border-2 transition-colors text-sm flex flex-col items-center gap-1 ${
                           formData.reaction === reaction ? selectedBtn : unselectedBtn
                         }`}
@@ -432,8 +519,10 @@ export function NewConsultation() {
                   </div>
                   {formData.reaction === 'その他' && (
                     <div className="mt-3">
+                      <label htmlFor="reaction-other" className="sr-only">その他の反応</label>
                       <input
                         type="text"
+                        id="reaction-other"
                         value={formData.reactionOther}
                         onChange={(e) => setFormData({ ...formData, reactionOther: e.target.value })}
                         className={inputClass(errors.reactionOther)}
@@ -446,18 +535,19 @@ export function NewConsultation() {
                       )}
                     </div>
                   )}
-                </div>
+                </fieldset>
 
-                <div>
-                  <label className="block text-sm font-medium text-[#5B6573] mb-2">
+                <fieldset>
+                  <legend className="block text-sm font-medium text-[#5B6573] mb-2">
                     出来事からの経過時間<span className="text-red-500 ml-0.5">*</span>
-                  </label>
+                  </legend>
                   <div className="grid grid-cols-4 lg:grid-cols-2 gap-2">
                     {TIMINGS.map((timing) => (
                       <button
                         key={timing}
                         type="button"
                         onClick={() => setFormData({ ...formData, timing })}
+                        aria-pressed={formData.timing === timing}
                         className={`py-3 px-2 rounded-lg border-2 transition-colors text-sm ${
                           formData.timing === timing ? selectedBtn : unselectedBtn
                         }`}
@@ -466,17 +556,18 @@ export function NewConsultation() {
                       </button>
                     ))}
                   </div>
-                </div>
+                </fieldset>
 
-                <div>
-                  <label className="block text-sm font-medium text-[#5B6573] mb-2">
+                <fieldset>
+                  <legend className="block text-sm font-medium text-[#5B6573] mb-2">
                     自分の行動（その後どうしたか）<span className="text-red-500 ml-0.5">*</span>
-                  </label>
+                  </legend>
 
                   <div className="flex gap-2 mb-3">
                     <button
                       type="button"
                       onClick={() => setActionMode('text')}
+                      aria-pressed={actionMode === 'text'}
                       className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border-2 text-sm transition-colors ${
                         actionMode === 'text' ? selectedBtn : unselectedBtn
                       }`}
@@ -487,6 +578,7 @@ export function NewConsultation() {
                     <button
                       type="button"
                       onClick={() => setActionMode('chat')}
+                      aria-pressed={actionMode === 'chat'}
                       className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border-2 text-sm transition-colors ${
                         actionMode === 'chat' ? selectedBtn : unselectedBtn
                       }`}
@@ -497,6 +589,7 @@ export function NewConsultation() {
                     <button
                       type="button"
                       onClick={() => setActionMode('none')}
+                      aria-pressed={actionMode === 'none'}
                       className={'flex-1 py-2.5 px-2 rounded-lg border-2 text-sm transition-colors ' + (actionMode === 'none' ? selectedBtn : unselectedBtn)}
                     >
                       何もしていない
@@ -505,7 +598,9 @@ export function NewConsultation() {
 
                   {actionMode === 'text' && (
                     <>
+                      <label htmlFor="user-action" className="sr-only">自分の行動の内容</label>
                       <textarea
+                        id="user-action"
                         value={formData.userAction}
                         onChange={(e) => setFormData({ ...formData, userAction: e.target.value })}
                         className={inputClass(errors.userAction)}
@@ -526,6 +621,7 @@ export function NewConsultation() {
                         <button
                           type="button"
                           onClick={() => setChatPlatform('LINE')}
+                          aria-pressed={chatPlatform === 'LINE'}
                           className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg border-2 text-sm transition-colors ${
                             chatPlatform === 'LINE' ? selectedBtn : unselectedBtn
                           }`}
@@ -535,6 +631,7 @@ export function NewConsultation() {
                         <button
                           type="button"
                           onClick={() => setChatPlatform('other')}
+                          aria-pressed={chatPlatform === 'other'}
                           className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg border-2 text-sm transition-colors ${
                             chatPlatform === 'other' ? selectedBtn : unselectedBtn
                           }`}
@@ -574,7 +671,8 @@ export function NewConsultation() {
                                     <button
                                       type="button"
                                       onClick={() => removeChatMessage(i)}
-                                      className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full hidden group-hover:flex items-center justify-center"
+                                      aria-label={`${i + 1}件目のメッセージを削除`}
+                                      className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center"
                                     >
                                       <X className="w-3 h-3" />
                                     </button>
@@ -589,6 +687,7 @@ export function NewConsultation() {
                               <button
                                 type="button"
                                 onClick={() => setChatSender('自分')}
+                                aria-pressed={chatSender === '自分'}
                                 className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-colors ${
                                   chatSender === '自分'
                                     ? 'bg-[#0F4C81] text-white'
@@ -600,6 +699,7 @@ export function NewConsultation() {
                               <button
                                 type="button"
                                 onClick={() => setChatSender('相手')}
+                                aria-pressed={chatSender === '相手'}
                                 className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-colors ${
                                   chatSender === '相手'
                                     ? 'bg-[#5B6573] text-white'
@@ -612,6 +712,8 @@ export function NewConsultation() {
                             <div className="flex gap-2">
                               <input
                                 type="text"
+                                id="chat-message"
+                                aria-label={`${chatSender}のメッセージ`}
                                 value={chatInput}
                                 onChange={(e) => setChatInput(e.target.value)}
                                 onKeyDown={(e) => {
@@ -626,6 +728,7 @@ export function NewConsultation() {
                               <button
                                 type="button"
                                 onClick={addChatMessage}
+                                aria-label="メッセージを追加"
                                 disabled={!chatInput.trim()}
                                 className="w-9 h-9 flex items-center justify-center rounded-lg bg-[#0F4C81] text-white hover:bg-[#0C3E69] disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex-shrink-0"
                               >
@@ -645,7 +748,9 @@ export function NewConsultation() {
                               <span className="text-[#0F4C81]">ユーザー名も含めてコピーするとより正確に分析できます。</span>
                             </p>
                           </div>
+                          <label htmlFor="chat-transcript" className="sr-only">貼り付ける会話の内容</label>
                           <textarea
+                            id="chat-transcript"
                             value={otherChatText}
                             onChange={(e) => setOtherChatText(e.target.value)}
                             className={inputClass(errors.chatContent)}
@@ -663,20 +768,21 @@ export function NewConsultation() {
                       )}
                     </div>
                   )}
-                </div>
+                </fieldset>
               </div>
             </div>
 
             {apiError && (
-              <div className="mb-6 flex items-center gap-2 bg-red-50 border border-red-300 text-red-700 rounded-lg px-4 py-3 text-sm">
+              <div role="alert" className="mb-6 flex items-center gap-2 bg-red-50 border border-red-300 text-red-700 rounded-lg px-4 py-3 text-sm">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 <span>{apiError}</span>
               </div>
             )}
 
+            {isAnalyzing && <p role="status" className="text-sm text-[#5B6573]">相談を保存しています…</p>}
             <button
               type="submit"
-              disabled={isAnalyzing}
+              disabled={isAnalyzing || personLoading || personLoadFailed || personEditing}
               className={`w-full text-white py-4 lg:py-5 rounded-xl font-semibold shadow-sm transition-colors lg:text-lg flex justify-center items-center gap-2 ${
                 isAnalyzing
                   ? "bg-[#B8C2CF] cursor-not-allowed"
@@ -689,7 +795,7 @@ export function NewConsultation() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  分析中です...
+                  相談を保存しています...
                 </>
               ) : (
                 "分析する"

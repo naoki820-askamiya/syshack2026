@@ -1,10 +1,22 @@
-export type ConfidenceLevel = 'low' | 'medium' | 'high';
+export type ConfidenceLevel = 'low' | 'medium' | 'high' | 'unknown';
+export type EvidenceSource = 'current_case' | 'person_profile' | 'recent_case' | 'feedback' | 'unknown';
+export type EvidenceStrength = ConfidenceLevel | 'unknown';
+export interface AnalysisEvidenceView { text: string; source: EvidenceSource; strength: EvidenceStrength }
+export interface ComparisonPatternView { label: string; source: EvidenceSource; relevance: EvidenceStrength }
+export interface ComparisonReasonView { label: string; reason: string }
+export interface ComparisonDeviationView extends ComparisonReasonView { strength: EvidenceStrength }
+
+export type ActionSafety = 'safe' | 'caution' | 'unknown';
+
+export function actionSafetyLabel(safety: ActionSafety): string {
+  return safety === 'safe' ? '比較的安全な候補' : safety === 'caution' ? '注意して検討' : '安全性の情報なし・慎重に検討';
+}
 
 export interface AnalysisScoreView {
   key: string;
   label: string;
   score: number;
-  category: 'concern' | 'reassurance';
+  category: 'concern' | 'context' | 'reassurance' | 'unknown';
   reason?: string;
 }
 
@@ -18,17 +30,17 @@ export interface AnalysisView {
   situationReading: string;
   scoreDescription?: string;
   scores: AnalysisScoreView[];
-  concernSignals: string[];
-  reassuringSignals: string[];
+  concernSignals: AnalysisEvidenceView[];
+  reassuringSignals: AnalysisEvidenceView[];
   unknowns: string[];
   alternatives: { label: string; reason: string }[];
   possibleBiases: { label: string; basis: string }[];
   balancedView: string;
-  recommendedActions: { label: string; reason: string }[];
+  recommendedActions: { label: string; reason: string; safety: ActionSafety }[];
   avoidActions: { label: string; reason: string }[];
   replyDrafts: { tone: 'formal' | 'normal' | 'light'; text: string }[];
   contactTiming: string;
-  contextComparison: { enabled: boolean; conclusion: string; patterns: string[]; deviations: string[] };
+  contextComparison: { enabled: boolean; conclusion: string; patterns: ComparisonPatternView[]; sameAsUsual: ComparisonReasonView[]; deviations: ComparisonDeviationView[] };
   disclaimer: string;
 }
 
@@ -41,7 +53,7 @@ const text = (value: unknown, fallback = ''): string =>
   typeof value === 'string' ? value : fallback;
 
 const confidence = (value: unknown): ConfidenceLevel =>
-  value === 'low' || value === 'high' ? value : 'medium';
+  value === 'low' || value === 'medium' || value === 'high' ? value : 'unknown';
 
 const score100 = (value: unknown): number => {
   const numeric = typeof value === 'number' && Number.isFinite(value) ? value : 0;
@@ -60,6 +72,15 @@ const objectArray = (value: unknown): JsonObject[] =>
 const stringArray = (value: unknown): string[] =>
   Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
 
+const evidenceSource = (value: unknown): EvidenceSource =>
+  value === 'current_case' || value === 'person_profile' || value === 'recent_case' || value === 'feedback' ? value : 'unknown';
+const evidenceStrength = (value: unknown): EvidenceStrength =>
+  value === 'low' || value === 'medium' || value === 'high' ? value : 'unknown';
+const evidenceItems = (value: unknown): AnalysisEvidenceView[] => objectArray(value).map(item => ({
+  text: text(item.text), source: evidenceSource(item.source), strength: evidenceStrength(item.strength),
+})).filter(item => item.text.length > 0);
+const legacyEvidence = (value: string): AnalysisEvidenceView => ({ text: value, source: 'unknown', strength: 'unknown' });
+
 function normalizeV2(root: JsonObject): AnalysisView | null {
   const result = isObject(root.result) ? root.result : root;
   const analysis = isObject(result.analysis) ? result.analysis : null;
@@ -75,7 +96,7 @@ function normalizeV2(root: JsonObject): AnalysisView | null {
       key,
       label: text(item.label, key),
       score: score100(item.score),
-      category: item.category === 'relief' ? 'reassurance' : 'concern',
+      category: item.category === 'relief' ? 'reassurance' : item.category === 'context' ? 'context' : item.category === 'concern' ? 'concern' : 'unknown',
       reason: text(item.reason),
     }];
   });
@@ -97,8 +118,8 @@ function normalizeV2(root: JsonObject): AnalysisView | null {
     situationReading: isObject(analysis.situationReading) ? text(analysis.situationReading.body) : '',
     scoreDescription: text(scoreContainer.description),
     scores,
-    concernSignals: objectArray(evidence.signalsForConcern).map((item) => text(item.text)).filter(Boolean),
-    reassuringSignals: objectArray(evidence.signalsAgainstConcern).map((item) => text(item.text)).filter(Boolean),
+    concernSignals: evidenceItems(evidence.signalsForConcern),
+    reassuringSignals: evidenceItems(evidence.signalsAgainstConcern),
     unknowns: stringArray(evidence.unknowns),
     alternatives: objectArray(analysis.alternativeInterpretations).map((item) => ({
       label: text(item.label), reason: text(item.reason),
@@ -109,6 +130,7 @@ function normalizeV2(root: JsonObject): AnalysisView | null {
     balancedView: text(reframe.balancedView),
     recommendedActions: objectArray(analysis.recommendedActions).map((item) => ({
       label: text(item.label), reason: text(item.reason),
+      safety: item.safety === 'safe' || item.safety === 'caution' ? item.safety : 'unknown',
     })),
     avoidActions: objectArray(analysis.avoidActions).map((item) => ({
       label: text(item.label), reason: text(item.reason),
@@ -121,8 +143,15 @@ function normalizeV2(root: JsonObject): AnalysisView | null {
     contextComparison: {
       enabled: usual.enabled === true,
       conclusion: text(usual.comparisonConclusion),
-      patterns: objectArray(usual.usualPatternsUsed).map((item) => text(item.label)).filter(Boolean),
-      deviations: objectArray(usual.deviationSignals).map((item) => text(item.label)).filter(Boolean),
+      patterns: usual.enabled === true ? objectArray(usual.usualPatternsUsed).map(item => ({
+        label: text(item.label), source: evidenceSource(item.source), relevance: evidenceStrength(item.relevance),
+      })).filter(item => item.label.length > 0) : [],
+      sameAsUsual: usual.enabled === true ? objectArray(usual.sameAsUsual).map(item => ({
+        label: text(item.label), reason: text(item.reason),
+      })).filter(item => item.label.length > 0) : [],
+      deviations: usual.enabled === true ? objectArray(usual.deviationSignals).map(item => ({
+        label: text(item.label), reason: text(item.reason), strength: evidenceStrength(item.strength),
+      })).filter(item => item.label.length > 0) : [],
     },
     disclaimer: text(disclaimer.text, 'AIの出力は診断や事実の断定ではなく、状況を整理するための参考情報です。'),
   };
@@ -148,18 +177,18 @@ function normalizeLegacy(root: JsonObject): AnalysisView | null {
     textImpression: text(legacy.textImpression),
     situationReading: text(legacy.contextImpression),
     scores: meta.map(([key, label, category]) => ({ key, label, category, score: legacyScore100(rawScores[key]) })),
-    concernSignals: objectArray(legacy.reasons).map((item) => `${text(item.label)}：${text(item.detail)}`),
-    reassuringSignals: objectArray(legacy.goodSignals).map((item) => text(item.text)).filter(Boolean),
+    concernSignals: objectArray(legacy.reasons).map((item) => legacyEvidence(`${text(item.label)}：${text(item.detail)}`)),
+    reassuringSignals: objectArray(legacy.goodSignals).map((item) => text(item.text)).filter(Boolean).map(legacyEvidence),
     unknowns: [], alternatives: [], possibleBiases: [],
     balancedView: text(legacy.contextImpression),
-    recommendedActions: objectArray(legacy.actions).map((item) => ({ label: text(item.text), reason: '' })),
+    recommendedActions: objectArray(legacy.actions).map((item) => ({ label: text(item.text), reason: '', safety: 'unknown' })),
     avoidActions: objectArray(legacy.avoidExpressions).map((item) => ({ label: text(item.text), reason: '' })),
     replyDrafts: objectArray(legacy.replyExamples).map((item) => ({
       tone: item.tone === 'formal' ? 'formal' : item.tone === 'casual' ? 'light' : 'normal',
       text: text(item.text),
     })),
     contactTiming: text(legacy.contactTiming),
-    contextComparison: { enabled: false, conclusion: "旧形式では利用文脈の要約は記録されていません。", patterns: [], deviations: [] },
+    contextComparison: { enabled: false, conclusion: "旧形式では利用文脈の要約は記録されていません。", patterns: [], sameAsUsual: [], deviations: [] },
     disclaimer: '旧形式のAI分析です。感情の断定や診断ではなく、状況整理の参考として確認してください。',
   };
 }

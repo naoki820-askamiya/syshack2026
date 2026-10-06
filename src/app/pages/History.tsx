@@ -1,45 +1,74 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router';
+import { Link, useNavigate, useSearchParams, useParams } from 'react-router';
 import { ArrowLeft, Calendar, User, PlusCircle } from 'lucide-react';
 import type { ConsultationData } from '../types';
 import { getConsultations } from '../utils/storage';
 import { loadConsultationHistory } from '../api/sessionV17';
+import { getLatestConsultationsByPerson } from '../utils/consultationHistory';
+import { useAuth } from '../auth/AuthContext';
+import { captureAuthBoundary, isCurrentAuthBoundary } from '../utils/authBoundary';
 import { Navigation } from '../components/Navigation';
 import { getRelationStyle, getReactionStyle } from '../utils/relationStyles';
 
 export function History() {
+  const { user, authEpoch, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const initialPerson = searchParams.get('person') ?? 'すべて';
+  const { personId: routePersonId } = useParams<{ personId?: string }>();
+  const initialPerson = routePersonId ?? searchParams.get('personId') ?? '';
   const [filterPerson, setFilterPerson] = useState<string>(initialPerson);
-  const [allConsultations, setAllConsultations] = useState<ConsultationData[]>(getConsultations);
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState('');
+  const [loadedConsultations, setAllConsultations] = useState<ConsultationData[]>(getConsultations);
+  const [loadedBoundary, setLoadedBoundary] = useState(captureAuthBoundary);
+  const [loadingState, setIsLoading] = useState(true);
+  const [loadedError, setLoadError] = useState('');
+  const [loadAttempt, setLoadAttempt] = useState(0);
+
+  const currentBoundary = captureAuthBoundary();
+  const sameBoundary = loadedBoundary.userId === currentBoundary.userId && loadedBoundary.epoch === currentBoundary.epoch;
+  const allConsultations = sameBoundary ? loadedConsultations : [];
+  const loadError = sameBoundary ? loadedError : '';
+  const isLoading = authLoading || !sameBoundary || loadingState;
 
   useEffect(() => {
+    if (authLoading) return;
+    const boundary = captureAuthBoundary();
+    setLoadedBoundary(boundary);
+    setAllConsultations(getConsultations());
     let active = true;
-    void loadConsultationHistory()
+    const controller = new AbortController();
+    setIsLoading(true);
+    setLoadError('');
+    if (!user) {
+      setIsLoading(false);
+      return () => { active = false; controller.abort(); };
+    }
+    void loadConsultationHistory({ signal: controller.signal })
       .then((consultations) => {
-        if (active) setAllConsultations(consultations);
+        if (active && isCurrentAuthBoundary(boundary)) setAllConsultations(consultations);
       })
       .catch((error: unknown) => {
-        if (active) setLoadError(error instanceof Error ? error.message : '相談履歴を取得できませんでした。');
+        if (active && isCurrentAuthBoundary(boundary)) setLoadError(error instanceof Error ? error.message : '相談履歴を取得できませんでした。');
       })
       .finally(() => {
-        if (active) setIsLoading(false);
+        if (active && isCurrentAuthBoundary(boundary)) setIsLoading(false);
       });
-    return () => { active = false; };
-  }, []);
+    return () => { active = false; controller.abort(); };
+  }, [loadAttempt, user?.id, authEpoch, authLoading]);
 
   useEffect(() => {
-    setFilterPerson(searchParams.get('person') ?? 'すべて');
-  }, [searchParams]);
+    setFilterPerson(routePersonId ?? searchParams.get('personId') ?? '');
+  }, [searchParams, routePersonId]);
 
-  const persons = ['すべて', ...Array.from(new Set(allConsultations.map(c => c.personName)))];
-  
-  const filteredConsultations = filterPerson === 'すべて'
+  const latestPersons = getLatestConsultationsByPerson(allConsultations).filter(c => c.personId);
+  const persons = [{ id: '', label: 'すべて' }, ...latestPersons.map((c, index) => ({
+    id: c.personId!,
+    label: latestPersons.filter(p => p.personName === c.personName).length > 1 ? `${c.personName}（${c.relation}・${index + 1}）` : c.personName,
+  }))];
+  const selectedPerson = persons.find(p => p.id === filterPerson);
+
+  const filteredConsultations = filterPerson === ''
     ? allConsultations
-    : allConsultations.filter(c => c.personName === filterPerson);
+    : allConsultations.filter(c => c.personId === filterPerson);
 
   const sortedConsultations = [...filteredConsultations].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -48,7 +77,7 @@ export function History() {
   return (
     <div className="min-h-screen bg-[#F7F9FC]">
       <Navigation />
-      
+
       <div className="lg:ml-64 pb-24 lg:pb-8">
         <div className="bg-white border-b border-[#D9E1EA] p-4 lg:px-8 sticky top-0 z-10">
           <div className="max-w-5xl mx-auto flex items-center gap-3">
@@ -68,18 +97,18 @@ export function History() {
               </div>
               <div className="flex gap-2 overflow-x-auto pb-2">
                 {persons.map((person) => {
-                  const isActive = filterPerson === person;
+                  const isActive = filterPerson === person.id;
                   return (
                     <button
-                      key={person}
-                      onClick={() => setFilterPerson(person)}
+                      key={person.id}
+                      onClick={() => setFilterPerson(person.id)}
                       className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
                         isActive
                           ? 'bg-[#0F4C81] text-white'
                           : 'bg-white text-[#5B6573] border border-[#D9E1EA] hover:border-[#0F4C81]'
                       }`}
                     >
-                      {person}
+                      {person.label}
                     </button>
                   );
                 })}
@@ -89,19 +118,20 @@ export function History() {
 
           {isLoading ? (
             <div className="bg-white rounded-2xl p-8 shadow-sm text-center border border-[#D9E1EA]">
-              <p className="text-[#5B6573]">相談履歴を読み込んでいます...</p>
+              <p role="status" className="text-[#5B6573]">相談履歴を読み込んでいます...</p>
             </div>
           ) : loadError ? (
-            <div className="bg-red-50 rounded-2xl p-8 text-center border border-red-200">
+            <div role="alert" className="bg-red-50 rounded-2xl p-8 text-center border border-red-200">
               <p className="text-red-700">{loadError}</p>
+              <button type="button" onClick={() => setLoadAttempt(value => value + 1)} className="mt-3 font-medium text-[#0F4C81] underline">履歴を再取得</button>
             </div>
           ) : sortedConsultations.length === 0 ? (
             <div className="bg-white rounded-2xl p-8 shadow-sm text-center border border-[#D9E1EA]">
               <Calendar className="w-12 h-12 mx-auto text-[#B8C2CF] mb-3" />
               <p className="text-[#5B6573] mb-4">
-                {filterPerson === 'すべて' 
+                {filterPerson === ''
                   ? 'まだ相談履歴がありません'
-                  : `${filterPerson}さんの相談履歴がありません`}
+                  : `${selectedPerson?.label ?? '選択した相手'}さんの相談履歴がありません`}
               </p>
               <button
                 onClick={() => navigate('/new')}
@@ -116,9 +146,9 @@ export function History() {
                 <span className="text-sm text-[#5B6573]">
                   {sortedConsultations.length}件の相談
                 </span>
-                {filterPerson !== 'すべて' && (
+                {filterPerson !== '' && (
                   <Link
-                    to={`/new?person=${encodeURIComponent(filterPerson)}`}
+                    to={`/new?personId=${encodeURIComponent(filterPerson)}`}
                     className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#0F4C81] text-white rounded-xl text-sm font-medium shadow-sm hover:bg-[#0C3E69] transition-colors"
                   >
                     <PlusCircle className="w-4 h-4" />
@@ -167,7 +197,7 @@ export function History() {
                           </div>
                         </div>
                       </div>
-                      
+
                       <div className="mb-3">
                         <span className="text-xs text-[#5B6573]">出来事</span>
                         <p className="text-sm text-[#1F2A37] line-clamp-2 mt-0.5">

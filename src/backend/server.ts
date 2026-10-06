@@ -40,15 +40,15 @@ const corsOptions: CorsOptions = {
 export async function createServerApp() {
     const app = express();
 
-    app.use(cors(corsOptions));
-    app.use(express.json());
-
     app.use((req, res, next) => {
         const requestId = requestIdFrom(req);
         res.locals.requestId = requestId;
         res.setHeader("x-request-id", requestId);
         next();
     });
+
+    app.use(cors(corsOptions));
+    app.use(express.json({ limit: "100kb" }));
 
     app.get("/health", (_req, res) => {
         res.json({ status: "ok" });

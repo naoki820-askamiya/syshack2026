@@ -51,9 +51,9 @@ export function Login() {
             <p className="text-[#5B6573] text-sm lg:text-base">感情ナビへようこそ</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4 lg:space-y-5">
+          <form aria-busy={isSubmitting} onSubmit={handleSubmit} className="space-y-4 lg:space-y-5">
             {errorMessage && (
-              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                 {errorMessage}
               </div>
             )}
@@ -64,6 +64,8 @@ export function Login() {
               </label>
               <input
                 id="email"
+                autoComplete="username"
+                disabled={isSubmitting}
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -79,6 +81,8 @@ export function Login() {
               </label>
               <input
                 id="password"
+                autoComplete="current-password"
+                disabled={isSubmitting}
                 type="password"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
@@ -88,15 +92,11 @@ export function Login() {
               />
             </div>
 
-            <div className="text-right">
-              <button
-                type="button"
-                className="text-sm text-[#0F4C81] hover:text-[#0C3E69]"
-              >
-                パスワードを忘れた方
-              </button>
-            </div>
+            <p className="text-sm text-[#5B6573]">
+              パスワード再設定は現在利用できません。
+            </p>
 
+            {isSubmitting && <p role="status" className="text-sm text-[#5B6573]">処理中です…</p>}
             <button
               type="submit"
               disabled={isSubmitting}

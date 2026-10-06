@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { AppError } from '../utils/index.js';
 import { requireAuth } from '../middlewares/requireAuth.js';
 import type { Request, Response } from 'express';
 
@@ -19,6 +20,10 @@ router.get('/', (req: Request, res: Response, next) => {
 
     requireAuth(req as AuthRequest, res, (error?: unknown) => {
         if (error) {
+            if (!(error instanceof AppError) || error.status !== 401) {
+                next(error);
+                return;
+            }
             res.status(401).json({
                 error: {
                     code: 'AUTH_INVALID',

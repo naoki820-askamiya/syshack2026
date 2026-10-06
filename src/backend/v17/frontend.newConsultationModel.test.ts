@@ -32,3 +32,9 @@ test('form validation follows the selected response mode', () => {
   assert.equal(getConsultationFormErrors(form, 'chat', 'LINE', [], '').chatContent, true);
   assert.equal(getConsultationFormErrors(form, 'chat', 'other', [], '貼り付け').chatContent, false);
 });
+
+test('new Other still requires detail but selected Person uses its authoritative enum', () => {
+  const form = { ...EMPTY_CONSULTATION_FORM, relation: 'その他' as const };
+  assert.equal(getConsultationFormErrors(form, 'none', 'LINE', [], '').relationOther, true);
+  assert.equal(getConsultationFormErrors({ ...form, personId: 'owned-person' }, 'none', 'LINE', [], '').relationOther, false);
+});
