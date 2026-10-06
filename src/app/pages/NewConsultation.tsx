@@ -302,7 +302,7 @@ export function NewConsultation() {
           </div>
         </div>
 
-        <div className="max-w-4xl mx-auto p-4 lg:p-8">
+        <div className="analysis-reading consultation-form max-w-5xl mx-auto p-4 lg:p-8">
           {personLoading && <p role="status" className="mb-4">相手の情報を確認しています...</p>}
           {personLoadFailed && <button type="button" className="mb-4 text-[#0F4C81]" onClick={() => { if (requestedPersonId.current) loadPerson(requestedPersonId.current); }}>相手の情報を再取得</button>}
           {prefilled && (
@@ -322,9 +322,11 @@ export function NewConsultation() {
           )}
 
           <form aria-busy={isAnalyzing} onSubmit={handleSubmit} className="space-y-6 lg:space-y-8" noValidate>
-            <div className="lg:grid lg:grid-cols-2 lg:gap-8 space-y-6 lg:space-y-0">
+            <p className="text-sm text-[#5B6573]">見聞きした出来事を、そのまま入力してください。<span className="text-red-600">*</span> は必須項目です。</p>
+            <div className="lg:grid lg:grid-cols-2 lg:gap-6 space-y-6 lg:space-y-0">
 
-              <div className="space-y-6">
+              <div className="space-y-6 rounded-2xl border border-[#D9E1EA] bg-white p-5 shadow-sm">
+                <h2 className="flex items-center gap-3 border-b border-[#D9E1EA] pb-4 text-lg font-semibold"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#E8F1F8] text-[#0F4C81]">1</span>相手と出来事</h2>
 
                 <div>
                   <label htmlFor="person-name" className="block text-sm font-medium text-[#5B6573] mb-1">
@@ -495,7 +497,8 @@ export function NewConsultation() {
                 </div>
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-6 rounded-2xl border border-[#D9E1EA] bg-white p-5 shadow-sm">
+                <h2 className="flex items-center gap-3 border-b border-[#D9E1EA] pb-4 text-lg font-semibold"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#E8F1F8] text-[#0F4C81]">2</span>反応と自分の対応</h2>
 
                 <fieldset>
                   <legend className="block text-sm font-medium text-[#5B6573] mb-2">
@@ -541,7 +544,7 @@ export function NewConsultation() {
                   <legend className="block text-sm font-medium text-[#5B6573] mb-2">
                     出来事からの経過時間<span className="text-red-500 ml-0.5">*</span>
                   </legend>
-                  <div className="grid grid-cols-4 lg:grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     {TIMINGS.map((timing) => (
                       <button
                         key={timing}

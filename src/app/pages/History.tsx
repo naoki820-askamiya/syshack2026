@@ -88,21 +88,22 @@ export function History() {
           </div>
         </div>
 
-        <div className="max-w-5xl mx-auto p-4 lg:p-8">
+        <div className="analysis-reading max-w-5xl mx-auto p-4 lg:p-8">
           {persons.length > 1 && (
             <div className="mb-6">
               <div className="flex items-center gap-2 mb-3">
                 <User className="w-4 h-4 text-[#5B6573]" />
                 <span className="text-sm font-medium text-[#5B6573]">人物で絞り込み</span>
               </div>
-              <div className="flex gap-2 overflow-x-auto pb-2">
+              <div className="flex flex-wrap gap-2">
                 {persons.map((person) => {
                   const isActive = filterPerson === person.id;
                   return (
                     <button
                       key={person.id}
                       onClick={() => setFilterPerson(person.id)}
-                      className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                      aria-pressed={isActive}
+                      className={`min-h-11 px-4 py-2 rounded-full text-sm font-medium break-all transition-colors ${
                         isActive
                           ? 'bg-[#0F4C81] text-white'
                           : 'bg-white text-[#5B6573] border border-[#D9E1EA] hover:border-[#0F4C81]'
@@ -213,7 +214,7 @@ export function History() {
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-xs text-[#8A94A6] w-14 flex-shrink-0">タイミング</span>
+                          <span className="text-xs text-[#8A94A6] w-20 flex-shrink-0">タイミング</span>
                           <span className="text-xs text-[#5B6573] bg-[#F1F4F8] px-2 py-0.5 rounded-full">
                             {consultation.timing}
                           </span>

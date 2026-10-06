@@ -59,8 +59,8 @@ export function AnalysisScoreRadar({ scores }: Props) {
       </p>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         {scores.map((item) => (
-          <div key={item.key} className="rounded-lg bg-[#F7F9FC] p-2 text-center">
-            <div className={`text-sm font-semibold ${item.category === 'reassurance' ? 'text-[#1F7A4D]' : 'text-[#0F4C81]'}`}>
+          <div key={item.key} className="rounded-lg bg-[#F7F9FC] p-3 text-center">
+            <div className={`text-xl font-semibold ${item.category === 'reassurance' ? 'text-[#1F7A4D]' : 'text-[#0F4C81]'}`}>
               {item.score}/100
             </div>
             <div className="text-xs text-[#5B6573]">{item.label}</div>

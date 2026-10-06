@@ -43,7 +43,7 @@ export function ActionSuggestionV17() {
           </div>
         </div>
 
-        <main className="mx-auto max-w-5xl space-y-5 p-4 lg:p-8">
+        <main className="analysis-reading mx-auto max-w-5xl space-y-6 p-4 lg:p-8">
           <section className="rounded-2xl border border-[#D9E1EA] bg-white p-5 shadow-sm">
             <p className="text-xs text-[#5B6573]">{consultation.personName}との状況</p>
             <h2 className="mt-1 text-lg font-semibold text-[#1F2A37]">{view.summary}</h2>
@@ -90,7 +90,7 @@ export function ActionSuggestionV17() {
                   <div key={`${draft.tone}-${index}`} className="rounded-xl border border-[#D9E1EA] bg-[#F7F9FC] p-4">
                     <div className="mb-2 flex items-center justify-between">
                       <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${TONES[draft.tone].className}`}>{TONES[draft.tone].label}</span>
-                      <button onClick={() => void copy(draft.text, index)} className="flex items-center gap-1 text-xs font-medium text-[#0F4C81]">
+                      <button onClick={() => void copy(draft.text, index)} className="flex min-h-11 items-center gap-2 rounded-lg border border-[#D9E1EA] bg-white px-3 text-sm font-medium text-[#0F4C81]">
                         {copied === index ? <CheckCircle2 className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
                         {copied === index ? 'コピー済み' : 'コピー'}
                       </button>

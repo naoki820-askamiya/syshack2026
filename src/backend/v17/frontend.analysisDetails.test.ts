@@ -5,7 +5,7 @@ import ts from 'typescript';
 import { normalizeAnalysis } from '../../app/utils/analysisViewModel.js';
 
 // Execute the actual page/mapper with synthetic I/O and JSX seams; not a browser/a11y proof.
-function pageText(raw: unknown): string {
+function pageText(raw: unknown, elements: { type: string; props: Record<string, unknown> }[] = []): string {
   const jsx = (type: unknown, props: Record<string, unknown>) => ({ type, props });
   const view = normalizeAnalysis(raw)!;
   const deps: Record<string, unknown> = {
@@ -20,6 +20,16 @@ function pageText(raw: unknown): string {
       view, loading: false, error: null, status: 'analyzed', retry: () => {},
     }) },
   };
+  // Execute the disclosure component too, so hiding detail panels cannot drop provenance.
+  const disclosure = { exports: {} };
+  const disclosureSource = ts.transpileModule(readFileSync('src/app/components/ReadingDisclosure.tsx', 'utf8'), { compilerOptions: {
+    module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX,
+  } }).outputText;
+  new Function('require', 'exports', 'module', disclosureSource)((id: string) => {
+    if (!Object.hasOwn(deps, id)) throw new Error('Unexpected dependency ' + id);
+    return deps[id];
+  }, disclosure.exports, disclosure);
+  deps['../components/ReadingDisclosure'] = disclosure.exports;
   const source = ts.transpileModule(readFileSync('src/app/pages/AnalysisV17.tsx', 'utf8'), { compilerOptions: {
     module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX,
   } }).outputText;
@@ -33,6 +43,7 @@ function pageText(raw: unknown): string {
     if (typeof node === 'string' || typeof node === 'number') return String(node);
     if (Array.isArray(node)) return node.map(content).join(' ');
     if (typeof node.type === 'function') return content(node.type(node.props));
+    if (typeof node.type === 'string') elements.push(node);
     return content(node.props?.children);
   }
   return content(module.exports.AnalysisV17());
@@ -57,6 +68,18 @@ function fixture(enabled = true) {
 test('actual result page renders source meanings and AI-rated strength next to evidence', () => {
   const text = pageText(fixture());
   for (const label of ['今回の入力（ユーザー記入）', 'ユーザーの振り返り（本人の報告）', '過去のAI要約（推測を含む）', '保存された人物要約（推測を含む）', '根拠の強さ（AI評価）', '今回との関連度（AI評価）', '状況の材料']) assert.ok(text.includes(label), label);
+});
+
+test('collapsed detail panels retain input, all score reasons and comparison provenance', () => {
+  const elements: { type: string; props: Record<string, unknown> }[] = [];
+  const text = pageText(fixture(), elements);
+  const panels = elements.filter((node) => node.type === 'details');
+  assert.ok(panels.length >= 3);
+  assert.ok(panels.every((node) => node.props.open === undefined));
+  assert.equal(text.match(/synthetic score reason/g)?.length, 6);
+  for (const label of ['synthetic event', 'synthetic reaction', '過去情報固有ラベル', '保存された人物要約（推測を含む）', '共通点の具体的な理由']) assert.ok(text.includes(label), label);
+  assert.ok(elements.some((node) => node.type === 'a' && node.props.href === '#analysis-evidence'));
+  assert.ok(elements.some((node) => node.props.id === 'analysis-evidence'));
 });
 
 test('actual result page renders same/deviation reasons only for an enabled comparison', () => {

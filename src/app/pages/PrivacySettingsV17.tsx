@@ -51,7 +51,7 @@ export function PrivacySettingsV17() {
             <h1 className="text-xl font-semibold">プライバシー設定</h1>
           </div>
         </header>
-        <main className="mx-auto max-w-3xl space-y-5 p-4 lg:p-8">
+        <main className="analysis-reading mx-auto max-w-3xl space-y-5 p-4 lg:p-8">
           <section className="rounded-2xl border border-[#D9E1EA] bg-white p-5 shadow-sm">
             <h2 className="font-semibold text-[#1F2A37]">分析のパーソナライズ</h2>
             <p className="mt-2 text-sm leading-relaxed text-[#5B6573]">
