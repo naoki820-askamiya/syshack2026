@@ -18,6 +18,7 @@ const UNSAFE_ASSERTION_PATTERNS = [
     /脈なし度/u,
     /危険度/u,
     /(うつ病|人格障害|サイコパス).{0,12}(です|だ|確定)/u,
+    /\b(?:the person|your partner|he|she|they|you)\s+(?:definitely\s+)?(?:has|have|is|are)\s+(?:definitely\s+)?(?:a\s+)?(?:personality disorder|psychopath|depression)\b/iu,
 ] as const;
 
 const GENERIC_REASON_PATTERNS = [
@@ -70,8 +71,10 @@ export function validateAiOutput(
     return validated;
 }
 
-// These field/phrase checks cover known regressions, not a complete Japanese safety policy.
-const AGGRESSIVE_ACTION_PATTERN = /(殴(?:る|って|り|れ)|蹴(?:る|って|り|れ)|脅(?:す|して|し|せ)|晒(?:す|して|し|せ)|仕返し|復讐|追い詰め(?:る|て|ろ))/gu;
+// These field/phrase checks cover known regressions, not a complete multilingual safety policy.
+const AGGRESSIVE_ACTION_PATTERN = /(殴打(?:する|して|し)?|殴(?:る|って|り|れ)|蹴(?:る|って|り|れ)|脅(?:す|して|し|せ)|晒(?:す|して|し|せ)|仕返し|復讐|追い詰め(?:る|て|ろ))/gu;
+// Person-targeted phrases avoid treating unrelated uses such as a hit song as aggression.
+const ENGLISH_AGGRESSIVE_ACTION_PATTERN = /\b(?:hit(?:ting)?|punch(?:ing)?|threaten(?:ing)?)\s+(?:(?:the|your|other)\s+)*(?:other person|person|partner|them|him|her|you)\b/iu;
 const DIRECT_INSTRUCTION_PATTERN = /(ましょう|してください|しよう|べき|おすすめ|お勧め|しなさい|してよい|してもよい|必要があります)/u;
 
 function validateFieldSafety(result: KigenAnalysisResultV2): void {
@@ -83,11 +86,19 @@ function validateFieldSafety(result: KigenAnalysisResultV2): void {
         }
 
         const avoidedLabel = path[0] === "avoidActions" && path[2] === "label";
+        if (ENGLISH_AGGRESSIVE_ACTION_PATTERN.test(text)) {
+            // Only a whole-field denial or an avoided gerund label is exempt. A second
+            // sentence/inverted negation cannot conceal an instruction behind a warning.
+            const standaloneAvoidance = /^(?:do not|don't|never)\s+(?:hit|punch|threaten)\s+(?:(?:the|your|other)\s+)*(?:other person|person|partner|them|him|her|you)[.!?]?\s*$/iu.test(text)
+                || /^avoid\s+(?:hitting|punching|threatening)\s+(?:(?:the|your|other)\s+)*(?:other person|person|partner|them|him|her|you)[.!?]?\s*$/iu.test(text);
+            const avoidedName = avoidedLabel && /^(?:hitting|punching|threatening)\s+(?:(?:the|your|other)\s+)*(?:other person|person|partner|them|him|her|you)[.!?]?\s*$/iu.test(text);
+            if (!standaloneAvoidance && !avoidedName) rejectUnsafeField(field);
+        }
         for (const match of text.matchAll(AGGRESSIVE_ACTION_PATTERN)) {
             const end = match.index! + match[0].length;
             if (isExplicitAvoidance(text.slice(end))) continue;
             // An avoidActions label names what to avoid; it must not explicitly urge the action.
-            const bareAction = /^(?:(?:相手|他人)(?:を|に))?(?:殴る|蹴る|脅す|晒す|仕返し|復讐|追い詰める)[。.!！？?]?\s*$/u.test(text);
+            const bareAction = /^(?:(?:相手|他人)(?:を|に))?(?:殴打する|殴る|蹴る|脅す|晒す|仕返し|復讐|追い詰める)[。.!！？?]?\s*$/u.test(text);
             if (avoidedLabel && bareAction && !DIRECT_INSTRUCTION_PATTERN.test(text)) continue;
             // Preserve the existing deny behavior outside the specific avoided/negated cases.
             rejectUnsafeField(field);
@@ -113,6 +124,12 @@ function isExplicitAvoidance(suffix: string): boolean {
 }
 
 function maskDiscussedQuotes(text: string): string {
+    // Narrow complete diagnostic denials preserve benign controls; continuations
+    // or instructions to reverse the denial remain subject to assertion checks.
+    if (/^we cannot conclude that (?:the person|your partner|he|she|they|you) (?:has|have|is|are) (?:a )?(?:personality disorder|psychopath|depression)[.!?]?\s*$/iu.test(text)
+        || /^"(?:the person|your partner|he|she|they|you) (?:has|have|is|are) (?:a )?(?:personality disorder|psychopath|depression)" cannot be concluded[.!?]?\s*$/iu.test(text)) {
+        return "Explicit diagnostic denial";
+    }
     return text.replace(/[「『]([^」』]*)[」』]/gu, (quote, _content: string, offset: number) => {
         const suffix = text.slice(offset + quote.length);
         // Only a complete standalone denial is exempt; unknown prefix/continuation stays denied.
