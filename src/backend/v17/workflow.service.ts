@@ -1,3 +1,4 @@
+import { AiInputBoundsError } from "../ai/v2/input-bounds.js";
 import {
     PROMPT_VERSION,
     RESULT_SCHEMA_VERSION,
@@ -252,6 +253,12 @@ async function settleUsageOrLog(
 }
 
 function normalizeAnalysisError(error: unknown): AppError {
+    if (error instanceof AiInputBoundsError ||
+        (error instanceof AnalyzeMoodV2Error && error.code === "AI_INPUT_LIMIT_EXCEEDED")) {
+        return new AppError({ code: "AI_INPUT_LIMIT_EXCEEDED",
+            message: "AIへ送る情報量が上限を超えています。過去情報の利用設定を見直して再度お試しください。",
+            status: 422 });
+    }
     if (error instanceof AppError) return error;
     if (error instanceof AnalyzeMoodV2Error) {
         return new AppError({

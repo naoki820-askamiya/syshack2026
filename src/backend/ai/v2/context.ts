@@ -1,3 +1,4 @@
+import { assertProfileBounds, serializeBoundedAiInput } from "./input-bounds.js";
 import { CONTEXT_SCHEMA_VERSION } from "./constants.js";
 import type { AiAnalysisInput, ReferenceContext } from "./input.schema.js";
 
@@ -21,12 +22,13 @@ export interface AnalysisContextSnapshotV5 {
 }
 
 export function buildAiInput(input: AiAnalysisInput): string {
-    return JSON.stringify(input);
+    return serializeBoundedAiInput(input);
 }
 
 export function buildContextSnapshot(
     referenceContext: ReferenceContext,
 ): AnalysisContextSnapshotV5 {
+    assertProfileBounds(referenceContext.personProfile);
     const personProfileUsed = referenceContext.personProfile !== null;
     const feedbackCount = referenceContext.recentFeedbacks.length;
     const recentCaseCount = referenceContext.recentCaseSummaries.length;

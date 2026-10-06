@@ -1,3 +1,4 @@
+import { AiInputBoundsError, assertProfileBounds, MAX_AI_OUTPUT_TOKENS } from "./input-bounds.js";
 import OpenAI from "openai";
 import { zodTextFormat } from "openai/helpers/zod";
 import {
@@ -14,6 +15,7 @@ import {
 import { AiOutputValidationError, validateAiOutput } from "./validation.js";
 
 export type AnalyzeFailureCode =
+    | "AI_INPUT_LIMIT_EXCEEDED"
     | "AI_CONFIG_MISSING"
     | "AI_TIMEOUT"
     | "AI_PROVIDER_ERROR"
@@ -72,7 +74,20 @@ export async function analyzeMoodV2(
         onAttemptMetrics?: (metrics: AiAttemptMetrics) => void | Promise<void>;
     } = {},
 ): Promise<AnalyzeMoodV2Result> {
-    const input = aiAnalysisInputSchema.parse(rawInput);
+    const preparationStartedAt = performance.now();
+    let input: AiAnalysisInput;
+    let serializedInput: string;
+    try {
+        assertProfileBounds(rawInput.referenceContext.personProfile);
+        input = aiAnalysisInputSchema.parse(rawInput);
+        serializedInput = buildAiInput(input);
+    } catch (error) {
+        if (error instanceof AiInputBoundsError) {
+            throw new AnalyzeMoodV2Error("AI_INPUT_LIMIT_EXCEEDED", error.message, 0);
+        }
+        throw error;
+    }
+    const preparationMs = elapsedMs(preparationStartedAt);
     const apiKey = process.env.OPENAI_API_KEY?.trim();
     const model =
         process.env.OPENAI_ANALYSIS_MODEL?.trim() ??
@@ -95,7 +110,7 @@ export async function analyzeMoodV2(
         if (options.signal?.aborted || performance.now() >= deadline) {
             throw new AnalyzeMoodV2Error("AI_TIMEOUT", "AI分析が中断またはタイムアウトしました。", attempt - 1);
         }
-        const attemptStartedAt = performance.now();
+        const attemptStartedAt = attempt === 1 ? preparationStartedAt : performance.now();
         const metrics: AiAttemptMetrics = {
             attempt, model, outcome: "failed", failureCode: null,
             duration: { prompt_build_ms: null, provider_request_ms: null,
@@ -113,7 +128,8 @@ export async function analyzeMoodV2(
                         model,
                         store: false,
                         instructions: buildAiInstructions(),
-                        input: buildAiInput(input),
+                        input: serializedInput,
+                        max_output_tokens: MAX_AI_OUTPUT_TOKENS,
                         text: {
                             format: zodTextFormat(
                                 kigenAnalysisResultV2Schema,
@@ -122,7 +138,7 @@ export async function analyzeMoodV2(
                         },
                     };
                 } finally {
-                    metrics.duration.prompt_build_ms = elapsedMs(promptStartedAt);
+                    metrics.duration.prompt_build_ms = elapsedMs(promptStartedAt) + (attempt === 1 ? preparationMs : 0);
                 }
                 providerStartedAt = performance.now();
                 return client.parse(body, {

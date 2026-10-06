@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { assertProfileBounds } from "./input-bounds.js";
 
 const boundedText = (minimum: number, maximum: number) =>
     z.string().trim().min(minimum).max(maximum);
@@ -77,7 +78,10 @@ const recentFeedbackSchema = z
 
 export const referenceContextSchema = z
     .object({
-        personProfile: z.unknown().nullable(),
+        personProfile: z.unknown().superRefine((value, context) => {
+            try { assertProfileBounds(value); }
+            catch { context.addIssue({ code: z.ZodIssueCode.custom, message: "Profileの情報量が上限を超えているか、形式が不正です。" }); }
+        }).nullable(),
         userPatternSummary: z.null(),
         recentCaseSummaries: z.array(recentCaseSummarySchema).max(3),
         recentFeedbacks: z.array(recentFeedbackSchema).max(3),

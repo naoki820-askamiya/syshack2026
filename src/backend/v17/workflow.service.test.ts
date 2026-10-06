@@ -240,3 +240,32 @@ test("workflow aggregates observed substages and correlates per-attempt token co
     assert.equal("usage" in result.result, false);
     assert.equal(JSON.stringify(events).includes(SECRET), false);
 });
+
+test('oversized saved Profile is typed422 before generation and settles known zero usage', async t => {
+    const { events, recovery, settlement } = startFixture(t);
+    contextFixture(t);
+    replace(t, prisma.userPrivacySetting, 'upsert', async () => ({
+        personalizationEnabled: true, usePersonProfile: true, useFeedbackForContext: false,
+    }));
+    replace(t, prisma.personProfile, 'findFirst', async () => ({
+        id: '99999999-9999-4999-8999-999999999999', profileJson: 'x'.repeat(65535),
+        needsRefresh: false, staleSince: null, generatedAt: new Date('2026-10-01T12:00:00Z'),
+        generatedByModel: 'synthetic-model', profileSchemaVersion: 'synthetic-v1',
+        sourceLatestCaseId: CASE_ID, sourceCaseCount: 1, sourceFeedbackCount: 0,
+    }));
+    replace(t, prisma.analysisCase, 'findMany', async () => []);
+    const generate = t.mock.fn(generateSuccess);
+    await assert.rejects(analyzeCase(USER_ID, CASE_ID, { generate }), error => {
+        assert.equal((error as { code: string }).code, 'AI_INPUT_LIMIT_EXCEEDED');
+        assert.equal((error as { status: number }).status, 422);
+        return true;
+    });
+    assert.equal(generate.mock.callCount(), 0);
+    assert.equal(recovery.mock.callCount(), 1);
+    assert.equal(settlement.mock.callCount(), 1);
+    assert.equal(settlement.mock.calls[0].arguments[0].data.costUnits, 0);
+    const timing = events.find(([name]) => name === 'analysis_timing')?.[1];
+    assert.equal(timing?.errorStage, 'db_context');
+    assert.equal(timing?.attempt, 0);
+    assert.equal(JSON.stringify(events).includes(SECRET), false);
+});
