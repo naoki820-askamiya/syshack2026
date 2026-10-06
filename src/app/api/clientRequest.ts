@@ -32,19 +32,46 @@ function assertCurrentResponse(boundary: AuthBoundary): void {
   }
 }
 
-async function buildApiError(response: Response): Promise<Error> {
-  const payload = await response.json().catch(() => null) as {
-    error?: { message?: string; requestId?: string };
+// Race token lookup and body parsing too: these operations can outlive fetch cancellation.
+// Always observe the underlying promise and release the listener on every settlement.
+export function awaitApiOperation<T>(operation: () => Promise<T>, signal?: AbortSignal | null): Promise<T> {
+  signal?.throwIfAborted();
+  if (!signal) return operation();
+  return new Promise<T>((resolve, reject) => {
+    let settled = false;
+    const finish = (accept: () => void) => {
+      if (settled) return;
+      settled = true;
+      signal.removeEventListener('abort', onAbort);
+      accept();
+    };
+    const onAbort = () => finish(() => reject(signal.reason));
+    signal.addEventListener('abort', onAbort, { once: true });
+    Promise.resolve().then(() => { signal.throwIfAborted(); return operation(); })
+      .then(value => finish(() => resolve(value)), error => finish(() => reject(error)));
+  });
+}
+
+export class ApiResponseError extends Error {
+  constructor(readonly status: number, readonly code: string | undefined, readonly requestId: string | undefined, message: string) {
+    super(message);
+    this.name = 'ApiResponseError';
+  }
+}
+
+async function buildApiError(response: Response, signal?: AbortSignal | null): Promise<Error> {
+  const payload = await awaitApiOperation(() => response.json().catch(() => null), signal) as {
+    error?: { message?: string; requestId?: string; code?: string };
   } | null;
   const requestId = payload?.error?.requestId;
   const suffix = requestId ? `（問い合わせID: ${requestId}）` : '';
-  return new Error(`${payload?.error?.message ?? `APIエラー: ${response.status}`}${suffix}`);
+  return new ApiResponseError(response.status, payload?.error?.code, requestId, `${payload?.error?.message ?? `APIエラー: ${response.status}`}${suffix}`);
 }
 
 // The existing protected transport, with injectable I/O for response-race regressions.
 export function createApiClient({ getSession, send }: ApiTransport) {
   async function request(endpoint: string, options: RequestInit, boundary: AuthBoundary): Promise<Response> {
-    const { data } = await getSession();
+    const { data } = await awaitApiOperation(getSession, options.signal);
     const accessToken = data.session?.access_token;
     if (!accessToken) throw new Error('ログインが必要です。');
 
@@ -55,15 +82,18 @@ export function createApiClient({ getSession, send }: ApiTransport) {
     }
 
     const requestOptions = { ...options, headers };
-    if (['POST', 'PATCH', 'PUT', 'DELETE'].includes((requestOptions.method ?? 'GET').toUpperCase())) {
+    const response = await awaitApiOperation(() => {
+      // Check at the exact dispatch; the signal race can introduce a microtask after token lookup.
       requestOptions.signal?.throwIfAborted();
-      const current = captureAuthBoundary();
-      if (boundary.userId !== current.userId || boundary.epoch !== current.epoch) {
-        throw new StaleAuthWriteIntentError();
+      if (['POST', 'PATCH', 'PUT', 'DELETE'].includes((requestOptions.method ?? 'GET').toUpperCase())) {
+        const current = captureAuthBoundary();
+        if (boundary.userId !== current.userId || boundary.epoch !== current.epoch) {
+          throw new StaleAuthWriteIntentError();
+        }
       }
-    }
-    const response = await send(endpoint, requestOptions);
-    if (!response.ok) throw await buildApiError(response);
+      return send(endpoint, requestOptions);
+    }, requestOptions.signal);
+    if (!response.ok) throw await buildApiError(response, requestOptions.signal);
     return response;
   }
 
@@ -78,7 +108,7 @@ export function createApiClient({ getSession, send }: ApiTransport) {
     const boundary = captureAuthBoundary();
     const response = await request(endpoint, options, boundary);
     assertCurrentResponse(boundary);
-    const payload = await response.json() as T;
+    const payload = await awaitApiOperation(() => response.json(), options.signal) as T;
     assertCurrentResponse(boundary);
     return payload;
   }

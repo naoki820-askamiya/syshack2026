@@ -240,3 +240,52 @@ test('production protected client uses this transport while public/login/registe
   assert.match(settings, /detectSessionInUrl: true/);
   assert.match(source('src/backend/server.ts'), /app\.get\("\/health"/);
 });
+
+test('already aborted GET never looks up a session or dispatches', async () => {
+  loginA(); let sessions = 0, sends = 0;
+  const client = createApiClient({ getSession: async () => { sessions++; return session(); }, send: async () => { sends++; return Response.json({}); } });
+  const controller = new AbortController(); controller.abort();
+  await assert.rejects(client.fetchApiJson('/api/persons', { signal: controller.signal }), { name: 'AbortError' });
+  assert.equal(sessions, 0); assert.equal(sends, 0);
+});
+test('canceling GET during token lookup rejects promptly and never dispatches later', async () => {
+  loginA(); const token = deferred<Awaited<ReturnType<typeof session>>>(); let sends = 0;
+  const client = createApiClient({ getSession: () => token.promise, send: async () => { sends++; return Response.json({}); } });
+  const controller = new AbortController(); const pending = client.fetchApiJson('/api/persons', { signal: controller.signal });
+  const rejected = assert.rejects(pending, { name: 'AbortError' }); controller.abort(); await rejected;
+  token.resolve(await session()); await new Promise<void>(done => setImmediate(done)); assert.equal(sends, 0);
+});
+test('canceling GET body parse rejects promptly and cannot publish late JSON', async () => {
+  loginA(); const body = deferred<unknown>(); const parsing = deferred<void>(); const response = Response.json({});
+  Object.defineProperty(response, 'json', { value: () => { parsing.resolve(); return body.promise; } });
+  const client = createApiClient({ getSession: session, send: async () => response }); const controller = new AbortController();
+  const pending = client.fetchApiJson('/api/persons', { signal: controller.signal }); await parsing.promise;
+  const rejected = assert.rejects(pending, { name: 'AbortError' }); controller.abort(); await rejected; body.resolve({ private: 'old A' });
+});
+
+test('signaled writes recheck auth at the exact dispatch across adversarial microtask schedules', async () => {
+  for (const method of ['POST', 'PATCH', 'PUT', 'DELETE']) for (let switchAt = 1; switchAt <= 12; switchAt++) {
+    loginA(); let tick = 0, sendsUnderNewUser = 0;
+    const switchLater = () => { if (++tick === switchAt) setAuthenticatedUser('B'); else queueMicrotask(switchLater); };
+    const client = createApiClient({ getSession: session, send: async () => {
+      if (captureAuthBoundary().userId !== 'A') sendsUnderNewUser++;
+      return Response.json({});
+    } });
+    const pending = client.fetchApiJson('/api/persons', { method, signal: new AbortController().signal }).catch(error => error);
+    queueMicrotask(switchLater); await pending; await new Promise<void>(done => setImmediate(done));
+    assert.equal(sendsUnderNewUser, 0, method + ': auth switch at microtask ' + switchAt);
+  }
+});
+test('signaled dispatch never starts after caller cancellation across adversarial microtask schedules', async () => {
+  for (let abortAt = 1; abortAt <= 12; abortAt++) {
+    loginA(); const controller = new AbortController(); let tick = 0, abortedDispatches = 0;
+    const abortLater = () => { if (++tick === abortAt) controller.abort(); else queueMicrotask(abortLater); };
+    const client = createApiClient({ getSession: session, send: async (_path, options) => {
+      if (options.signal?.aborted) abortedDispatches++;
+      return Response.json({});
+    } });
+    const pending = client.fetchApiJson('/api/persons', { method: 'POST', signal: controller.signal }).catch(error => error);
+    queueMicrotask(abortLater); await pending; await new Promise<void>(done => setImmediate(done));
+    assert.equal(abortedDispatches, 0, 'abort at microtask ' + abortAt);
+  }
+});

@@ -24,10 +24,11 @@ export function Home() {
   useEffect(() => {
     if (authLoading) return;
     let active = true;
+    const controller = new AbortController();
     const boundary = captureAuthBoundary();
     setHistoryState({ boundary, status: user ? 'loading' : 'loaded', consultations: [], error: '' });
     if (user) {
-      void loadConsultationHistory()
+      void loadConsultationHistory({ signal: controller.signal })
         .then((loaded) => {
           if (active && isCurrentAuthBoundary(boundary)) setHistoryState({ boundary, status: 'loaded', consultations: loaded, error: '' });
         })
@@ -35,7 +36,7 @@ export function Home() {
           if (active && isCurrentAuthBoundary(boundary)) setHistoryState({ boundary, status: 'error', consultations: [], error: cause instanceof Error ? cause.message : '履歴を取得できませんでした。' });
         });
     }
-    return () => { active = false; };
+    return () => { active = false; controller.abort(); };
   }, [user?.id, authEpoch, authLoading, loadAttempt]);
 
   const randomMessage = useMemo(() => getRandomSubtitle(), []);

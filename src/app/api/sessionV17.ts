@@ -1,4 +1,4 @@
-import { assertCurrentAuthBoundary, captureAuthBoundary } from '../utils/authBoundary';
+import { assertCurrentAuthBoundary, captureAuthBoundary, subscribeAuthBoundary } from '../utils/authBoundary';
 import { saveAnalysis, saveConsultation, replaceConsultations } from '../utils/storage';
 import type { ConsultationData } from '../types';
 import { fetchApiJson } from './client';
@@ -13,7 +13,7 @@ const RELATIONSHIP_TYPES: Record<string, string> = {
   配偶者: 'spouse', 友人: 'friend', 家族: 'family', その他: 'other',
 };
 
-async function listAllPersons(checkCurrent: () => void, recordFailure: (error: unknown) => never): Promise<ApiPerson[]> {
+async function listAllPersons(signal: AbortSignal, checkCurrent: () => void, recordFailure: (error: unknown) => never): Promise<ApiPerson[]> {
   const persons: ApiPerson[] = [];
   let offset = 0;
   while (true) {
@@ -21,7 +21,7 @@ async function listAllPersons(checkCurrent: () => void, recordFailure: (error: u
     const payload = await fetchApiJson<{
       persons: ApiPerson[];
       pagination: { hasMore: boolean };
-    }>(`/api/persons?limit=50&offset=${offset}`).catch(recordFailure);
+    }>(`/api/persons?limit=50&offset=${offset}`, { signal }).catch(recordFailure);
     checkCurrent();
     persons.push(...payload.persons);
     if (!payload.pagination.hasMore) return persons;
@@ -29,7 +29,7 @@ async function listAllPersons(checkCurrent: () => void, recordFailure: (error: u
   }
 }
 
-async function listAllCases(personId: string, checkCurrent: () => void, recordFailure: (error: unknown) => never): Promise<ApiAnalysisCase[]> {
+async function listAllCases(personId: string, signal: AbortSignal, checkCurrent: () => void, recordFailure: (error: unknown) => never): Promise<ApiAnalysisCase[]> {
   const cases: ApiAnalysisCase[] = [];
   let offset = 0;
   while (true) {
@@ -38,7 +38,7 @@ async function listAllCases(personId: string, checkCurrent: () => void, recordFa
       analysisCases: ApiAnalysisCase[];
       pagination: { hasMore: boolean };
     }>(
-      `/api/persons/${personId}/analysis-cases?limit=50&offset=${offset}`,
+      `/api/persons/${personId}/analysis-cases?limit=50&offset=${offset}`, { signal },
     ).catch(recordFailure);
     checkCurrent();
     cases.push(...payload.analysisCases);
@@ -47,46 +47,77 @@ async function listAllCases(personId: string, checkCurrent: () => void, recordFa
   }
 }
 
-export async function loadConsultationHistory(): Promise<ConsultationData[]> {
+export const HISTORY_LOAD_DEADLINE_MS = 30_000;
+
+export class HistoryDeadlineError extends Error {
+  readonly code = 'HISTORY_LOAD_TIMEOUT';
+  constructor() {
+    super('相談履歴の取得が時間内に完了しませんでした。もう一度取得してください。');
+    this.name = 'HistoryDeadlineError';
+  }
+}
+
+export async function loadConsultationHistory(options: { signal?: AbortSignal } = {}): Promise<ConsultationData[]> {
   const boundary = captureAuthBoundary();
   assertCurrentAuthBoundary(boundary);
+  const controller = new AbortController();
   let failed = false;
   let firstFailure: unknown;
-  const checkCurrent = () => {
-    if (failed) throw firstFailure;
-    assertCurrentAuthBoundary(boundary);
-  };
   const recordFailure = (error: unknown): never => {
-    if (!failed) { failed = true; firstFailure = error; }
+    if (!failed) {
+      failed = true;
+      firstFailure = error;
+      controller.abort(error);
+    }
     throw firstFailure;
   };
-  const persons = await listAllPersons(checkCurrent, recordFailure);
-  checkCurrent();
-  const casesByPerson: { person: ApiPerson; cases: ApiAnalysisCase[] }[] = new Array(persons.length);
-  let nextPerson = 0;
-  // Limit only this History read's fan-out; parallel writes and other API calls are unchanged.
-  const worker = async () => {
+  const checkCurrent = () => {
+    if (failed) throw firstFailure;
     try {
-      while (true) {
-        checkCurrent();
-        const index = nextPerson++;
-        if (index >= persons.length) return;
-        const person = persons[index];
-        casesByPerson[index] = { person, cases: await listAllCases(person.id, checkCurrent, recordFailure) };
-      }
-    } catch (error) {
-      recordFailure(error);
-    }
+      controller.signal.throwIfAborted();
+      assertCurrentAuthBoundary(boundary);
+    } catch (error) { recordFailure(error); }
   };
-  // Promise.all observes every peer rejection but returns the first failure promptly.
-  // In-flight GETs may finish; checkCurrent prevents any subsequent page/Person request.
-  await Promise.all(Array.from({ length: Math.min(4, persons.length) }, worker));
-  checkCurrent();
-  const consultations = casesByPerson
-    .flatMap(({ person, cases }) => cases.map((analysisCase) => toConsultation(analysisCase, person)))
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  replaceConsultations(consultations, boundary);
-  return consultations;
+  const cancel = () => {
+    if (!controller.signal.aborted) controller.abort(options.signal?.reason);
+  };
+  options.signal?.addEventListener('abort', cancel, { once: true });
+  if (options.signal?.aborted) cancel();
+  const unsubscribe = subscribeAuthBoundary(() => {
+    try { assertCurrentAuthBoundary(boundary); }
+    catch (error) { controller.abort(error); }
+  });
+  // This is a client recovery budget for the entire paginated load, not a server SLA.
+  const timer = setTimeout(() => controller.abort(new HistoryDeadlineError()), HISTORY_LOAD_DEADLINE_MS);
+  try {
+    const persons = await listAllPersons(controller.signal, checkCurrent, recordFailure);
+    checkCurrent();
+    const casesByPerson: { person: ApiPerson; cases: ApiAnalysisCase[] }[] = new Array(persons.length);
+    let nextPerson = 0;
+    // Only this read's fan-out is limited; normal same-user protected calls stay parallel.
+    const worker = async () => {
+      try {
+        while (true) {
+          checkCurrent();
+          const index = nextPerson++;
+          if (index >= persons.length) return;
+          const person = persons[index];
+          casesByPerson[index] = { person, cases: await listAllCases(person.id, controller.signal, checkCurrent, recordFailure) };
+        }
+      } catch (error) { recordFailure(error); }
+    };
+    await Promise.all(Array.from({ length: Math.min(4, persons.length) }, worker));
+    checkCurrent();
+    const consultations = casesByPerson
+      .flatMap(({ person, cases }) => cases.map((analysisCase) => toConsultation(analysisCase, person)))
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    replaceConsultations(consultations, boundary);
+    return consultations;
+  } finally {
+    clearTimeout(timer);
+    unsubscribe();
+    options.signal?.removeEventListener('abort', cancel);
+  }
 }
 
 export async function hydrateAnalysis(caseId: string): Promise<boolean> {

@@ -5,36 +5,55 @@ import type { ConsultationData } from '../types';
 import { getConsultations } from '../utils/storage';
 import { loadConsultationHistory } from '../api/sessionV17';
 import { getLatestConsultationsByPerson } from '../utils/consultationHistory';
+import { useAuth } from '../auth/AuthContext';
+import { captureAuthBoundary, isCurrentAuthBoundary } from '../utils/authBoundary';
 import { Navigation } from '../components/Navigation';
 import { getRelationStyle, getReactionStyle } from '../utils/relationStyles';
 
 export function History() {
+  const { user, authEpoch, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { personId: routePersonId } = useParams<{ personId?: string }>();
   const initialPerson = routePersonId ?? searchParams.get('personId') ?? '';
   const [filterPerson, setFilterPerson] = useState<string>(initialPerson);
-  const [allConsultations, setAllConsultations] = useState<ConsultationData[]>(getConsultations);
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState('');
+  const [loadedConsultations, setAllConsultations] = useState<ConsultationData[]>(getConsultations);
+  const [loadedBoundary, setLoadedBoundary] = useState(captureAuthBoundary);
+  const [loadingState, setIsLoading] = useState(true);
+  const [loadedError, setLoadError] = useState('');
   const [loadAttempt, setLoadAttempt] = useState(0);
 
+  const currentBoundary = captureAuthBoundary();
+  const sameBoundary = loadedBoundary.userId === currentBoundary.userId && loadedBoundary.epoch === currentBoundary.epoch;
+  const allConsultations = sameBoundary ? loadedConsultations : [];
+  const loadError = sameBoundary ? loadedError : '';
+  const isLoading = authLoading || !sameBoundary || loadingState;
+
   useEffect(() => {
+    if (authLoading) return;
+    const boundary = captureAuthBoundary();
+    setLoadedBoundary(boundary);
+    setAllConsultations(getConsultations());
     let active = true;
+    const controller = new AbortController();
     setIsLoading(true);
     setLoadError('');
-    void loadConsultationHistory()
+    if (!user) {
+      setIsLoading(false);
+      return () => { active = false; controller.abort(); };
+    }
+    void loadConsultationHistory({ signal: controller.signal })
       .then((consultations) => {
-        if (active) setAllConsultations(consultations);
+        if (active && isCurrentAuthBoundary(boundary)) setAllConsultations(consultations);
       })
       .catch((error: unknown) => {
-        if (active) setLoadError(error instanceof Error ? error.message : '相談履歴を取得できませんでした。');
+        if (active && isCurrentAuthBoundary(boundary)) setLoadError(error instanceof Error ? error.message : '相談履歴を取得できませんでした。');
       })
       .finally(() => {
-        if (active) setIsLoading(false);
+        if (active && isCurrentAuthBoundary(boundary)) setIsLoading(false);
       });
-    return () => { active = false; };
-  }, [loadAttempt]);
+    return () => { active = false; controller.abort(); };
+  }, [loadAttempt, user?.id, authEpoch, authLoading]);
 
   useEffect(() => {
     setFilterPerson(routePersonId ?? searchParams.get('personId') ?? '');

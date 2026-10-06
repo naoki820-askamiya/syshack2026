@@ -17,7 +17,7 @@ function scenario({ failurePage = -1, mutatePage = -1, persons = 12, mutation = 
   let active = 0; let peak = 0; let pages = 0; let failedAt = -1; let mutatedAt = -1;
   const personRows = Array.from({ length: persons }, (_, i) => ({ id: 'person-' + i, displayName: 'Synthetic ' + i, relationshipType: 'friend' }));
   const loader = actualModule('src/app/api/sessionV17.ts', {
-    '../utils/authBoundary': { captureAuthBoundary: () => ({ ...current }), assertCurrentAuthBoundary: (b: any) => { if (b.userId !== current.userId || b.epoch !== current.epoch) throw stale; } },
+    '../utils/authBoundary': { subscribeAuthBoundary: () => () => {}, captureAuthBoundary: () => ({ ...current }), assertCurrentAuthBoundary: (b: any) => { if (b.userId !== current.userId || b.epoch !== current.epoch) throw stale; } },
     '../utils/storage': { saveAnalysis: () => { throw new Error('unexpected'); }, saveConsultation: () => { throw new Error('unexpected'); }, replaceConsultations: (value: unknown, b: any) => { assert.equal(b.userId, current.userId); assert.equal(b.epoch, current.epoch); writes.push(value); } },
     './consultationMapper': actualModule('src/app/api/consultationMapper.ts'),
     './client': { fetchApiJson: async (path: string) => {
@@ -77,7 +77,7 @@ function simultaneousFlow() {
   const requests: Array<{ resolve: (value: unknown) => void; reject: (error: unknown) => void }> = [];
   const error = new Error('synthetic exact first failure');
   const loader = actualModule('src/app/api/sessionV17.ts', {
-    '../utils/authBoundary': { captureAuthBoundary: () => current, assertCurrentAuthBoundary: () => {} },
+    '../utils/authBoundary': { subscribeAuthBoundary: () => () => {}, captureAuthBoundary: () => current, assertCurrentAuthBoundary: () => {} },
     '../utils/storage': { saveAnalysis: () => {}, saveConsultation: () => {}, replaceConsultations: (value: unknown) => writes.push(value) },
     './consultationMapper': actualModule('src/app/api/consultationMapper.ts'),
     './client': { fetchApiJson: (path: string) => {
