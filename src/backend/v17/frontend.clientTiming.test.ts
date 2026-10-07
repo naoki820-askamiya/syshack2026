@@ -128,6 +128,7 @@ test('actual New page hands submit/ACK correlation to actual hydration hook with
     '../utils/authBoundary': { captureAuthBoundary: () => boundary, isCurrentAuthBoundary: () => true, assertCurrentAuthBoundary: () => {} },
     '../api/consultationMapper': actualModule('src/app/api/consultationMapper.ts'), '../utils/storage': { getConsultations: () => [], saveConsultation: () => {} },
     '../utils/relationStyles': { getRelationStyle: () => ({}) }, '../components/Navigation': { Navigation: () => null },
+    '../components/LegalLinks': { LegalLinks: () => null }, '../legal/documents': { dataHandlingNotice: 'Storage notice' },
     '../components/PersonEditor': { PersonEditor: () => null },
     '../utils/consultationHistory': { findLatestConsultationByPersonId: () => undefined, getLatestConsultationsByPerson: () => [] },
     './newConsultationModel': actualModule('src/app/pages/newConsultationModel.ts'), '../utils/clientTiming': { clientTiming: flow.timing },

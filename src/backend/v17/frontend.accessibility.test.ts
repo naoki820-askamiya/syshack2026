@@ -24,7 +24,7 @@ function attribute(element: Opening, name: string): string | undefined {
 }
 function tag(element: Opening) { return element.tagName.getText(); }
 
-for (const page of ['NewConsultation', 'Login', 'Register']) {
+for (const page of ['NewConsultation', 'Login', 'Register', 'Consent']) {
   test(`${page} editable controls have unique IDs and real associated names`, () => {
     const { elements, tree } = inspect(`src/app/pages/${page}.tsx`);
     const labels = new Set(elements.filter((element) => tag(element) === 'label').map((element) => attribute(element, 'htmlFor')).filter(Boolean));

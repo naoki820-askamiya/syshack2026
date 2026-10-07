@@ -11,6 +11,8 @@ import { saveConsultation, getConsultations } from '../utils/storage';
 import { getRelationStyle } from '../utils/relationStyles';
 import { Navigation } from '../components/Navigation';
 import { PersonEditor } from '../components/PersonEditor';
+import { LegalLinks } from '../components/LegalLinks';
+import { dataHandlingNotice } from '../legal/documents';
 import {
   findLatestConsultationByPersonId,
   getLatestConsultationsByPerson,
@@ -782,6 +784,11 @@ export function NewConsultation() {
               </div>
             )}
 
+            <section aria-label="相談内容の取扱い" className="space-y-3 rounded-xl border border-[#D9E1EA] bg-white p-4 text-sm text-[#5B6573]">
+              <p>{dataHandlingNotice}</p>
+              <p>実名・連絡先など、相談に必要のない個人情報は削除・置換してください。過去情報の利用はプライバシー設定で変更できます。利用をOFFにしても保存済みの相談は削除されません。</p>
+              <LegalLinks />
+            </section>
             {isAnalyzing && <p role="status" className="text-sm text-[#5B6573]">相談を保存しています…</p>}
             <button
               type="submit"

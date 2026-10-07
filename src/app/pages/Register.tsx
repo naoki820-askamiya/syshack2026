@@ -1,7 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { ArrowLeft, UserPlus } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
+import { LegalLinks } from '../components/LegalLinks';
+import { dataHandlingNotice, legalDraftNotice } from '../legal/documents';
+import { safeLegalReturnTo } from '../../shared/legal';
+import { recordConsent } from '../api/consentV17';
+import { assertCurrentAuthBoundary, isCurrentAuthBoundary, type AuthBoundary } from '../utils/authBoundary';
 
 export function Register() {
   const navigate = useNavigate();
@@ -16,38 +21,65 @@ export function Register() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [noticeMessage, setNoticeMessage] = useState('');
+  const [accepted, setAccepted] = useState(false);
+  const [accountCreated, setAccountCreated] = useState(false);
+  const [awaitingEmail, setAwaitingEmail] = useState(false);
+  const registeredBoundary = useRef<AuthBoundary | null>(null);
+  const busy = useRef(false);
+  const lifetime = useRef<object | null>(null);
+  useEffect(() => {
+    lifetime.current = {};
+    return () => { lifetime.current = null; };
+  }, []);
 
-  const returnTo = searchParams.get('returnTo') || '/new';
+  const returnTo = safeLegalReturnTo(searchParams.get('returnTo'));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (busy.current || awaitingEmail || (accountCreated && !registeredBoundary.current)) return;
     setErrorMessage('');
     setNoticeMessage('');
+    if (!accepted) {
+      setErrorMessage('利用規約とプライバシーポリシーへの同意が必要です。');
+      return;
+    }
     
     if (formData.password !== formData.confirmPassword) {
       setErrorMessage('パスワードが一致しません。');
       return;
     }
     
+    busy.current = true;
+    const owner = lifetime.current;
+    const active = () => owner !== null && lifetime.current === owner;
     setIsSubmitting(true);
 
     try {
-      const result = await signUp(
-        formData.email.trim(),
-        formData.password,
-        formData.name.trim(),
-      );
-
-      if (result.needsEmailConfirmation) {
-        setNoticeMessage('確認メールを送信しました。メール内のリンクを開いてからログインしてください。');
-        return;
+      if (!registeredBoundary.current) {
+        const result = await signUp(formData.email.trim(), formData.password, formData.name.trim());
+        if (!active()) return;
+        if (result.needsEmailConfirmation) {
+          setAwaitingEmail(true);
+          setNoticeMessage('確認メールを送信しました。メール内のリンクを開いてからログインしてください。メール確認が必要な場合、ログイン後に改めて同意を確認・記録します。');
+          return;
+        }
+        setAccountCreated(true);
+        if (!result.authenticatedBoundary || !isCurrentAuthBoundary(result.authenticatedBoundary)) {
+          throw new Error('ログイン状態が変わりました。ログインし直して同意を確認してください。');
+        }
+        registeredBoundary.current = result.authenticatedBoundary;
       }
-
-      navigate(returnTo, { replace: true });
+      const boundary = registeredBoundary.current;
+      assertCurrentAuthBoundary(boundary);
+      await recordConsent();
+      if (active() && isCurrentAuthBoundary(boundary)) navigate(returnTo, { replace: true });
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : '新規登録に失敗しました。');
+      if (active()) setErrorMessage(registeredBoundary.current
+        ? 'アカウントの登録は完了しましたが、同意の記録を完了できませんでした。再試行してください。ログイン状態が変わった場合はログインし直してください。'
+        : error instanceof Error ? error.message : '新規登録に失敗しました。');
     } finally {
-      setIsSubmitting(false);
+      busy.current = false;
+      if (active()) setIsSubmitting(false);
     }
   };
 
@@ -85,17 +117,17 @@ export function Register() {
 
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-[#5B6573] mb-2">
-                お名前
+                お名前（ニックネーム可）
               </label>
               <input
                 id="name"
                 autoComplete="name"
-                disabled={isSubmitting}
+                disabled={isSubmitting || accountCreated || awaitingEmail}
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 className="w-full px-4 py-3 lg:py-4 rounded-lg border border-[#D9E1EA] bg-white text-[#1F2A37] placeholder:text-[#8A94A6] focus:ring-2 focus:ring-[#0F4C81]/20 focus:border-[#0F4C81] outline-none"
-                placeholder="山田太郎"
+                placeholder="ニックネーム"
                 required
               />
             </div>
@@ -107,7 +139,7 @@ export function Register() {
               <input
                 id="email"
                 autoComplete="username"
-                disabled={isSubmitting}
+                disabled={isSubmitting || accountCreated || awaitingEmail}
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -124,7 +156,7 @@ export function Register() {
               <input
                 id="password"
                 autoComplete="new-password"
-                disabled={isSubmitting}
+                disabled={isSubmitting || accountCreated || awaitingEmail}
                 type="password"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
@@ -142,7 +174,7 @@ export function Register() {
               <input
                 id="confirmPassword"
                 autoComplete="new-password"
-                disabled={isSubmitting}
+                disabled={isSubmitting || accountCreated || awaitingEmail}
                 type="password"
                 value={formData.confirmPassword}
                 onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
@@ -153,12 +185,23 @@ export function Register() {
             </div>
 
             {isSubmitting && <p role="status" className="text-sm text-[#5B6573]">処理中です…</p>}
+            <section aria-label="登録前の確認" className="space-y-3 rounded-xl border border-[#D9E1EA] bg-[#F7F9FC] p-4 text-sm text-[#5B6573]">
+              <p className="text-amber-900">{legalDraftNotice}</p>
+              <p>お名前・メールアドレスは、アカウントの登録・認証に使用します。</p>
+              <p>{dataHandlingNotice}</p>
+              <LegalLinks />
+              <label htmlFor="registration-legal-confirmation" className="flex items-start gap-3">
+                <input id="registration-legal-confirmation" type="checkbox" autoComplete="off" required disabled={isSubmitting || accountCreated || awaitingEmail} checked={accepted} onChange={event => setAccepted(event.target.checked)} className="mt-1 h-5 w-5 shrink-0" />
+                <span>利用規約（ドラフト）とプライバシーポリシーに同意します。</span>
+              </label>
+              <p>登録後に同意内容を記録します。メール確認が必要な場合は、確認・ログイン後に改めて同意をお願いします。</p>
+            </section>
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !accepted || awaitingEmail || (accountCreated && !registeredBoundary.current)}
               className="w-full bg-[#0F4C81] text-white py-3 lg:py-4 rounded-lg font-semibold shadow-sm hover:bg-[#0C3E69] transition-colors mt-6 lg:text-lg disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? '登録中...' : '登録する'}
+              {isSubmitting ? '処理中...' : awaitingEmail ? '確認メールを送信しました' : accountCreated ? '同意の記録を再試行' : '同意して登録する'}
             </button>
           </form>
 

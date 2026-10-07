@@ -30,7 +30,7 @@ export function AnalysisV17() {
   const { id, caseId } = useParams<{ id?: string; caseId?: string }>();
   const navigate = useNavigate();
   const resolvedId = id ?? caseId;
-  const { consultation, view, loading, error, status, retry } = useHydratedAnalysis(resolvedId);
+  const { consultation, view, loading, error, status, retry, needsConsent } = useHydratedAnalysis(resolvedId);
 
   if (!view) return (
     <div className="min-h-screen bg-[#F7F9FC]">
@@ -40,6 +40,7 @@ export function AnalysisV17() {
         <p role="status" aria-live="polite">{loading ? '相談の状態を確認し、状況を整理しています。結果は検証後に表示します。' : status === 'analyzing' ? '分析処理が続いています。画面を閉じても保存した相談から状態を確認できます。' : '相談の状態を確認して、同じ相談から分析を開始・再試行できます。'}</p>
         {consultation && <p className="text-sm">相談を保存しました。</p>}
         {error && <p role="alert" className="text-red-700">{error}</p>}
+        {needsConsent && <button type="button" onClick={() => navigate(`/consent?returnTo=${encodeURIComponent(`/analysis/${resolvedId}`)}`)} className="rounded-xl bg-[#0F4C81] px-4 py-3 text-white">規約と個人情報の取扱いを確認</button>}
         <button type="button" disabled={loading} onClick={retry} className="rounded-xl bg-[#0F4C81] px-4 py-3 text-white disabled:opacity-50">{status === 'analyzing' ? '分析状態を再取得' : '同じ相談で分析・再試行'}</button>
         <button type="button" onClick={() => navigate('/history')} className="block text-[#0F4C81]">相談履歴へ戻る</button>
       </main>

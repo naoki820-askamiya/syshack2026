@@ -2,11 +2,13 @@ import { Router } from "express";
 import { requireAuth } from "../middlewares/requireAuth.js";
 import { asyncHandler, getUuidParam, requireUserId } from "./http.js";
 import * as service from "./workflow.service.js";
+import { requireCurrentConsent } from './consent.service.js';
 
 const router = Router();
 router.use(requireAuth);
 
 router.post("/", asyncHandler(async (req, res) => {
+    await requireCurrentConsent(requireUserId(req));
     res.status(201).json(await service.createAnalysisCase(requireUserId(req), req.body));
 }));
 
@@ -15,6 +17,7 @@ router.get("/:caseId", asyncHandler(async (req, res) => {
 }));
 
 router.post("/:caseId/analyze", asyncHandler(async (req, res) => {
+    await requireCurrentConsent(requireUserId(req));
     res.json(await service.analyzeCase(requireUserId(req), getUuidParam(req.params.caseId), { requestId: res.locals.requestId }));
 }));
 

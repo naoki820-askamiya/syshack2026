@@ -60,6 +60,9 @@ after(async () => {
 });
 
 function authenticateAs(t: test.TestContext, userId = USER_ID) {
+    // Existing business-contract fixtures represent a user who already accepted
+    // the current documents; missing/old consent is tested independently.
+    replaceMethod(t, prisma.userConsentRecord, "findFirst", async () => ({ consentedAt: new Date('2026-10-07T00:00:00.000Z') }));
     replaceMethod(t, supabaseAuth.auth, "getUser", async () => ({
         data: { user: { id: userId, email: "user@example.com" } },
         error: null,

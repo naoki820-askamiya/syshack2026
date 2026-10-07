@@ -9,8 +9,14 @@ import { Register } from './pages/Register';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { ProtectedPlaceholder } from './pages/ProtectedPlaceholder';
 import { PrivacySettingsV17 } from './pages/PrivacySettingsV17';
+import { LegalDocument } from './pages/LegalDocument';
+import { Consent } from './pages/Consent';
+import { RequireConsent } from './components/RequireConsent';
 
 export const router = createBrowserRouter([
+  { path: '/terms', element: <LegalDocument kind="terms" /> },
+  { path: '/privacy-policy', element: <LegalDocument kind="privacy" /> },
+  { path: '/consent', element: <ProtectedRoute><Consent /></ProtectedRoute> },
   {
     path: '/',
     Component: Home,
@@ -19,7 +25,7 @@ export const router = createBrowserRouter([
     path: '/new',
     element: (
       <ProtectedRoute>
-        <NewConsultation />
+        <RequireConsent><NewConsultation /></RequireConsent>
       </ProtectedRoute>
     ),
   },

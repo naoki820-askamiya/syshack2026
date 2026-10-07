@@ -11,6 +11,7 @@ import type { ReactNode } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import { captureAuthBoundary, finishExplicitLogin, setAuthenticatedUser } from '../utils/authBoundary';
+import type { AuthBoundary } from '../utils/authBoundary';
 import '../utils/storage';
 
 type AuthContextValue = {
@@ -18,7 +19,7 @@ type AuthContextValue = {
   loading: boolean;
   authEpoch: number;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, displayName?: string) => Promise<{ needsEmailConfirmation: boolean }>;
+  signUp: (email: string, password: string, displayName?: string) => Promise<{ needsEmailConfirmation: boolean; authenticatedBoundary: AuthBoundary | null }>;
   signOut: () => Promise<void>;
 };
 
@@ -76,6 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signUp = useCallback(async (email: string, password: string, displayName?: string) => {
+    const start = captureAuthBoundary();
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -88,7 +90,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error('新規登録に失敗しました。入力内容を確認してください。');
     }
 
-    return { needsEmailConfirmation: !data.session };
+    const boundary = captureAuthBoundary();
+    const expectedEpoch = start.epoch + (data.session?.user.id === start.userId ? 0 : 1);
+    // Never attach registration intent to a different current account/session.
+    return { needsEmailConfirmation: !data.session,
+      authenticatedBoundary: data.session && boundary.userId === data.session.user.id && boundary.epoch === expectedEpoch ? boundary : null };
   }, []);
 
   const signOut = useCallback(async () => {

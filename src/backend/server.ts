@@ -79,6 +79,7 @@ export async function createServerApp() {
         "/api/privacy-settings",
         () => import("./v17/privacy.routes.js"),
     );
+    await mountOptionalRouter(app, "/api/legal-consent", () => import("./v17/consent.routes.js"));
     await mountOptionalRouter(
         app,
         "/api",

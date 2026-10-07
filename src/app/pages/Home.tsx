@@ -9,6 +9,7 @@ import { Navigation } from '../components/Navigation';
 import { getRelationStyle, getReactionStyle } from '../utils/relationStyles';
 import { getRandomSubtitle } from '../utils/randomSubtitle';
 import { useAuth } from '../auth/AuthContext';
+import { LegalLinks } from '../components/LegalLinks';
 
 export function Home() {
   const { user, authEpoch, loading: authLoading } = useAuth();
@@ -195,6 +196,7 @@ export function Home() {
               </div>
             </div>
           </div>
+          <footer className="mt-8 border-t border-[#D9E1EA] pt-5"><LegalLinks /></footer>
         </div>
       </div>
     </div>

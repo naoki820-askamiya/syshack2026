@@ -40,6 +40,7 @@ function scenario(options: { person?: (body: any) => Promise<unknown>; failure?:
     '../utils/storage': { getConsultations: () => [], saveConsultation: (value: unknown) => saved.push(value) },
     '../utils/relationStyles': { getRelationStyle: () => ({}) },
     '../components/Navigation': { Navigation: () => null },
+    '../components/LegalLinks': { LegalLinks: () => null }, '../legal/documents': { dataHandlingNotice: 'Storage notice' },
     '../components/PersonEditor': { PersonEditor: () => null },
     '../utils/consultationHistory': { findLatestConsultationByPersonId: () => undefined, getLatestConsultationsByPerson: () => [] },
     './newConsultationModel': actualModule('src/app/pages/newConsultationModel.ts'),

@@ -64,6 +64,7 @@ function fixture(load: (options: { signal: AbortSignal }) => Promise<unknown[]>,
     '../auth/AuthContext': { useAuth: () => ({ user: userId ? { id: userId } : null, authEpoch: auth.captureAuthBoundary().epoch, loading: false }) },
     '../utils/authBoundary': auth,
     '../components/Navigation': { Navigation: 'Navigation' },
+    '../components/LegalLinks': { LegalLinks: 'LegalLinks' },
     '../utils/relationStyles': { getRelationStyle: () => ({}), getReactionStyle: () => ({}) },
   });
   const params = new URLSearchParams('personId=person-A');

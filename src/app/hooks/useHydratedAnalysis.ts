@@ -19,6 +19,7 @@ export function useHydratedAnalysis(caseId: string | undefined) {
   const [loading, setLoading] = useState(!!caseId && !normalizeAnalysis(getAnalysis(caseId)));
   const [status, setStatus] = useState<SavedAnalysisStatus | null>(null);
   const [error, setError] = useState('');
+  const [needsConsent, setNeedsConsent] = useState(false);
   const consultation = caseId ? getConsultation(caseId) : undefined;
   const view = caseId ? normalizeAnalysis(getAnalysis(caseId)) : null;
 
@@ -65,6 +66,7 @@ export function useHydratedAnalysis(caseId: string | undefined) {
       let resultReady = false;
       setLoading(true);
       setError('');
+      setNeedsConsent(false);
       try {
         const next = await ensureSavedCaseAnalysis(caseId, { latest, state, start: async (id) => {
           assertCurrentAuthBoundary(boundary);
@@ -86,6 +88,7 @@ export function useHydratedAnalysis(caseId: string | undefined) {
           timer = setTimeout(() => { if (current()) void check(false); }, 2_000);
         }
       } catch (cause: unknown) {
+        if (current()) setNeedsConsent(!!cause && typeof cause === 'object' && 'code' in cause && cause.code === 'LEGAL_CONSENT_REQUIRED');
         if (current()) setError(cause instanceof Error ? cause.message : '分析状態を取得できませんでした。');
       } finally {
         if (current()) { setLoading(false); if (resultReady) clientTiming.finish(timing); }
@@ -96,5 +99,5 @@ export function useHydratedAnalysis(caseId: string | undefined) {
   }, [caseId, authEpoch, attempt, startRequest]);
 
   const retry = () => { if (caseId) clientTiming.retry(caseId, captureAuthBoundary()); setStartRequest({ caseId, allowStart: true }); setAttempt(v => v + 1); };
-  return { consultation, view, loading, error, status, retry };
+  return { consultation, view, loading, error, status, retry, needsConsent };
 }
