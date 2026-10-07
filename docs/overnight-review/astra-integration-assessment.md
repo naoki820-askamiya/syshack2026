@@ -75,7 +75,6 @@ Executed: current file/lock/source inspection; explicit Git HEAD/ancestry/frozen
 
 Not run by this assessor: full suite/typecheck/build/Markdown/PG rerun, CUA browser interactions, real Supabase Auth/GRANT/RLS/Data API, actual model output/latency/cost, production smoke/load/paint/accessibility/screen reader, dependency candidate installation/audit. Parent-agent test/browser results must be appended with their exact source/environment.
 
-
 ## Final parent verification
 
 The root agent completed the browser run on its restarted owned fixture; that server was temporary.
