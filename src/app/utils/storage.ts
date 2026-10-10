@@ -1,63 +1,77 @@
-import { ConsultationData, AnalysisResult } from '../types';
+import { assertCurrentAuthBoundary, captureAuthBoundary, subscribeAuthBoundary, type AuthBoundary } from './authBoundary.js';
+import type { ConsultationData } from '../types.js';
 
-const STORAGE_KEYS = {
-  CONSULTATIONS: 'kanjo-navi-consultations',
-  ANALYSES: 'kanjo-navi-analyses',
+type CachedAnalysis = Record<string, unknown> & { consultationId: string };
+
+const consultations: ConsultationData[] = [];
+const analyses: CachedAnalysis[] = [];
+let cacheRevision = 0;
+const cacheListeners = new Set<() => void>();
+const changed = () => { cacheRevision += 1; cacheListeners.forEach((listener) => listener()); };
+export const getCacheRevision = (): number => cacheRevision;
+export const subscribeCache = (listener: () => void): (() => void) => {
+  cacheListeners.add(listener);
+  return () => { cacheListeners.delete(listener); };
 };
 
-// 相談データの保存
-export const saveConsultation = (data: ConsultationData): void => {
-  const consultations = getConsultations();
-  consultations.push(data);
-  localStorage.setItem(STORAGE_KEYS.CONSULTATIONS, JSON.stringify(consultations));
+// 業務データの正本はDBです。この配列は画面遷移用に限り、Web Storageへ永続化しません。
+export const saveConsultation = (data: ConsultationData, boundary: AuthBoundary = captureAuthBoundary()): void => {
+  assertCurrentAuthBoundary(boundary);
+  const existingIndex = consultations.findIndex(c => c.id === data.id);
+  if (existingIndex > -1) {
+    consultations[existingIndex] = data;
+  } else {
+    consultations.push(data);
+  }
+  changed();
 };
 
-// 全相談データの取得
+export const replaceConsultations = (data: ConsultationData[], boundary: AuthBoundary = captureAuthBoundary()): void => {
+  assertCurrentAuthBoundary(boundary);
+  consultations.length = 0;
+  consultations.push(...data);
+  changed();
+};
+
 export const getConsultations = (): ConsultationData[] => {
-  const data = localStorage.getItem(STORAGE_KEYS.CONSULTATIONS);
-  return data ? JSON.parse(data) : [];
+  return [...consultations];
 };
 
-// 特定の相談データ取得
 export const getConsultation = (id: string): ConsultationData | undefined => {
   const consultations = getConsultations();
   return consultations.find(c => c.id === id);
 };
 
-// 分析結果の保存
-export const saveAnalysis = (consultationId: string, data: AnalysisResult): void => {
-  const analyses = getAnalyses();
-  const newAnalysis = { ...data, consultationId };
+export const saveAnalysis = (consultationId: string, data: Record<string, unknown>, boundary: AuthBoundary = captureAuthBoundary()): void => {
+  assertCurrentAuthBoundary(boundary);
+  const newAnalysis: CachedAnalysis = { ...data, consultationId };
   const existingIndex = analyses.findIndex(a => a.consultationId === consultationId);
   if (existingIndex > -1) {
     analyses[existingIndex] = newAnalysis;
   } else {
     analyses.push(newAnalysis);
   }
-  localStorage.setItem(STORAGE_KEYS.ANALYSES, JSON.stringify(analyses));
+  changed();
 };
 
-// 全分析結果の取得
-export const getAnalyses = (): AnalysisResult[] => {
-  const data = localStorage.getItem(STORAGE_KEYS.ANALYSES);
-  return data ? JSON.parse(data) : [];
+export const getAnalyses = (): CachedAnalysis[] => {
+  return [...analyses];
 };
 
-// 特定の分析結果取得
-export const getAnalysis = (consultationId: string): AnalysisResult | undefined => {
+export const clearCachedConsultations = (): void => {
+  consultations.length = 0;
+  analyses.length = 0;
+  changed();
+};
+
+export const getAnalysis = (consultationId: string): CachedAnalysis | undefined => {
   const analyses = getAnalyses();
   return analyses.find(a => a.consultationId === consultationId);
 };
 
-// 人物ごとの相談履歴を取得
-export const getConsultationsByPerson = (personName: string): ConsultationData[] => {
-  const consultations = getConsultations();
-  return consultations.filter(c => c.personName === personName);
-};
-
-// 登録済みの人物一覧を取得
-export const getRegisteredPersons = (): string[] => {
-  const consultations = getConsultations();
-  const personNames = consultations.map(c => c.personName);
+export const getRegisteredPersons = (data = getConsultations()): string[] => {
+  const personNames = data.map(c => c.personName);
   return Array.from(new Set(personNames));
 };
+
+subscribeAuthBoundary(clearCachedConsultations);

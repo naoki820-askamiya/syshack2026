@@ -1,75 +1,85 @@
-/**
- * 関係性ごとのスタイル定義（色の一元管理）
- * badge: カテゴリバッジの色クラス
- * bg: 背景色（ホバー含む）
- * emoji: 関係性の絵文字
- */
+import {
+  BriefcaseBusiness,
+  Gem,
+  HandMetal,
+  Handshake,
+  Heart,
+  Home,
+  Rabbit,
+  User,
+  type LucideIcon,
+} from 'lucide-react';
+
 export type RelationStyle = {
-  badge: string;       // バッジのbg + textクラス
-  bgHover: string;     // カードホバー背景
-  dot: string;         // アクセントカラー（ドットなど）
+  badge: string;
+  bgHover: string;
+  dot: string;
   emoji: string;
+  lucideIcon?: LucideIcon;
 };
 
 export const RELATION_STYLES: Record<string, RelationStyle> = {
   上司: {
-    badge: 'bg-[#E8F1F8] text-[#0F4C81]',
-    bgHover: 'hover:bg-[#F1F4F8]',
-    dot: 'bg-[#0F4C81]',
+    badge: 'bg-[#EDF2F7] text-[#1F3A4D]',
+    bgHover: 'hover:bg-[#E8EEF7]',
+    dot: 'bg-[#1F3A4D]',
     emoji: '👤',
+    lucideIcon: BriefcaseBusiness,
   },
   同僚: {
-    badge: 'bg-[#E8F1F8] text-[#0F4C81]',
-    bgHover: 'hover:bg-[#F1F4F8]',
+    badge: 'bg-[#E0EEFF] text-[#0F4C81]',
+    bgHover: 'hover:bg-[#DCE8FA]',
     dot: 'bg-[#0F4C81]',
     emoji: '👤',
+    lucideIcon: Handshake,
   },
   部下: {
-    badge: 'bg-[#E8F1F8] text-[#0F4C81]',
-    bgHover: 'hover:bg-[#F1F4F8]',
-    dot: 'bg-[#0F4C81]',
+    badge: 'bg-[#E0F7FF] text-[#086A86]',
+    bgHover: 'hover:bg-[#D9F0FA]',
+    dot: 'bg-[#086A86]',
     emoji: '👤',
+    lucideIcon: Rabbit,
   },
   恋人: {
-    badge: 'bg-[#F1F4F8] text-[#5B6573]',
-    bgHover: 'hover:bg-[#F1F4F8]',
-    dot: 'bg-[#5B6573]',
+    badge: 'bg-[#FFE4E9] text-[#A71D30]',
+    bgHover: 'hover:bg-[#FCE1E6]',
+    dot: 'bg-[#A71D30]',
     emoji: '👤',
+    lucideIcon: Heart,
   },
   配偶者: {
-    badge: 'bg-[#F1F4F8] text-[#5B6573]',
-    bgHover: 'hover:bg-[#F1F4F8]',
-    dot: 'bg-[#5B6573]',
+    badge: 'bg-[#FFF0D6] text-[#995800]',
+    bgHover: 'hover:bg-[#F9ECD8]',
+    dot: 'bg-[#995800]',
     emoji: '👤',
+    lucideIcon: Gem,
   },
   友人: {
-    badge: 'bg-[#F1F4F8] text-[#5B6573]',
-    bgHover: 'hover:bg-[#F1F4F8]',
-    dot: 'bg-[#5B6573]',
+    badge: 'bg-[#E8F8E8] text-[#2A6D4F]',
+    bgHover: 'hover:bg-[#E3F4E3]',
+    dot: 'bg-[#2A6D4F]',
     emoji: '👤',
+    lucideIcon: HandMetal,
   },
   家族: {
-    badge: 'bg-[#F1F4F8] text-[#5B6573]',
-    bgHover: 'hover:bg-[#F1F4F8]',
-    dot: 'bg-[#5B6573]',
+    badge: 'bg-[#FFE8E8] text-[#8B3A3A]',
+    bgHover: 'hover:bg-[#FBE3E3]',
+    dot: 'bg-[#8B3A3A]',
     emoji: '👤',
+    lucideIcon: Home,
   },
   その他: {
-    badge: 'bg-[#F1F4F8] text-[#5B6573]',
-    bgHover: 'hover:bg-[#F1F4F8]',
-    dot: 'bg-[#8A94A6]',
+    badge: 'bg-[#E8EBEE] text-[#4A5568]',
+    bgHover: 'hover:bg-[#E2E6EB]',
+    dot: 'bg-[#7F8A9F]',
     emoji: '👤',
+    lucideIcon: User,
   },
 };
 
-/** 関係性スタイルを取得（未定義の場合はその他を返す） */
 export const getRelationStyle = (relation: string): RelationStyle =>
   RELATION_STYLES[relation] ?? RELATION_STYLES['その他'];
 
-/**
- * 相手の反応を色付けする
- * returns Tailwind text + bg クラス
- */
 export type ReactionStyle = { text: string; bg: string };
 
 export const getReactionStyle = (reaction: string): ReactionStyle => {

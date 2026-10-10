@@ -1,14 +1,44 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
-import { History, Users, PlusCircle, ChevronRight } from 'lucide-react';
-import { getRegisteredPersons, getConsultations } from '../utils/storage';
+import { History, Users, PlusCircle, ChevronRight, UserRoundSearch, MessageSquareDashed } from 'lucide-react';
+import { loadConsultationHistory } from '../api/sessionV17';
+import { captureAuthBoundary, isCurrentAuthBoundary } from '../utils/authBoundary';
+import { recentConsultations as selectRecentConsultations, visibleHomeHistory, type HomeHistoryState } from '../utils/homeHistoryModel';
+import { getLatestConsultationsByPerson } from '../utils/consultationHistory';
 import { Navigation } from '../components/Navigation';
 import { getRelationStyle, getReactionStyle } from '../utils/relationStyles';
 import { getRandomSubtitle } from '../utils/randomSubtitle';
+import { useAuth } from '../auth/AuthContext';
+import { LegalLinks } from '../components/LegalLinks';
 
 export function Home() {
-  const persons = getRegisteredPersons();
-  const recentConsultations = getConsultations().slice(-5).reverse();
+  const { user, authEpoch, loading: authLoading } = useAuth();
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  const [historyState, setHistoryState] = useState<HomeHistoryState>(() => ({
+    boundary: captureAuthBoundary(), status: 'loading', consultations: [], error: '',
+  }));
+  const visible = visibleHomeHistory(historyState, captureAuthBoundary());
+  const consultations = visible.consultations;
+  const persons = getLatestConsultationsByPerson(consultations);
+  const recentConsultations = selectRecentConsultations(consultations);
+
+  useEffect(() => {
+    if (authLoading) return;
+    let active = true;
+    const controller = new AbortController();
+    const boundary = captureAuthBoundary();
+    setHistoryState({ boundary, status: user ? 'loading' : 'loaded', consultations: [], error: '' });
+    if (user) {
+      void loadConsultationHistory({ signal: controller.signal })
+        .then((loaded) => {
+          if (active && isCurrentAuthBoundary(boundary)) setHistoryState({ boundary, status: 'loaded', consultations: loaded, error: '' });
+        })
+        .catch((cause: unknown) => {
+          if (active && isCurrentAuthBoundary(boundary)) setHistoryState({ boundary, status: 'error', consultations: [], error: cause instanceof Error ? cause.message : '履歴を取得できませんでした。' });
+        });
+    }
+    return () => { active = false; controller.abort(); };
+  }, [user?.id, authEpoch, authLoading, loadAttempt]);
 
   const randomMessage = useMemo(() => getRandomSubtitle(), []);
 
@@ -16,28 +46,29 @@ export function Home() {
     <div className="min-h-screen bg-[#F7F9FC]">
       <Navigation />
       
-      <div className="lg:ml-64 p-4 lg:p-8 pb-24 lg:pb-8">
+      <div className="lg:ml-64 p-4 lg:p-4 pb-24 lg:pb-8">
         <div className="max-w-4xl mx-auto">
-          {/* ヘッダー */}
-          <div className="text-center py-8 lg:py-12 relative">
-            <div className="mx-auto mb-4 h-5 lg:h-5"/> {/* blank */}
-            <img src="/kigen404_title_b_transparent.png" alt="KIGEN404" className="mx-auto mb-4 h-28 lg:h-32" />
-            <p className="text-[#5B6573] lg:text-lg">{randomMessage}<br/>相手のLINEから“本音”をAIが予測、最適な返しまで提案</p>
+          <div className="text-center py-8 lg:py-8 relative">
+            <div className="mx-auto mb-4 h-5 lg:h-5" />
+            <img src="/kigen404_title_b_transparent.png" alt="KIGEN404" className="mx-auto mb-4 h-28 lg:h-44" />
+            <p className="text-[#5B6573] lg:text-lg">{randomMessage}<br/>出来事や反応をもとに、複数の見方と次に取れる行動を整理</p>
           </div>
 
-          {/* メインアクション */}
-          <Link to="/new" className="block mb-6">
-            <button className="w-full bg-[#0F4C81] text-white rounded-2xl p-5 lg:p-7 shadow-sm hover:bg-[#0C3E69] transition-colors hover:scale-[1.01] active:scale-[0.99]">
+          <Link to={user ? '/new' : '/login?returnTo=%2Fnew'} className="block mb-6">
+            <div className="w-full bg-[#0F4C81] text-white rounded-2xl p-5 lg:p-7 shadow-sm hover:bg-[#0C3E69] transition-colors hover:scale-[1.01] active:scale-[0.99]">
               <div className="flex items-center justify-center gap-3">
                 <PlusCircle className="w-7 h-7 lg:w-9 lg:h-9" />
-                <span className="text-xl lg:text-2xl font-semibold">新しい相談を作成</span>
+                <span className="text-xl lg:text-2xl font-semibold">
+                  {user ? '新しい相談を作成' : 'ログインして相談を保存'}
+                </span>
               </div>
-              <p className="text-[#E8F1F8] text-sm mt-1">Find their invisible emotion.</p>
-            </button>
+              <p className="text-[#E8F1F8] text-sm mt-1">
+                {user ? '入力と根拠から、次の一歩を考える。' : 'ログイン後、この画面に戻ります。'}
+              </p>
+            </div>
           </Link>
 
           <div className="lg:grid lg:grid-cols-3 lg:gap-6 space-y-6 lg:space-y-0">
-            {/* 左カラム: 過去の人物 */}
             <div className="lg:col-span-1">
               <div className="bg-white rounded-2xl p-5 shadow-sm h-full border border-[#D9E1EA]">
                 <div className="flex items-center justify-between mb-4">
@@ -52,26 +83,26 @@ export function Home() {
                   )}
                 </div>
 
-                {persons.length > 0 ? (
+                {authLoading || visible.status === 'loading' ? <p role="status" className="py-6 text-sm text-[#5B6573]">相談対象を読み込んでいます…</p> : visible.status === 'error' ? <HistoryLoadError message={visible.error} onRetry={() => setLoadAttempt((value) => value + 1)} /> : persons.length > 0 ? (
                   <div className="space-y-2">
                     {persons.map((person) => {
-                      const personConsultations = getConsultations().filter(c => c.personName === person);
+                      const personConsultations = consultations.filter(c => person.personId ? c.personId === person.personId : c.id === person.id);
                       const latest = personConsultations.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
                       const style = getRelationStyle(latest?.relation ?? 'その他');
+                      const RelationIcon = style.lucideIcon;
                       return (
                         <Link
-                          key={person}
-                          to={`/history?person=${encodeURIComponent(person)}`}
+                          key={person.personId ?? person.id}
+                          to={person.personId ? `/history?personId=${encodeURIComponent(person.personId)}` : '/history'}
                           className={`flex items-center justify-between bg-[#F1F4F8] ${style.bgHover} rounded-xl px-4 py-3 transition-colors group`}
                         >
                           <div className="flex items-center gap-3">
-                            {/* 絵文字アイコン */}
-                            <span className="text-2xl">{style.emoji}</span>
+                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-sm flex-shrink-0 ${style.badge}`}>
+                              {RelationIcon ? <RelationIcon className="w-4 h-4" /> : style.emoji}
+                            </div>
                             <div>
-                              {/* ニックネームを大きめに */}
-                              <p className="text-base font-semibold text-[#1F2A37] leading-tight">{person}</p>
+                              <p className="text-base font-semibold text-[#1F2A37] leading-tight">{person.personName}</p>
                               <div className="flex items-center gap-1.5 mt-1">
-                                {/* 関係性バッジ（丸くくる） */}
                                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${style.badge}`}>
                                   {latest?.relation ?? 'その他'}
                                 </span>
@@ -88,15 +119,14 @@ export function Home() {
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center py-8 text-center">
-                    <div className="text-4xl mb-3">👥</div>
-                    <p className="text-sm text-[#5B6573]">まだ相談した人物はいません</p>
+                    <UserRoundSearch className="w-16 h-16 text-4xl mb-3" />
+                    <p className="text-sm">まだ相談した人物はいません</p>
                     <p className="text-xs text-[#8A94A6] mt-1">相談すると人物が登録されます</p>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* 右カラム: 最近の相談履歴 */}
             <div className="lg:col-span-2">
               <div className="bg-white rounded-2xl p-5 shadow-sm border border-[#D9E1EA]">
                 <div className="flex items-center justify-between mb-4">
@@ -112,19 +142,20 @@ export function Home() {
                   )}
                 </div>
 
-                {recentConsultations.length > 0 ? (
+                {authLoading || visible.status === 'loading' ? <p role="status" className="py-6 text-sm text-[#5B6573]">最近の相談履歴を読み込んでいます…</p> : visible.status === 'error' ? <HistoryLoadError message={visible.error} onRetry={() => setLoadAttempt((value) => value + 1)} /> : recentConsultations.length > 0 ? (
                   <div className="space-y-3">
                     {recentConsultations.map((consultation) => {
                       const style = getRelationStyle(consultation.relation);
                       const reactionStyle = getReactionStyle(consultation.reaction);
+                      const RelationIcon = style.lucideIcon;
                       return (
                         <Link
                           key={consultation.id}
-                          to={`/action/${consultation.id}`}
+                          to={`/analysis/${consultation.id}`}
                           className={`flex items-start gap-4 bg-[#F1F4F8] ${style.bgHover} rounded-xl p-4 transition-colors group`}
                         >
-                          <div className="flex-shrink-0 text-2xl mt-0.5">
-                            {style.emoji}
+                          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-sm flex-shrink-0 mt-0.5 ${style.badge}`}>
+                            {RelationIcon ? <RelationIcon className="w-4 h-4" /> : style.emoji}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between mb-1">
@@ -153,27 +184,26 @@ export function Home() {
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center py-10 text-center">
-                    <div className="text-5xl mb-4">💭</div>
+                    <MessageSquareDashed className="w-16 h-16 text-4xl mb-3" />
                     <h3 className="text-base font-semibold text-[#1F2A37] mb-2">
                       人間関係の悩み、相談してみませんか？
                     </h3>
                     <p className="text-[#5B6573] text-sm leading-relaxed max-w-xs">
                       「相手の機嫌が分からない」「どう対応すればいいか分からない」そんな時、具体的な行動を提案します。
                     </p>
-                    <Link
-                      to="/new"
-                      className="mt-5 inline-flex items-center gap-2 bg-[#0F4C81] text-white px-5 py-2.5 rounded-xl text-sm font-medium shadow-sm hover:bg-[#0C3E69] transition-colors"
-                    >
-                      <PlusCircle className="w-4 h-4" />
-                      最初の相談を始める
-                    </Link>
                   </div>
                 )}
               </div>
             </div>
           </div>
+          <footer className="mt-8 border-t border-[#D9E1EA] pt-5"><LegalLinks /></footer>
         </div>
       </div>
     </div>
   );
+}
+
+
+function HistoryLoadError({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return <div role="alert" className="py-6 text-sm text-red-700"><p>{message}</p><button type="button" onClick={onRetry} className="mt-2 font-medium underline">履歴を再取得</button></div>;
 }

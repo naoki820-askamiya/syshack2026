@@ -1,0 +1,75 @@
+# Independent E2E handoff
+
+Status: NOT_RUN in this run. Use synthetic consultations and two isolated test users.
+Record build SHA, dirty flag, frontend/backend origins, device/browser, time,
+case/person IDs and pass/fail evidence. Do not record real text or credentials.
+Do not deploy or use Production DB without separate authorization.
+
+| Test | What to observe | Result |
+| --- | --- | --- |
+| Register / login | SDK success/failure, errors and return path | NOT_RUN |
+| Direct route / reload | Login, dashboard, new, history, analysis, action, privacy routes | NOT_RUN |
+| New consultation | Saved Case exists before AI completes; no duplicated Person | NOT_RUN |
+| Slow Person prefill | Identity controls disabled, event draft retained, failures retryable | NOT_RUN |
+| Analysis state | Draft/analyzing/analyzed/failed match server, no fake percentage | NOT_RUN |
+| Lost analysis response | Latest/state reconcile before restarting | NOT_RUN |
+| Failed analysis retry | Same saved Case; no new Person/Case | NOT_RUN |
+| Failed Case remount | Consumed navigation flag does not silently retry | NOT_RUN |
+| State GET failure/stall | No implicit provider start; polling cutoff is scheduling only | NOT_RUN |
+| Same Person second case | Existing Person reused, selected ID not display-name equality | NOT_RUN |
+| Same-name two Persons | Histories and consultation targets remain distinct | NOT_RUN |
+| Existing Person edit | Save/cancel/error/retry, nickname/raw relationship, server-authoritative re-read; profile stale even privacy OFF | NOT_RUN |
+| Edited Person / new Case | New snapshot reflects committed edit; earlier snapshot stays immutable; historical labels use current latest Person | NOT_RUN |
+| Edit/archive versus Case create | Concurrent operations preserve owned active Person and atomic snapshot; observe existing last-writer-wins | NOT_RUN |
+| Personalization ON/OFF | Actual permitted source IDs reflect settings | NOT_RUN |
+| Privacy GET/PATCH failure | No saving fallback defaults, recover with read/retry | NOT_RUN |
+| Feedback create/edit/reload | POST once, PATCH existing, restored values | NOT_RUN |
+| Feedback opt-out | Future context excludes item; profile invalidation visible | NOT_RUN |
+| A→B while token lookup pending | No old protected POST/PATCH/PUT/DELETE sent | NOT_RUN |
+| A→B while response/JSON pending | No A cache/state delivered to B | NOT_RUN |
+| Logout / same-user re-login / expiry | Old epoch responses and unsent writes rejected | NOT_RUN |
+| Parallel same-user requests | Ordinary independent requests complete | NOT_RUN |
+| 401/403/409 / abort / network | Existing errors remain distinguishable and recoverable | NOT_RUN |
+| Public/login/register | No unnecessary protected client guard effect | NOT_RUN |
+| Auth SDK rejection | Isolated provider fault returns generic500/requestId, no private message/token and no business write; ordinary auth error401 | NOT_RUN |
+| Mobile | Readability, scrolling, controls and navigation | NOT_RUN |
+| Keyboard | Focus, labels, choice state, pending/error announcements | NOT_RUN |
+| Result comprehension | Independently explain evidence, uncertainty, alternatives and caution | NOT_RUN |
+| Score interpretation | Ask whether numbers mean emotional probability; record misunderstanding | NOT_RUN |
+| Crisis / safety | Use proposal fixtures; expert policy review required, not approval by regex tests | NOT_RUN |
+
+## Residual implementation follow-up
+
+| Test | What to observe | Result |
+| --- | --- | --- |
+| Evidence and comparison | Identify current entry, Feedback report and prior AI; explain strength/relevance/reasons without treating them as facts | NOT_RUN |
+| Older result metadata | Missing confidence/source stays unknown; busyness/flatness remain context, not reassurance | NOT_RUN |
+| Person ACK then Case error | Retry retains confirmed full Person; editor remains available; explicit name change chooses new intent even when returning to original text | NOT_RUN |
+| Person response lost after commit | Same mounted screen unchanged retry reuses key and owned resource; changed fields/new intent gets new key; differing key input409 | NOT_RUN |
+| Case response lost after commit | Unchanged retry returns original Case/snapshot without resetting analyzed run/results/updatedAt/quota | NOT_RUN |
+| Concurrent create replay | Same owner/key/input resolves to one ID/row; other owner isolated; omitted key legacy ordinary create | NOT_RUN |
+| Archived target / changed replay input | Safe404/no resurrection and typed409 reach caller; reload/unmount or physical delete recovery outside current guarantee | NOT_RUN |
+| History failure/retry | Filter preserved, inline retry, all pages/newest order, per-load4 and no subsequent dispatch after failure/auth change | NOT_RUN |
+| Logout failure | Current user sees retryable error; no premature navigation or another-user error | NOT_RUN |
+| Password recovery affordance | Unavailable state is clear; login/register continue; no unfinished email/reset flow | NOT_RUN |
+| Client timing | Native opaque milestones omit private text/IDs; retry/remount/auth do not mix traces; compare logical events with actual visible paint separately | NOT_RUN |
+| Dependency HTTP contract | Query/JSON/error behavior under adopted runtime patch | NOT_RUN |
+
+The History cap applies per invocation; overlapping retry may temporarily retain earlier
+in-flight peers. SDK recovery characterization is not an implemented reset flow.
+Current-screen keys are in memory only and are not a cross-reload draft or durable ledger.
+Server-side authorization/ownership remains authoritative; stale UI guards cannot undo
+an already-sent write. Unknown provider attempts remain conservative quota, not refunds.
+
+## Post-deploy smoke preparation
+
+Only after an independently authorized deployment: obtain the intended full commit
+SHA and fetch frontend /build.json; require exact commitSha equality and dirty=false.
+Record backend health/build identity separately; do not infer it from frontend metadata.
+Fetch each deep route directly and reload in the browser. Require the expected SPA
+entry/asset content; HTTP200 alone is not proof (fallback/error shells can be200).
+Verify API errors remain JSON and are not rewritten to SPA HTML. For owned synthetic
+Case IDs test both analysis/action; test unknown/other-user IDs for safe non-disclosure.
+Check cold and warm navigations, auth redirect/return, chunk failure recovery and
+mobile/keyboard behavior. Mark each step verified or NOT_RUN with its environment.
+No smoke command or deployment was executed against Production here.

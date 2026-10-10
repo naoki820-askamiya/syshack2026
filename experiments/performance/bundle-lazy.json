@@ -1,0 +1,92 @@
+{
+  "mode": "LOCAL_PRODUCTION_BUILD_MEASUREMENT",
+  "chunks": [
+    {
+      "file": "assets/index-CZwATcCg.js",
+      "isEntry": true,
+      "bytes": 539628,
+      "gzipBytes": 156284,
+      "imports": [],
+      "dynamicImports": [
+        "assets/AnalysisV17-CY-3O4G7.js",
+        "assets/ActionSuggestionV17-DoeM62oj.js"
+      ]
+    },
+    {
+      "file": "assets/AnalysisV17-CY-3O4G7.js",
+      "isEntry": false,
+      "bytes": 382545,
+      "gzipBytes": 106670,
+      "imports": [
+        "assets/index-CZwATcCg.js",
+        "assets/useHydratedAnalysis-C_U5o59k.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "file": "assets/ActionSuggestionV17-DoeM62oj.js",
+      "isEntry": false,
+      "bytes": 7102,
+      "gzipBytes": 2426,
+      "imports": [
+        "assets/index-CZwATcCg.js",
+        "assets/useHydratedAnalysis-C_U5o59k.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "file": "assets/useHydratedAnalysis-C_U5o59k.js",
+      "isEntry": false,
+      "bytes": 7275,
+      "gzipBytes": 3084,
+      "imports": [
+        "assets/index-CZwATcCg.js"
+      ],
+      "dynamicImports": []
+    }
+  ],
+  "renderedCharactersBeforeMinification": {
+    "application": 189955,
+    "react": 9585,
+    "react-dom": 134728,
+    "scheduler": 4962,
+    "react-router": 223471,
+    "tslib": 2162,
+    "@supabase/functions-js": 15671,
+    "@supabase/postgrest-js": 106076,
+    "@supabase/realtime-js": 94276,
+    "@supabase/phoenix": 54182,
+    "iceberg-js": 15836,
+    "@supabase/storage-js": 106053,
+    "@supabase/auth-js": 379855,
+    "@supabase/supabase-js": 34626,
+    "lucide-react": 19576,
+    "clsx": 362,
+    "lodash": 194362,
+    "react-is": 3234,
+    "recharts": 449170,
+    "d3-shape": 24430,
+    "d3-path": 4347,
+    "d3-array": 7617,
+    "internmap": 1111,
+    "d3-scale": 28712,
+    "d3-color": 11297,
+    "d3-interpolate": 5004,
+    "d3-format": 11837,
+    "d3-time": 10613,
+    "d3-time-format": 19138,
+    "victory-vendor": 0,
+    "decimal.js-light": 49577,
+    "recharts-scale": 16702,
+    "tiny-invariant": 112,
+    "prop-types": 2921,
+    "fast-equals": 23253,
+    "react-smooth": 38616,
+    "eventemitter3": 10065
+  },
+  "limitations": [
+    "Rendered characters attribute transformed module code before final minification; not each package compressed-byte share.",
+    "No browser parse, network, layout or perceived latency measured.",
+    "No route splitting, chart removal, cache or DB index was adopted."
+  ]
+}

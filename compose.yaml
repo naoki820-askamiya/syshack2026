@@ -1,0 +1,3 @@
+include:
+  - path: compose.services.yaml
+    env_file: .env.local
