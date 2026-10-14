@@ -338,3 +338,5 @@ CIは合成の接続設定と既存のテスト用モックを使い、実DBへ�
 
 実装計画には将来構想が、日付付きの調査・検証資料には過去時点の情報が含まれます。
 現在の動作を確認する場合は、このREADMEと現行仕様書から参照してください。
+
+AI と共同で開発する際の共通規則は [AGENTS.md](AGENTS.md)、PR・差分のレビュー手順は [KIGEN404 敵対的レビュー Skill](.agents/skills/kigen-adversarial-review/SKILL.md) を参照してください。

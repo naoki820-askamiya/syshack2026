@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "lint": "tsc --noEmit --pretty false -p tsconfig.json",
-    "lint:md": "markdownlint-cli2 \"README.md\" \"docs/**/*.md\"",
+    "lint:md": "markdownlint-cli2 \"README.md\" \"AGENTS.md\" \"docs/**/*.md\" \".agents/skills/**/SKILL.md\"",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "build:client": "vite build",
     "build:server": "npm run prisma:generate && tsc -p tsconfig.server.json",
