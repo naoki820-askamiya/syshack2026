@@ -279,6 +279,20 @@ docker compose down
 自動テストとは別に、実際のAI出力の品質や本番環境での動作を確認する必要があります。
 テスト数や処理時間の記録を参照するときは、対象時点と環境も確認してください。
 
+### CI
+
+[GitHub ActionsのCI](.github/workflows/ci.yml)は、`main`・`develop`へのpushと、それらを対象とするPull Requestで実行します。
+`workflow_dispatch`による手動実行も定義しています。GitHubの画面からの手動実行には、デフォルトブランチにこのworkflowが必要です。
+Node.js 22と標準のUbuntuランナーを使い、`npm ci`、Prisma schema検証・Client生成、型チェック、Markdown検査、`npm test`、フロントエンド・バックエンドのビルドを順に確認します。
+
+CIは合成の接続設定と既存のテスト用モックを使い、実DBへのmigrationや有料AI APIの呼び出し、デプロイを行いません。
+実DB・実認証・実AI出力・ブラウザー操作の検証は、このCIの対象外です。
+マージ前に成功を必須とする設定は、GitHub側のbranch protectionまたはrulesetで別途行う必要があります。
+
+実行は1ジョブ・最大15分とし、同じPRまたはブランチの古い実行を自動キャンセルします。キャッシュ・成果物の保存は使いません。
+公開リポジトリの標準ランナーは実行時間が無料です。Private化後の無料枠超過や大型ランナーへの変更は課金条件が変わるため、[GitHubの料金条件](https://docs.github.com/en/billing/concepts/product-billing/github-actions)を確認してください。
+停止するときは、GitHubのActions画面でCIを選び、メニューから「Disable workflow」を実行します。
+
 ## ディレクトリ構成
 
 ```text
