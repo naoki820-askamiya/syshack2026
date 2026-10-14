@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Tests, types and build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      # Prisma configuration needs a URL; these checks do not connect to a database.
+      DATABASE_URL: postgresql://ci:ci@127.0.0.1:1/kigen404_ci
+      DIRECT_URL: postgresql://ci:ci@127.0.0.1:1/kigen404_ci
+      SUPABASE_URL: https://ci.invalid
+      SUPABASE_PUBLISHABLE_KEY: synthetic-ci-key
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Validate Prisma schema
+        run: npm run prisma:validate
+
+      - name: Generate Prisma Client
+        run: npm run prisma:generate
+
+      - name: Check TypeScript
+        run: npm run typecheck
+
+      - name: Check Markdown
+        run: npm run lint:md
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build client and server
+        run: npm run build
