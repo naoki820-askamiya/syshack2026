@@ -148,6 +148,40 @@ function caseBody(personId = PERSON_ID) {
     };
 }
 
+test('combined Person+Case POST preserves auth/consent and returns one owned pair without intent metadata', async t => {
+    authenticateAs(t);
+    let persons = 0, cases = 0;
+    const { personId: _personId, ...fields } = caseBody();
+    const body = { ...fields, newPerson: { displayName: ' Synthetic atomic ', relationshipType: 'friend' },
+        createIntentKey: '88888888-8888-4888-8888-888888888888' };
+    replaceMethod(t, prisma.person, 'create', async () => { throw new Error('Person must only be inserted through transaction client'); });
+    replaceMethod(t, prisma, '$transaction', async operation => operation({
+        person: { create: async ({ data }: any) => { persons++; assert.equal(data.userId, USER_ID); assert.equal(data.displayName, 'Synthetic atomic'); return person(data); } },
+        analysisCase: {
+            findFirst: async ({ where }: any) => { assert.equal(where.userId, USER_ID); return null; },
+            create: async ({ data }: any) => {
+                cases++; assert.equal(data.userId, USER_ID); assert.equal(data.personId, PERSON_ID);
+                assert.equal(data.newPerson, undefined); assert.equal(data.personSnapshot.schemaVersion, 'person-snapshot-v2');
+                return { ...data, id: CASE_ID, status: 'draft' };
+            },
+        },
+    }));
+    assert.equal((await request('/api/analysis-cases', { method: 'POST', body: JSON.stringify(body) })).status, 401);
+    for (const invalid of [{ ...body, createIntentKey: undefined }, { ...body, personId: PERSON_ID },
+        { ...body, newPerson: { ...body.newPerson, userId: OTHER_USER_ID } }]) {
+        assert.equal((await request('/api/analysis-cases', authorizedJson('POST', invalid))).status, 400);
+    }
+    assert.equal(persons, 0); assert.equal(cases, 0);
+    const response = await request('/api/analysis-cases', authorizedJson('POST', body));
+    assert.equal(response.status, 201); assert.equal(persons, 1); assert.equal(cases, 1);
+    const saved = response.body.analysisCase as any;
+    assert.equal(saved.personId, PERSON_ID); assert.equal(saved.status, 'draft');
+    assert.equal(Object.hasOwn(saved, 'createIntentKey'), false); assert.equal(Object.hasOwn(saved, 'createIntentFingerprint'), false);
+    replaceMethod(t, prisma.userConsentRecord, 'findFirst', async () => null);
+    const denied = await request('/api/analysis-cases', authorizedJson('POST', body));
+    assert.equal(denied.status, 403); assert.equal(persons, 1); assert.equal(cases, 1);
+});
+
 test("protected APIs return 401 without a valid authenticated session", async (t) => {
     const missing = await request("/api/persons");
     assert.equal(missing.status, 401);

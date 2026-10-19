@@ -147,21 +147,3 @@ test('stale auth boundary and unmount stop visibility and timer work', async () 
   flow.switchUser(); await flow.visible(false); await flow.advance(120_000);
   assert.equal(flow.calls, calls); flow.close(); assert.equal(flow.events.size, 0);
 });
-
-for (const leave of [false, true]) test('incomplete consultation uses native departure confirmation: leave=' + leave, () => {
-  const h = fixture(); const pending = { current: true }; const listeners = new Set<(event: any) => void>();
-  let shouldBlock!: () => boolean, proceeded = 0, reset = 0;
-  const blocker = { state: 'unblocked', proceed: () => proceeded++, reset: () => reset++ };
-  const { IncompleteConsultationGuard } = load('src/app/components/IncompleteConsultationGuard.tsx', {
-    react: h.react, 'react-router': { useBlocker: (fn: () => boolean) => { shouldBlock = fn; return { ...blocker }; } },
-  }, { window: { confirm: (message: string) => { assert.match(message, /相手の情報だけ/); return leave; },
-    addEventListener: (_event: string, fn: (event: any) => void) => listeners.add(fn), removeEventListener: (_event: string, fn: (event: any) => void) => listeners.delete(fn) } });
-  const render = () => h.render(() => IncompleteConsultationGuard({ pending })); render();
-  assert.equal(shouldBlock(), true);
-  let prevented = false; const event = { preventDefault: () => { prevented = true; }, returnValue: undefined as string | undefined };
-  listeners.forEach(listener => listener(event)); assert.equal(prevented, true); assert.equal(event.returnValue, '');
-  blocker.state = 'blocked'; render(); assert.equal(proceeded, leave ? 1 : 0); assert.equal(reset, leave ? 0 : 1);
-  pending.current = false; assert.equal(shouldBlock(), false);
-  prevented = false; listeners.forEach(listener => listener(event)); assert.equal(prevented, false);
-  h.close(); assert.equal(listeners.size, 0);
-});

@@ -14,6 +14,14 @@ export function caseIntentFingerprint(data: { personId: string; userAgeRange: st
 }
 function fingerprint(fields: unknown[]) { return 'v1:' + createHash('sha256').update(JSON.stringify(fields)).digest('hex'); }
 
+export function newPersonCaseIntentFingerprint(data: Omit<Parameters<typeof caseIntentFingerprint>[0], 'personId'> & {
+  newPerson: Parameters<typeof personIntentFingerprint>[0];
+}) {
+  // The input identity is the requested new Person, not its generated UUID.
+  return fingerprint(['case-with-new-person', personIntentFingerprint(data.newPerson),
+    caseIntentFingerprint({ ...data, personId: 'new-person' })]);
+}
+
 export function isCreateIntentCollision(error: unknown, table: 'persons' | 'analysis_cases') {
   if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== 'P2002') return false;
   const target = error.meta?.target;

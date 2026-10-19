@@ -47,7 +47,7 @@ for (const { cached, relationshipType, failed } of scenarios) test(`current Pers
     'react/jsx-runtime':{jsx,jsxs:jsx},
     'react-router':{useNavigate:()=>()=>{},useSearchParams:()=>[new URLSearchParams('personId=synthetic-A')]},
     'lucide-react':new Proxy({}, {get:(_target,key)=>String(key)}),
-    '../api/sessionV17':{createPerson:async()=>{assert.equal(failed,true);creates++;return {person:{id:'created-B',displayName:'Synthetic typed B',relationshipType:'boss'}};},createAnalysisCase:async(body:unknown)=>{caseBodies.push(body);return {analysisCase:{id:'created-case'}};}},
+    '../api/sessionV17':{createPerson:async()=>{creates++;throw new Error('Standalone Person API must not be called');},createAnalysisCase:async(body:any)=>{caseBodies.push(body);return {analysisCase:{id:'created-case',personId:body.personId ?? 'created-B'}};}},
     '../api/client':{fetchApiJson:()=>{reads++;return response;}},
     '../utils/clientTiming': { clientTiming: new Proxy({}, { get: () => () => null }) },
     '../utils/authBoundary':{captureAuthBoundary:()=>boundary,isCurrentAuthBoundary:()=>true,assertCurrentAuthBoundary:()=>{}},
@@ -55,7 +55,6 @@ for (const { cached, relationshipType, failed } of scenarios) test(`current Pers
     '../utils/storage':{getConsultations:()=>[],saveConsultation:()=>{writes++;}},
     '../utils/relationStyles':{getRelationStyle:()=>({})},
     '../components/Navigation':{Navigation:()=>null},
-    '../components/IncompleteConsultationGuard': { IncompleteConsultationGuard: () => null },
     '../components/LegalLinks': { LegalLinks: () => null }, '../legal/documents': { dataHandlingNotice: 'Storage notice' },
     '../components/PersonEditor':{PersonEditor:()=>null},
     '../utils/consultationHistory':{findLatestConsultationByPersonId:()=>cached ? { personId:'synthetic-A',personName:'Stale historical name',relation:'上司' } : undefined,getLatestConsultationsByPerson:()=>[]},
@@ -83,7 +82,7 @@ for (const { cached, relationshipType, failed } of scenarios) test(`current Pers
     assert.equal(tree.find(node=>node.type==='button'&&node.props.type==='submit')?.props.disabled,false);
     assert.equal(tree.some(node=>node.type==='button'&&node.props.children==='相手の情報を再取得'),false);
     await tree.find(node=>node.type==='form')!.props.onSubmit({preventDefault(){}});
-    assert.equal(creates,1);assert.equal(caseBodies[0]?.personId,'created-B');assert.equal(reads,1);
+    assert.equal(creates,0);assert.equal(caseBodies[0]?.personId,undefined);assert.equal(caseBodies[0]?.newPerson.displayName,'Synthetic typed B');assert.equal(reads,1);
     cleanup.forEach(fn=>{if(typeof fn==='function')fn();});return;
   }
   assert.equal(control('person-name').props.value,'Synthetic A');
@@ -127,7 +126,6 @@ test('retry uses the failed selected Person instead of the original URL Person',
     '../utils/storage':{getConsultations:()=>[],saveConsultation:()=>{}},
     '../utils/relationStyles':{getRelationStyle:()=>({})},
     '../components/Navigation':{Navigation:()=>null},
-    '../components/IncompleteConsultationGuard': { IncompleteConsultationGuard: () => null },
     '../components/LegalLinks': { LegalLinks: () => null }, '../legal/documents': { dataHandlingNotice: 'Storage notice' },
     '../components/PersonEditor':{PersonEditor:()=>null},
     '../utils/consultationHistory':{findLatestConsultationByPersonId:()=>undefined,getLatestConsultationsByPerson:()=>[personB]},

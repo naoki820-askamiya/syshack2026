@@ -5,7 +5,39 @@ import type { AnalysisContextSnapshotV5 } from "../ai/v2/context.js";
 import { reserveAnalyzeUsageAndStartCase } from "./rateLimit.js";
 import { buildPersonSnapshot } from "./schemas.js";
 import { resourceNotFound } from "./http.js";
-import { assertSameCreateIntent, caseIntentFingerprint, isCreateIntentCollision } from './createIntent.js';
+import { assertSameCreateIntent, caseIntentFingerprint, newPersonCaseIntentFingerprint, isCreateIntentCollision } from './createIntent.js';
+import type { CreateNewPersonCaseInput } from './schemas.js';
+
+export async function createCaseWithNewPerson(userId: string, input: CreateNewPersonCaseInput) {
+    const intent = { createIntentKey: input.createIntentKey.toLowerCase(),
+        createIntentFingerprint: newPersonCaseIntentFingerprint(input) };
+    const replay = async (db: Pick<Prisma.TransactionClient, 'analysisCase' | 'person'>) => {
+        const existing = await db.analysisCase.findFirst({ where: { userId, createIntentKey: intent.createIntentKey } });
+        if (!existing) return null;
+        assertSameCreateIntent(existing.createIntentFingerprint, intent.createIntentFingerprint);
+        if (!await db.person.findFirst({ where: { userId, id: existing.personId, archivedAt: null } })) throw resourceNotFound();
+        return existing;
+    };
+    try {
+        return await prisma.$transaction(async tx => {
+            const existing = await replay(tx);
+            if (existing) return existing;
+            const { newPerson, createIntentKey: _key, ...caseData } = input;
+            const person = await tx.person.create({ data: { ...newPerson, notes: newPerson.notes ?? null, userId } });
+            // No provider call or separately committed Person: either both rows
+            // commit, or a Case/unique failure rolls back the new Person as well.
+            return tx.analysisCase.create({ data: { ...caseData, userId, personId: person.id,
+                ...intent, personSnapshot: buildPersonSnapshot(person) } });
+        });
+    } catch (error) {
+        if (!isCreateIntentCollision(error, 'analysis_cases')) throw error;
+        // Concurrent same-key INSERT can lose after its Person was inserted.
+        // PostgreSQL has rolled back the entire losing transaction before replay.
+        const existing = await replay(prisma);
+        if (!existing) throw resourceNotFound();
+        return existing;
+    }
+}
 
 export async function createCase(
     userId: string,

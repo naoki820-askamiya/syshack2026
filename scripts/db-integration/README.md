@@ -35,3 +35,8 @@ Cleanup verifies the created container ID and run label before removal. Normal f
 interrupts remove that container and discard tmpfs data; a hard process kill/host crash can leave a
 labeled container running. Inspect only `label=kigen404.disposable-run` before any manual cleanup.
 The harness does not certify deployed Supabase RLS, GRANTs, Data API, provider behavior or migrations.
+
+Combined new-Person/Case creation is also checked with two real concurrent connections,
+lost-response replay, failures after each table insert, changed-input conflicts, owner separation,
+existing-Person intent compatibility, and failed analysis followed by creation replay. Each failed
+combined save must leave neither row; analysis failure must retain the already committed pair.

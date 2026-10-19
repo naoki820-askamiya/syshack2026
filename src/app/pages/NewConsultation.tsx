@@ -3,7 +3,7 @@ import { clientTiming, type TimingToken } from '../utils/clientTiming';
 import { useNavigate, useSearchParams } from 'react-router';
 import { ArrowLeft, Send, MessageSquare, PenLine, X, ChevronDown, AlertCircle, UserCheck } from 'lucide-react';
 import type { ConsultationData, RelationType } from '../types';
-import { createPerson, createAnalysisCase } from '../api/sessionV17';
+import { createAnalysisCase } from '../api/sessionV17';
 import { fetchApiJson } from '../api/client';
 import { captureAuthBoundary, isCurrentAuthBoundary, assertCurrentAuthBoundary } from '../utils/authBoundary';
 import { relationshipLabel, personFromCaseSnapshot, type ApiPerson } from '../api/consultationMapper';
@@ -12,7 +12,6 @@ import { getRelationStyle } from '../utils/relationStyles';
 import { Navigation } from '../components/Navigation';
 import { PersonEditor } from '../components/PersonEditor';
 import { LegalLinks } from '../components/LegalLinks';
-import { IncompleteConsultationGuard } from '../components/IncompleteConsultationGuard';
 import { dataHandlingNotice } from '../legal/documents';
 import {
   findLatestConsultationByPersonId,
@@ -81,9 +80,8 @@ export function NewConsultation() {
   const personLoadGeneration = useRef(0);
   const requestedPersonId = useRef<string | null>(selectedPersonId);
   const submitBusy = useRef(false);
-  const incompleteCreation = useRef(false);
-  const createIntents = useRef<{ person?: { payload: string; key: string; userId: string | null; epoch: number }; analysisCase?: { payload: string; key: string; userId: string | null; epoch: number } }>({});
-  const intentKey = (kind: 'person' | 'analysisCase', payload: object, boundary: ReturnType<typeof captureAuthBoundary>) => {
+  const createIntents = useRef<{ analysisCase?: { payload: string; key: string; userId: string | null; epoch: number } }>({});
+  const intentKey = (kind: 'analysisCase', payload: object, boundary: ReturnType<typeof captureAuthBoundary>) => {
     const serialized = JSON.stringify(payload);
     const previous = createIntents.current[kind];
     if (previous?.payload === serialized && previous.userId === boundary.userId && previous.epoch === boundary.epoch) return previous.key;
@@ -126,7 +124,6 @@ export function NewConsultation() {
   const handleNameChange = (value: string) => {
     if (personLoading || isAnalyzing || personEditing) return;
     // 手入力で名前を変えた場合、別人に以前のpersonIdを流用しない。
-    if (formData.personId) delete createIntents.current.person;
     setFormData(prev => ({ ...prev, personId: '', personName: value }));
     setPrefilled(false);
     setLoadedPerson(null);
@@ -205,28 +202,12 @@ export function NewConsultation() {
     setIsAnalyzing(true);
     
     try {
-      // 履歴から選んだ相手は所有中のPersonを再利用し、新規入力時だけ作成します。
+      // New Person and Case are committed together by one server transaction.
       assertCurrentAuthBoundary(boundary);
-      let personId = formData.personId;
-      let confirmedPerson = loadedPerson;
-      if (!personId) {
-        incompleteCreation.current = true;
-        const personPayload = {
-          displayName: formData.personName.trim(),
-          relationshipType: effectiveRelation,
-        };
-        const personRes = await createPerson({ ...personPayload, createIntentKey: intentKey('person', personPayload, boundary) });
-        assertCurrentAuthBoundary(boundary);
-        personId = personRes.person.id;
-        setLoadedPerson(personRes.person);
-        confirmedPerson = personRes.person;
-        // Acknowledged identity survives a later Case failure; do not infer unknown server outcomes.
-        setFormData(prev => prev.personName === formData.personName && resolveRelation(prev) === effectiveRelation && !prev.personId
-          ? { ...prev, personId, personName: personRes.person.displayName, relation: relationshipLabel(personRes.person.relationshipType), relationOther: '' } : prev);
-      }
-
       const casePayload = {
-        personId,
+        ...(formData.personId ? { personId: formData.personId } : {
+          newPerson: { displayName: formData.personName.trim(), relationshipType: effectiveRelation },
+        }),
         userAgeRange: formData.ageGroup.trim(),
         userGender: formData.gender.trim(),
         perceivedPartnerReaction: effectiveReaction.trim(),
@@ -238,8 +219,9 @@ export function NewConsultation() {
       const caseRes = await createAnalysisCase({ ...casePayload, createIntentKey: intentKey('analysisCase', casePayload, boundary) });
       assertCurrentAuthBoundary(boundary);
       const caseId = caseRes.analysisCase.id;
-      incompleteCreation.current = false;
-      const savedIdentity = personFromCaseSnapshot(caseRes.analysisCase.personSnapshot) ?? confirmedPerson;
+      const personId = caseRes.analysisCase.personId;
+      if (!personId) throw new Error('保存した相談の相手情報を確認できませんでした。同じ入力で再試行してください。');
+      const savedIdentity = personFromCaseSnapshot(caseRes.analysisCase.personSnapshot) ?? loadedPerson;
       clientTiming.ack(timing, caseId);
 
       // DBが正本であり、このキャッシュは直後の画面遷移を滑らかにする目的に限定します。
@@ -296,7 +278,6 @@ export function NewConsultation() {
 
   return (
     <div className="min-h-screen bg-[#F7F9FC]">
-      <IncompleteConsultationGuard pending={incompleteCreation} />
       <Navigation />
 
       <div className="lg:ml-64 pb-24 lg:pb-8">

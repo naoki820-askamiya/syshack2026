@@ -152,9 +152,8 @@ export async function createPerson(params: { displayName: string; relationshipTy
   });
 }
 
-export interface CreateAnalysisCaseRequest {
+interface CreateAnalysisCaseFields {
   createIntentKey?: string;
-  personId: string;
   userAgeRange: string;
   userGender: string;
   perceivedPartnerReaction: string;
@@ -163,11 +162,17 @@ export interface CreateAnalysisCaseRequest {
   userResponseType: 'action' | 'conversation' | 'none';
   userResponseText: string | null;
 }
+export type CreateAnalysisCaseRequest = CreateAnalysisCaseFields & (
+  { personId: string; newPerson?: never } |
+  { personId?: never; newPerson: { displayName: string; relationshipType: string }; createIntentKey: string }
+);
 
 export async function createAnalysisCase(params: CreateAnalysisCaseRequest) {
   return fetchApiJson<{ analysisCase: ApiAnalysisCase }>('/api/analysis-cases', {
     method: 'POST',
-    body: JSON.stringify(params),
+    body: JSON.stringify(params.newPerson ? { ...params, newPerson: {
+      ...params.newPerson, relationshipType: RELATIONSHIP_TYPES[params.newPerson.relationshipType] ?? 'other',
+    } } : params),
   });
 }
 

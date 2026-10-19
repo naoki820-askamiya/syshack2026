@@ -26,7 +26,7 @@ const createIntentKeySchema = z.string().uuid().transform(value => value.toLower
 export const createPersonSchema = personFieldsSchema.extend({ createIntentKey: createIntentKeySchema });
 export const updatePersonSchema = personFieldsSchema.partial();
 
-export const createAnalysisCaseSchema = z
+const analysisCaseFieldsSchema = z
     .object({
         personId: z.string().uuid(),
         userAgeRange: z.string().trim().min(1).max(20),
@@ -38,8 +38,8 @@ export const createAnalysisCaseSchema = z
         userResponseText: z.string().trim().min(1).max(3000).nullable(),
         createIntentKey: createIntentKeySchema,
     })
-    .strict()
-    .superRefine((value, context) => {
+    .strict();
+const checkResponse = (value: { userResponseType: string; userResponseText: string | null }, context: z.RefinementCtx) => {
         if (value.userResponseType === "none" && value.userResponseText !== null) {
             context.addIssue({
                 code: z.ZodIssueCode.custom,
@@ -55,7 +55,15 @@ export const createAnalysisCaseSchema = z
                 message: "action/conversation の場合は本文が必要です。",
             });
         }
-    });
+    };
+
+export const createAnalysisCaseSchema = analysisCaseFieldsSchema.superRefine(checkResponse);
+export const createNewPersonCaseSchema = analysisCaseFieldsSchema.omit({ personId: true }).extend({
+    newPerson: personFieldsSchema,
+    createIntentKey: z.string().uuid().transform(value => value.toLowerCase()),
+}).strict().superRefine(checkResponse);
+export const createCaseRequestSchema = z.union([createAnalysisCaseSchema, createNewPersonCaseSchema]);
+export type CreateNewPersonCaseInput = z.infer<typeof createNewPersonCaseSchema>;
 
 export const paginationSchema = z.object({
     limit: z.coerce.number().int().min(1).max(50).default(20),

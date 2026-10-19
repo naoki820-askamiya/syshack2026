@@ -17,6 +17,12 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const USER_A = '11111111-1111-4111-8111-111111111111';
 const USER_B = '22222222-2222-4222-8222-222222222222';
 const USER_QUOTA = '33333333-3333-4333-8333-333333333333';
+
+function atomicInput(displayName: string, createIntentKey = randomUUID()) {
+  return { newPerson: { displayName, relationshipType: 'friend' as const }, createIntentKey,
+    userAgeRange: 'unknown', userGender: 'unknown', perceivedPartnerReaction: 'unknown', elapsedTimeType: 'unknown',
+    eventFacts: 'Synthetic atomic consultation', userResponseType: 'none' as const, userResponseText: null };
+}
 const [{ PrismaClient }, { PrismaPg }] = await Promise.all([
   import('../../src/backend/generated/prisma/client.js'), import('@prisma/adapter-pg'),
 ]);
@@ -28,6 +34,100 @@ const persons = await import('../../src/backend/v17/persons.repository.js');
 const setup = new pg.Client({ connectionString: databaseUrl });
 let personA: string;
 let personQuota: string;
+
+test('combined creation on two real connections commits exactly one Person+Case and replays after lost ACK', { timeout: 15_000 }, async () => {
+  const input = atomicInput('Synthetic atomic parallel');
+  let saved: any;
+  await withIntentInsertLock('analysis_cases', async lock => {
+    const outcomes = await concurrentlyBehindLock(lock, [
+      () => repository.createCaseWithNewPerson(USER_A, input),
+      () => repository.createCaseWithNewPerson(USER_A, input),
+    ]);
+    assert.ok(outcomes.every(result => result.status === 'fulfilled'), 'both same-key callers must receive the committed pair');
+    saved = (outcomes[0] as PromiseFulfilledResult<any>).value;
+    assert.equal((outcomes[1] as PromiseFulfilledResult<any>).value.id, saved.id);
+    assert.equal((outcomes[1] as PromiseFulfilledResult<any>).value.personId, saved.personId);
+  });
+  assert.equal(await prisma.person.count({ where: { userId: USER_A, displayName: input.newPerson.displayName } }), 1);
+  assert.equal(await prisma.analysisCase.count({ where: { userId: USER_A, createIntentKey: input.createIntentKey } }), 1);
+  const snapshot = saved.personSnapshot;
+  await persons.updateOwnedPerson(USER_A, saved.personId, { displayName: 'Synthetic later edit' });
+  const replay = await repository.createCaseWithNewPerson(USER_A, input);
+  assert.equal(replay.id, saved.id); assert.deepEqual(replay.personSnapshot, snapshot);
+  await assert.rejects(repository.createCaseWithNewPerson(USER_A, { ...input, eventFacts: 'Changed input' }), (e: any) => e.status === 409);
+  await assert.rejects(repository.createCaseWithNewPerson(USER_A, { ...input, newPerson: { ...input.newPerson, displayName: 'Changed Person' } }), (e: any) => e.status === 409);
+  assert.equal(await prisma.person.count({ where: { userId: USER_A, displayName: 'Changed Person' } }), 0);
+  const other = await repository.createCaseWithNewPerson(USER_B, input);
+  assert.notEqual(other.id, saved.id); assert.notEqual(other.personId, saved.personId);
+  await persons.archiveOwnedPerson(USER_A, saved.personId);
+  await assert.rejects(repository.createCaseWithNewPerson(USER_A, input), (e: any) => e.status === 404);
+});
+
+test('real PostgreSQL Person or Case insert failure leaves neither row; unchanged retry succeeds', { timeout: 15_000 }, async () => {
+  for (const table of ['persons', 'analysis_cases']) {
+    const input = atomicInput('Synthetic atomic rollback ' + table);
+    await setup.query(`CREATE FUNCTION synthetic_atomic_failure() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'Synthetic atomic failure'; END $$;
+      CREATE TRIGGER synthetic_atomic_failure AFTER INSERT ON ${table} FOR EACH ROW EXECUTE FUNCTION synthetic_atomic_failure();`);
+    try {
+      await assert.rejects(repository.createCaseWithNewPerson(USER_A, input));
+      assert.equal(await prisma.person.count({ where: { userId: USER_A, displayName: input.newPerson.displayName } }), 0);
+      assert.equal(await prisma.analysisCase.count({ where: { userId: USER_A, createIntentKey: input.createIntentKey } }), 0);
+    } finally {
+      await setup.query(`DROP TRIGGER synthetic_atomic_failure ON ${table}; DROP FUNCTION synthetic_atomic_failure()`);
+    }
+    const saved = await repository.createCaseWithNewPerson(USER_A, input);
+    assert.equal(await prisma.person.count({ where: { userId: USER_A, id: saved.personId } }), 1);
+    assert.equal(await prisma.analysisCase.count({ where: { userId: USER_A, createIntentKey: input.createIntentKey } }), 1);
+  }
+});
+
+test('concurrent different contents under one key yield one pair and one409; foreign Person is rejected', { timeout: 15_000 }, async () => {
+  const input = atomicInput('Synthetic atomic race A');
+  const changed = { ...input, newPerson: { ...input.newPerson, displayName: 'Synthetic atomic race B' } };
+  await withIntentInsertLock('analysis_cases', async lock => {
+    const outcomes = await concurrentlyBehindLock(lock, [
+      () => repository.createCaseWithNewPerson(USER_A, input),
+      () => repository.createCaseWithNewPerson(USER_A, changed),
+    ]);
+    assert.equal(outcomes.filter(outcome => outcome.status === 'fulfilled').length, 1);
+    const rejected = outcomes.find(outcome => outcome.status === 'rejected') as PromiseRejectedResult;
+    assert.equal(rejected.reason.status, 409); assert.equal(rejected.reason.code, 'CREATE_INTENT_CONFLICT');
+  });
+  assert.equal(await prisma.person.count({ where: { userId: USER_A, displayName: { in: [input.newPerson.displayName, changed.newPerson.displayName] } } }), 1);
+  assert.equal(await prisma.analysisCase.count({ where: { userId: USER_A, createIntentKey: input.createIntentKey } }), 1);
+  const foreign = await persons.createPerson(USER_B, { displayName: 'Synthetic foreign atomic target', relationshipType: 'friend' });
+  const { newPerson: _newPerson, ...fields } = atomicInput('Unused new Person');
+  await assert.rejects(repository.createCase(USER_A, { ...fields, personId: foreign.id }), (e: any) => e.status === 404);
+  assert.equal(await prisma.analysisCase.count({ where: { userId: USER_A, createIntentKey: fields.createIntentKey } }), 0);
+});
+
+test('existing-person and combined intent namespaces conflict safely in either order', { timeout: 15_000 }, async () => {
+  const combined = atomicInput('Synthetic atomic namespace');
+  const saved = await repository.createCaseWithNewPerson(USER_A, combined);
+  const { newPerson: _newPerson, ...fields } = combined;
+  await assert.rejects(repository.createCase(USER_A, { ...fields, personId: saved.personId }), (e: any) => e.status === 409);
+  const legacy = { ...fields, createIntentKey: randomUUID(), personId: personA };
+  await repository.createCase(USER_A, legacy);
+  const next = { ...combined, createIntentKey: legacy.createIntentKey, newPerson: { ...combined.newPerson, displayName: 'Synthetic namespace losing Person' } };
+  await assert.rejects(repository.createCaseWithNewPerson(USER_A, next), (e: any) => e.status === 409);
+  assert.equal(await prisma.person.count({ where: { userId: USER_A, displayName: next.newPerson.displayName } }), 0);
+});
+
+test('analysis generation failure retains the committed pair and combined replay does not restart analysis', { timeout: 15_000 }, async () => {
+  const input = atomicInput('Synthetic atomic analysis failure');
+  const saved = await repository.createCaseWithNewPerson(USER_A, input);
+  const service = await import('../../src/backend/v17/workflow.service.js');
+  let attempts = 0;
+  await assert.rejects(service.analyzeCase(USER_A, saved.id, { generate: async () => { attempts++; throw new Error('Synthetic provider failure'); } }));
+  assert.equal(attempts, 1);
+  const failed = await repository.findOwnedCase(USER_A, saved.id);
+  assert.equal(failed?.status, 'failed');
+  const usage = await prisma.apiUsageEvent.count({ where: { analysisCaseId: saved.id } });
+  const replay = await repository.createCaseWithNewPerson(USER_A, input);
+  assert.equal(replay.id, saved.id); assert.equal(replay.status, 'failed');
+  assert.equal(await prisma.apiUsageEvent.count({ where: { analysisCaseId: saved.id } }), usage);
+  assert.equal(await prisma.person.count({ where: { userId: USER_A, id: saved.personId } }), 1);
+});
 
 before(async () => {
   await setup.connect();

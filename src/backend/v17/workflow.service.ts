@@ -7,15 +7,17 @@ import { analyzeMoodV2, AnalyzeMoodV2Error } from "../ai/v2/analyzeMood.js";
 import { AppError } from "../utils/index.js";
 import { buildAiContext } from "./context.repository.js";
 import { parseOrThrow, resourceNotFound } from "./http.js";
-import { paginationSchema, createAnalysisCaseSchema } from "./schemas.js";
+import { paginationSchema, createCaseRequestSchema } from "./schemas.js";
 import { getOwnedPersonOrThrow } from "./persons.service.js";
 import { settleUsage } from "./rateLimit.js";
 import * as repository from "./workflow.repository.js";
 import { publicCreatedResource } from './createIntent.js';
 
 export async function createAnalysisCase(userId: string, body: unknown) {
-    const data = parseOrThrow(createAnalysisCaseSchema, body);
-    const analysisCase = await repository.createCase(userId, data);
+    const data = parseOrThrow(createCaseRequestSchema, body);
+    const analysisCase = 'newPerson' in data
+        ? await repository.createCaseWithNewPerson(userId, data)
+        : await repository.createCase(userId, data);
     return { analysisCase: publicCreatedResource(analysisCase) };
 }
 
