@@ -42,7 +42,7 @@ export interface ApiAnalysisCase {
 export function personFromCaseSnapshot(value: unknown): Pick<ApiPerson, 'displayName' | 'relationshipType'> | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const snapshot = value as Record<string, unknown>;
-  if (snapshot.schemaVersion !== 'person-snapshot-v1' || !snapshot.person || typeof snapshot.person !== 'object' || Array.isArray(snapshot.person)) return null;
+  if ((snapshot.schemaVersion !== 'person-snapshot-v1' && snapshot.schemaVersion !== 'person-snapshot-v2') || !snapshot.person || typeof snapshot.person !== 'object' || Array.isArray(snapshot.person)) return null;
   const person = snapshot.person as Record<string, unknown>;
   return typeof person.displayName === 'string' && typeof person.relationshipType === 'string' &&
     Object.hasOwn(RELATIONSHIP_TYPES_FROM_API, person.relationshipType)

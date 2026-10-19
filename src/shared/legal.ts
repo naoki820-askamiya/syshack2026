@@ -1,4 +1,4 @@
-// Update the digest when the title, draft notice or sections change. Regression
+// Run npm run legal:sync when the title, draft notice or sections change. Regression
 // tests check the complete SHA-256; its prefix makes the resulting consent
 // version change even if the human-readable release label was left unchanged.
 // Draft acknowledgements must never be reused for a published release.

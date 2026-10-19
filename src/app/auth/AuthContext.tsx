@@ -28,6 +28,8 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sessionError, setSessionError] = useState(false);
+  const [sessionAttempt, setSessionAttempt] = useState(0);
   const loginAttempt = useRef(0);
   const [authEpoch, setAuthEpoch] = useState(() => captureAuthBoundary().epoch);
   const publishUser = useCallback((nextUser: User | null, newSession = false) => {
@@ -39,13 +41,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
     let authEventObserved = false;
+    setLoading(true);
+    setSessionError(false);
 
-    supabase.auth.getSession().then(({ data }) => {
+    void Promise.resolve().then(() => supabase.auth.getSession()).then(({ data, error }) => {
       if (!mounted || authEventObserved) {
         return;
       }
 
+      if (error) throw error;
       publishUser(data.session?.user ?? null);
+      setLoading(false);
+    }).catch(() => {
+      if (!mounted || authEventObserved) return;
+      publishUser(null);
+      setSessionError(true);
       setLoading(false);
     });
 
@@ -53,6 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!mounted) return;
       authEventObserved = true;
       publishUser(nextSession?.user ?? null);
+      setSessionError(false);
       setLoading(false);
     });
 
@@ -60,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       mounted = false;
       listener.subscription.unsubscribe();
     };
-  }, [publishUser]);
+  }, [publishUser, sessionAttempt]);
 
   const signIn = useCallback(async (email: string, password: string) => {
     const start = captureAuthBoundary();
@@ -118,7 +129,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [authEpoch, loading, signIn, signOut, signUp, user],
   );
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={value}>{sessionError ? (
+    <main className="min-h-screen bg-[#F7F9FC] flex flex-col items-center justify-center gap-4 p-6">
+      <p role="alert">ログイン状態を確認できませんでした。時間をおいて再試行してください。</p>
+      <button type="button" onClick={() => setSessionAttempt(value => value + 1)} className="rounded-xl bg-[#0F4C81] px-4 py-3 text-white">ログイン状態を再確認</button>
+    </main>
+  ) : children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

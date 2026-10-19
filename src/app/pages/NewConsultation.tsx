@@ -12,6 +12,7 @@ import { getRelationStyle } from '../utils/relationStyles';
 import { Navigation } from '../components/Navigation';
 import { PersonEditor } from '../components/PersonEditor';
 import { LegalLinks } from '../components/LegalLinks';
+import { IncompleteConsultationGuard } from '../components/IncompleteConsultationGuard';
 import { dataHandlingNotice } from '../legal/documents';
 import {
   findLatestConsultationByPersonId,
@@ -80,6 +81,7 @@ export function NewConsultation() {
   const personLoadGeneration = useRef(0);
   const requestedPersonId = useRef<string | null>(selectedPersonId);
   const submitBusy = useRef(false);
+  const incompleteCreation = useRef(false);
   const createIntents = useRef<{ person?: { payload: string; key: string; userId: string | null; epoch: number }; analysisCase?: { payload: string; key: string; userId: string | null; epoch: number } }>({});
   const intentKey = (kind: 'person' | 'analysisCase', payload: object, boundary: ReturnType<typeof captureAuthBoundary>) => {
     const serialized = JSON.stringify(payload);
@@ -208,6 +210,7 @@ export function NewConsultation() {
       let personId = formData.personId;
       let confirmedPerson = loadedPerson;
       if (!personId) {
+        incompleteCreation.current = true;
         const personPayload = {
           displayName: formData.personName.trim(),
           relationshipType: effectiveRelation,
@@ -235,6 +238,7 @@ export function NewConsultation() {
       const caseRes = await createAnalysisCase({ ...casePayload, createIntentKey: intentKey('analysisCase', casePayload, boundary) });
       assertCurrentAuthBoundary(boundary);
       const caseId = caseRes.analysisCase.id;
+      incompleteCreation.current = false;
       const savedIdentity = personFromCaseSnapshot(caseRes.analysisCase.personSnapshot) ?? confirmedPerson;
       clientTiming.ack(timing, caseId);
 
@@ -292,6 +296,7 @@ export function NewConsultation() {
 
   return (
     <div className="min-h-screen bg-[#F7F9FC]">
+      <IncompleteConsultationGuard pending={incompleteCreation} />
       <Navigation />
 
       <div className="lg:ml-64 pb-24 lg:pb-8">

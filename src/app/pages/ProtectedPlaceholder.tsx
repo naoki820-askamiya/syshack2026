@@ -11,7 +11,7 @@ export function ProtectedPlaceholder({ title }: { title: string }) {
       <div className="lg:ml-64 pb-24 lg:pb-8">
         <div className="bg-white border-b border-[#D9E1EA] p-4 lg:px-8 sticky top-0 z-10">
           <div className="max-w-4xl mx-auto flex items-center gap-3">
-            <button onClick={() => navigate('/')} className="text-[#5B6573] hover:text-[#1F2A37]">
+            <button aria-label="ホームへ戻る" onClick={() => navigate('/')} className="text-[#5B6573] hover:text-[#1F2A37]">
               <ArrowLeft className="w-6 h-6" />
             </button>
             <h1 className="text-xl lg:text-2xl font-semibold">{title}</h1>

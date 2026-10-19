@@ -8,8 +8,9 @@ import {
 } from "../../app/api/consultationMapper.js";
 
 test('creation ACK identity accepts only the known snapshot shape and relationship enum', () => {
+    assert.deepEqual(personFromCaseSnapshot({ schemaVersion: 'person-snapshot-v2', person: { displayName: 'Current server', relationshipType: 'friend' } }), { displayName: 'Current server', relationshipType: 'friend' });
     assert.deepEqual(personFromCaseSnapshot({ schemaVersion: 'person-snapshot-v1', person: { displayName: 'Server', relationshipType: 'customer' } }), { displayName: 'Server', relationshipType: 'customer' });
-    for (const value of [null, [], { person: { displayName: 'x', relationshipType: 'friend' } },
+    for (const value of [null, [], { person: { displayName: 'x', relationshipType: 'friend' } }, { schemaVersion: 'person-snapshot-v3', person: { displayName: 'x', relationshipType: 'friend' } },
         { schemaVersion: 'person-snapshot-v1', person: { displayName: 5, relationshipType: 'friend' } },
         { schemaVersion: 'person-snapshot-v1', person: { displayName: 'x', relationshipType: 'invented' } }]) {
         assert.equal(personFromCaseSnapshot(value), null);

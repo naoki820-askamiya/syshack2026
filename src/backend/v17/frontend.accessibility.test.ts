@@ -24,6 +24,12 @@ function attribute(element: Opening, name: string): string | undefined {
 }
 function tag(element: Opening) { return element.tagName.getText(); }
 
+test('placeholder home button has an accessible name', () => {
+  const { elements } = inspect('src/app/pages/ProtectedPlaceholder.tsx');
+  const back = elements.find(value => tag(value) === 'button' && /navigate/.test(attribute(value, 'onClick') ?? ''));
+  assert.equal(attribute(back!, 'aria-label'), 'ホームへ戻る');
+});
+
 for (const page of ['NewConsultation', 'Login', 'Register', 'Consent']) {
   test(`${page} editable controls have unique IDs and real associated names`, () => {
     const { elements, tree } = inspect(`src/app/pages/${page}.tsx`);

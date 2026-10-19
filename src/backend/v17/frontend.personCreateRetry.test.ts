@@ -40,6 +40,7 @@ function scenario(options: { person?: (body: any) => Promise<unknown>; failure?:
     '../utils/storage': { getConsultations: () => [], saveConsultation: (value: unknown) => saved.push(value) },
     '../utils/relationStyles': { getRelationStyle: () => ({}) },
     '../components/Navigation': { Navigation: () => null },
+    '../components/IncompleteConsultationGuard': { IncompleteConsultationGuard: 'IncompleteConsultationGuard' },
     '../components/LegalLinks': { LegalLinks: () => null }, '../legal/documents': { dataHandlingNotice: 'Storage notice' },
     '../components/PersonEditor': { PersonEditor: () => null },
     '../utils/consultationHistory': { findLatestConsultationByPersonId: () => undefined, getLatestConsultationsByPerson: () => [] },
@@ -83,14 +84,31 @@ test('lost Person response keeps one intent for unchanged retry; new auth epoch 
   assert.notEqual(flow.personBodies[1].createIntentKey, flow.personBodies[2].createIntentKey);
 });
 
-test('changed Case input gets a new intent and saved snapshot supplies confirmed identity', async () => {
-  const flow = scenario({ snapshot: { schemaVersion: 'person-snapshot-v1', person: { displayName: 'Server snapshot name', relationshipType: 'friend' } } });
+test('changed Case input gets a new intent and saved v2 snapshot supplies confirmed identity', async () => {
+  const flow = scenario({ snapshot: { schemaVersion: 'person-snapshot-v2', person: { displayName: 'Server snapshot name', relationshipType: 'friend' } } });
   await flow.submit();
   flow.render().find(n => n.props.id === 'event-facts')!.props.onChange({ target: { value: 'Changed synthetic event' } });
   await flow.submit();
   assert.notEqual(flow.caseBodies[0].createIntentKey, flow.caseBodies[1].createIntentKey);
   assert.equal(flow.creates, 1);
   assert.equal(flow.saved[0].personName, 'Server snapshot name'); assert.equal(flow.saved[0].relation, '友人');
+});
+
+test('incomplete new-person creation guards departure until Case acknowledgement', async () => {
+  const flow = scenario();
+  const guard = () => flow.render().find(n => n.type === 'IncompleteConsultationGuard')!.props.pending.current;
+  assert.equal(guard(), false);
+  await flow.submit();
+  assert.equal(guard(), true, 'Case failed after Person was acknowledged');
+  await flow.submit();
+  assert.equal(guard(), false, 'successful navigation must not be blocked');
+});
+
+test('lost Person acknowledgement also guards departure without claiming rollback', async () => {
+  const flow = scenario({ person: async () => { throw new TypeError('Synthetic lost response'); } });
+  await flow.submit();
+  assert.equal(flow.render().find(n => n.type === 'IncompleteConsultationGuard')!.props.pending.current, true);
+  assert.equal(flow.caseBodies.length, 0);
 });
 
 test('two submit calls before a React render dispatch only one Person', async () => {

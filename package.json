@@ -4,6 +4,8 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
+    "legal:sync": "tsx scripts/sync-legal-digests.ts",
+    "legal:check": "tsx scripts/sync-legal-digests.ts --check",
     "lint": "tsc --noEmit --pretty false -p tsconfig.json",
     "lint:md": "markdownlint-cli2 \"README.md\" \"AGENTS.md\" \"docs/**/*.md\" \".agents/skills/**/SKILL.md\"",
     "typecheck": "tsc --noEmit -p tsconfig.json",

@@ -43,11 +43,28 @@ export function useHydratedAnalysis(caseId: string | undefined) {
       return () => clientTiming.release(timing);
     }
     let active = true;
+    let checking = false;
+    let awaitingAnalysis = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const controller = new AbortController();
     const boundary = captureAuthBoundary();
     const startedAt = performance.now();
     const current = () => active && isCurrentAuthBoundary(boundary);
+    const expired = () => performance.now() - startedAt >= 120_000;
+    const timeout = () => {
+      awaitingAnalysis = false;
+      if (current()) setError('分析状態の自動確認を終了しました。分析状態を再取得して確認してください。');
+    };
+    const poll = () => {
+      if (!current()) return;
+      if (expired()) { timeout(); return; }
+      void check(false);
+    };
+    const onVisible = () => {
+      if ((typeof document !== 'undefined' && document.hidden) || checking || !awaitingAnalysis || !current()) return;
+      if (timer !== undefined) clearTimeout(timer);
+      poll();
+    };
     const latest = async (id: string) => {
       assertCurrentAuthBoundary(boundary);
       const { result } = await fetchApiJson<{ result: unknown | null }>(`/api/analysis-cases/${id}/results/latest`, { signal: controller.signal });
@@ -63,6 +80,8 @@ export function useHydratedAnalysis(caseId: string | undefined) {
       return analysisCase.status as SavedAnalysisStatus;
     };
     const check = async (start: boolean) => {
+      if (checking || !current()) return;
+      checking = true;
       let resultReady = false;
       setLoading(true);
       setError('');
@@ -75,6 +94,7 @@ export function useHydratedAnalysis(caseId: string | undefined) {
           assertCurrentAuthBoundary(boundary);
         } }, start);
         if (!current()) return;
+        awaitingAnalysis = next === 'analyzing';
         setStatus(next);
         clientTiming.stage(timing, 'state');
         if (next === 'analyzed') {
@@ -84,18 +104,25 @@ export function useHydratedAnalysis(caseId: string | undefined) {
             if (resultReady) clientTiming.stage(timing, 'result_ready');
             setRevision(v => v + 1);
           }
-        } else if (next === 'analyzing' && performance.now() - startedAt < 120_000) {
-          timer = setTimeout(() => { if (current()) void check(false); }, 2_000);
+        } else if (next === 'analyzing') {
+          if (expired()) timeout();
+          else {
+            const interval = typeof document !== 'undefined' && document.hidden ? 10_000 : 2_000;
+            timer = setTimeout(poll, Math.min(interval, 120_000 - (performance.now() - startedAt)));
+          }
         }
       } catch (cause: unknown) {
+        awaitingAnalysis = false;
         if (current()) setNeedsConsent(!!cause && typeof cause === 'object' && 'code' in cause && cause.code === 'LEGAL_CONSENT_REQUIRED');
         if (current()) setError(cause instanceof Error ? cause.message : '分析状態を取得できませんでした。');
       } finally {
+        checking = false;
         if (current()) { setLoading(false); if (resultReady) clientTiming.finish(timing); }
       }
     };
+    if (typeof document !== 'undefined') document.addEventListener('visibilitychange', onVisible);
     void check(startRequest.caseId === caseId && startRequest.allowStart);
-    return () => { clientTiming.release(timing); active = false; controller.abort(); if (timer !== undefined) clearTimeout(timer); };
+    return () => { clientTiming.release(timing); active = false; controller.abort(); if (timer !== undefined) clearTimeout(timer); if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', onVisible); };
   }, [caseId, authEpoch, attempt, startRequest]);
 
   const retry = () => { if (caseId) clientTiming.retry(caseId, captureAuthBoundary()); setStartRequest({ caseId, allowStart: true }); setAttempt(v => v + 1); };

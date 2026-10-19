@@ -130,6 +130,7 @@ test('actual New page hands submit/ACK correlation to actual hydration hook with
     '../utils/relationStyles': { getRelationStyle: () => ({}) }, '../components/Navigation': { Navigation: () => null },
     '../components/LegalLinks': { LegalLinks: () => null }, '../legal/documents': { dataHandlingNotice: 'Storage notice' },
     '../components/PersonEditor': { PersonEditor: () => null },
+    '../components/IncompleteConsultationGuard': { IncompleteConsultationGuard: () => null },
     '../utils/consultationHistory': { findLatestConsultationByPersonId: () => undefined, getLatestConsultationsByPerson: () => [] },
     './newConsultationModel': actualModule('src/app/pages/newConsultationModel.ts'), '../utils/clientTiming': { clientTiming: flow.timing },
   });

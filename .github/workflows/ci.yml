@@ -53,6 +53,9 @@ jobs:
       - name: Check Markdown
         run: npm run lint:md
 
+      - name: Check legal content digests
+        run: npm run legal:check
+
       - name: Run tests
         run: npm test
 
