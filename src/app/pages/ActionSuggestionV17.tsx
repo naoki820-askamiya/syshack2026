@@ -4,6 +4,7 @@ import { AlertTriangle, ArrowLeft, CheckCircle2, Copy, MessageSquare, XCircle } 
 import { Navigation } from '../components/Navigation';
 import { useHydratedAnalysis } from '../hooks/useHydratedAnalysis';
 import { actionSafetyLabel, type ActionSafety } from '../utils/analysisViewModel';
+import { hasUnsafeModelContent } from '../../shared/modelContentPolicy';
 
 const TONES = {
   formal: { label: '丁寧', className: 'bg-[#E8F1F8] text-[#0F4C81]' },
@@ -17,6 +18,16 @@ export function ActionSuggestionV17() {
   const [copied, setCopied] = useState<number | null>(null);
   const { consultation, view, loading, error } = useHydratedAnalysis(id);
 
+  if (view?.contentBlocked) return (
+    <div className="min-h-screen bg-[#F7F9FC]"><Navigation />
+      <main className="lg:ml-64 mx-auto max-w-3xl space-y-4 p-6 pb-24">
+        <h1 className="text-xl font-semibold">返信案の表示を停止しました</h1>
+        <p role="status">{view.summary}</p>
+        <button type="button" onClick={() => navigate('/history')} className="min-h-12 underline">相談履歴へ戻る</button>
+      </main>
+    </div>
+  );
+
   if (!consultation || !view) {
     return (
       <div className="min-h-screen bg-[#F7F9FC] flex items-center justify-center text-center">
@@ -27,6 +38,7 @@ export function ActionSuggestionV17() {
   }
 
   const copy = async (value: string, index: number) => {
+    if (hasUnsafeModelContent({ replyDrafts: [{ text: value }] })) return;
     await navigator.clipboard.writeText(value);
     setCopied(index);
     window.setTimeout(() => setCopied(null), 1800);

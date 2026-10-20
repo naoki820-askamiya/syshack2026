@@ -12,6 +12,7 @@ import { getOwnedPersonOrThrow } from "./persons.service.js";
 import { settleUsage } from "./rateLimit.js";
 import * as repository from "./workflow.repository.js";
 import { publicCreatedResource } from './createIntent.js';
+import { hasUnsafeModelContent } from '../../shared/modelContentPolicy.js';
 
 export async function createAnalysisCase(userId: string, body: unknown) {
     const data = parseOrThrow(createCaseRequestSchema, body);
@@ -22,7 +23,20 @@ export async function createAnalysisCase(userId: string, body: unknown) {
 }
 
 export async function getAnalysisCase(userId: string, caseId: string) {
-    const analysisCase = await ownedCaseOrThrow(userId, caseId);
+    let analysisCase = await ownedCaseOrThrow(userId, caseId);
+    if (analysisCase.status === "analyzing" && analysisCase.analyzeRunId) {
+        try {
+            await repository.reconcileFailedAnalysis(userId, caseId, analysisCase.analyzeRunId);
+        } catch {
+            safeWorkflowLog("error", "analysis_state_reconciliation_required", {
+                caseId, runId: analysisCase.analyzeRunId,
+            });
+            // Failed recovery is not proof of failure/completion. Keep polling possible.
+        }
+        // A replacement run, completion, or deletion may have won the race.
+        // A failed fresh read must not publish an old snapshot as current state.
+        analysisCase = await ownedCaseOrThrow(userId, caseId);
+    }
     return { analysisCase: publicCreatedResource(analysisCase) };
 }
 
@@ -122,7 +136,7 @@ export async function analyzeCase(
             const normalized = normalizeAnalysisError(error);
             // Compensation and usage settlement stay independent; rejected state recovery is observable.
             const compensation = await Promise.allSettled([
-                repository.failAnalysis({
+                failAnalysisWithRetry({
                     userId, caseId, analyzeRunId: started.analyzeRunId,
                     failureCode: normalized.code, failureMessage: normalized.message,
                 }),
@@ -165,6 +179,16 @@ function elapsedMs(startedAt: number): number {
 
 function safeWorkflowLog(level: "info" | "error", event: string, metadata: Record<string, unknown>): void {
     try { console[level](event, metadata); } catch { /* Monitoring must not change a business result. */ }
+}
+
+async function failAnalysisWithRetry(input: Parameters<typeof repository.failAnalysis>[0]) {
+    try {
+        return await repository.failAnalysis(input);
+    } catch {
+        // Retry once after a transient DB failure or lost acknowledgement. The same
+        // owner/run/status compare-and-swap protects a completion or replacement run.
+        return repository.failAnalysis(input);
+    }
 }
 
 export async function getLatestResult(userId: string, caseId: string) {
@@ -210,6 +234,7 @@ async function ownedCaseOrThrow(userId: string, caseId: string) {
 type StoredAnalysisResult = NonNullable<Awaited<ReturnType<typeof repository.findLatestResult>>>;
 
 function toResultEnvelope(result: StoredAnalysisResult) {
+    const contentBlocked = hasUnsafeModelContent(result.resultJson);
     return {
         id: result.id,
         analysisCaseId: result.analysisCaseId,
@@ -218,7 +243,9 @@ function toResultEnvelope(result: StoredAnalysisResult) {
         resultSchemaVersion: result.resultSchemaVersion,
         model: result.model,
         generatedAt: result.createdAt.toISOString(),
-        analysis: result.resultJson,
+        // Preserve the DB original. Never send a flagged historical result to the UI.
+        analysis: contentBlocked ? null : result.resultJson,
+        ...(contentBlocked ? { contentBlocked: true } : {}),
     };
 }
 
@@ -255,6 +282,10 @@ async function settleUsageOrLog(
 }
 
 function normalizeAnalysisError(error: unknown): AppError {
+    if (error instanceof AnalyzeMoodV2Error && error.code === "AI_INPUT_INVALID") {
+        return new AppError({ code: "AI_INPUT_INVALID", status: 422,
+            message: "保存された入力の形式を確認できませんでした。入力内容を確認して新しい相談からお試しください。" });
+    }
     if (error instanceof AiInputBoundsError ||
         (error instanceof AnalyzeMoodV2Error && error.code === "AI_INPUT_LIMIT_EXCEEDED")) {
         return new AppError({ code: "AI_INPUT_LIMIT_EXCEEDED",

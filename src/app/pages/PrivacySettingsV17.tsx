@@ -55,7 +55,7 @@ export function PrivacySettingsV17() {
           <section className="rounded-2xl border border-[#D9E1EA] bg-white p-5 shadow-sm">
             <h2 className="font-semibold text-[#1F2A37]">分析のパーソナライズ</h2>
             <p className="mt-2 text-sm leading-relaxed text-[#5B6573]">
-              許可した過去の相談やFeedbackを、次回の状況整理の参考に使うか選べます。保存済みデータの削除設定ではありません。
+              許可したFeedbackを、次回の状況整理の参考に使うか選べます。保存済みデータの削除設定ではありません。
             </p>
             {loading && <p role="status" className="mt-4 text-sm text-[#5B6573]">設定を読み込んでいます…</p>}
             {loadError && <div role="alert" className="mt-4 text-sm text-red-700"><p>{loadError}</p><button type="button" onClick={() => setLoadAttempt((value) => value + 1)} className="mt-2 font-medium underline">設定を再取得</button></div>}
@@ -68,13 +68,6 @@ export function PrivacySettingsV17() {
                 onChange={(checked) => setSettings((current) => (current ? { ...current, personalizationEnabled: checked } : current))}
               />
               <Toggle
-                label="相手ごとのProfileを利用する"
-                description="長期傾向は事実や人格診断として扱いません。"
-                checked={settings.usePersonProfile}
-                disabled={loading || saving || !settings.personalizationEnabled}
-                onChange={(checked) => setSettings((current) => (current ? { ...current, usePersonProfile: checked } : current))}
-              />
-              <Toggle
                 label="許可済みFeedbackを利用する"
                 description="Feedback側でも「次回分析に利用可」を選んだものだけが対象です。"
                 checked={settings.useFeedbackForContext}
@@ -82,7 +75,7 @@ export function PrivacySettingsV17() {
                 onChange={(checked) => setSettings((current) => (current ? { ...current, useFeedbackForContext: checked } : current))}
               />
               <div className="rounded-xl border border-[#D9E1EA] bg-[#F7F9FC] p-4 text-sm text-[#5B6573]">
-                自分全体の傾向要約は、現在の分析には利用しません。
+                過去のAI要約・相手ごとのProfile・自分全体の傾向要約は、現在の分析には利用しません。保存済みの記録と設定値は保持します。
               </div>
             </div>}
           </section>

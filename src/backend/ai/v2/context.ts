@@ -22,7 +22,13 @@ export interface AnalysisContextSnapshotV5 {
 }
 
 export function buildAiInput(input: AiAnalysisInput): string {
-    return serializeBoundedAiInput(input);
+    return serializeBoundedAiInput(withoutGeneratedHistory(input));
+}
+
+export function withoutGeneratedHistory(input: AiAnalysisInput): AiAnalysisInput {
+    const reference = input.referenceContext;
+    return { ...input, referenceContext: { ...reference, personProfile: null, userPatternSummary: null,
+        recentCaseSummaries: [], ...(reference.provenance ? { provenance: { ...reference.provenance, personProfile: null } } : {}) } };
 }
 
 export function buildContextSnapshot(

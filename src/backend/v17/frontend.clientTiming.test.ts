@@ -3,6 +3,7 @@ import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import ts from 'typescript';
 import { clientTiming, createClientTiming } from '../../app/utils/clientTiming.js';
+import { hasUnsafeModelContent, CONTENT_BLOCK_MESSAGE } from '../../shared/modelContentPolicy.js';
 
 import { captureAuthBoundary, setAuthenticatedUser } from '../../app/utils/authBoundary.js';
 
@@ -89,7 +90,7 @@ function actualModule(path: string, deps: Record<string, unknown> = {}) {
 }
 const jsx = (type: unknown, props: Record<string, any>) => ({ type, props });
 function tree(value: any): any[] { return Array.isArray(value) ? value.flatMap(tree) : value && typeof value === 'object' && value.props ? [value, ...tree(value.props.children)] : []; }
-const normalized = actualModule('src/app/utils/analysisViewModel.ts');
+const normalized = actualModule('src/app/utils/analysisViewModel.ts', { '../../shared/modelContentPolicy.js': { hasUnsafeModelContent, CONTENT_BLOCK_MESSAGE } });
 const validResult = { result: { analysis: { emotionScoreAnalysis: { scores: Object.fromEntries(
   ['anger','coldness','distance','busyness','flatness','reassurance'].map(key => [key, { score: 1 }])) } } } };
 function hookFixture(flow: ReturnType<typeof clockFixture>, options: { cached?: boolean; missing?: boolean; fail?: boolean; pending?: Promise<void> } = {}) {

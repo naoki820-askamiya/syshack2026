@@ -18,12 +18,12 @@ function actualModule(path: string, dependencies: Record<string, unknown> = {}) 
 }
 const retryLogic = actualModule('src/app/utils/analysisRetry.ts');
 
-function scenario({ start = true, cached = false, unreadable = false } = {}) {
+function scenario({ start = true, cached = false, unreadable = false, initialStatus = 'draft' } = {}) {
   let location = {
     pathname: '/analysis/synthetic-case', search: '?fixture=1', hash: '#result',
     state: start ? { startAnalysis: true, retained: 'synthetic metadata' } : null as Record<string, unknown> | null,
   };
-  let serverStatus = 'draft';
+  let serverStatus = initialStatus;
   let starts = 0;
   const navigation: any[] = [];
   const boundary = { userId: 'synthetic-user', epoch: 1 };
@@ -59,7 +59,9 @@ function scenario({ start = true, cached = false, unreadable = false } = {}) {
       '../api/client': {
         fetchApiJson: async (path: string) => {
           if (unreadable) throw new Error('synthetic state unavailable');
-          return path.endsWith('/results/latest') ? { result: null } : { analysisCase: { status: serverStatus } };
+          return path.endsWith('/results/latest') ? { result: null } : { analysisCase: {
+            status: serverStatus, failureMessage: '分析処理に失敗しました。同じ相談から再試行できます。',
+          } };
         },
       },
       '../utils/storage': { getConsultation: () => cached ? {} : undefined, getAnalysis: () => cached ? {} : undefined },
@@ -80,6 +82,7 @@ function scenario({ start = true, cached = false, unreadable = false } = {}) {
     const value = await render();
     return {
       value,
+      snapshot: () => { index = 0; effects = []; return hook.useHydratedAnalysis('synthetic-case'); },
       close: () => cleanups.forEach(cleanup => { if (typeof cleanup === 'function') cleanup(); }),
       retry: async () => {
         cleanups.forEach(cleanup => { if (typeof cleanup === 'function') cleanup(); });
@@ -141,4 +144,15 @@ test('state lookup failure consumes navigation intent and a remount still sends 
   assert.equal(flow.starts, 0);
   assert.equal(flow.navigation.length, 1);
   second.close();
+});
+
+test('a recovered failed run renders a finished loading state and failure message without an implicit send', async () => {
+  const flow = scenario({ start: false, initialStatus: 'failed' });
+  const mount = await flow.mount();
+  const current = mount.snapshot();
+  assert.equal(current.status, 'failed');
+  assert.equal(current.loading, false);
+  assert.equal(current.error, '分析処理に失敗しました。同じ相談から再試行できます。');
+  assert.equal(flow.starts, 0);
+  mount.close();
 });

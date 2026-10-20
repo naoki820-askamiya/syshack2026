@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { aiAnalysisInputSchema } from './input.schema.js';
 import { analyzeMoodV2, AnalyzeMoodV2Error } from './analyzeMood.js';
-import { buildAiInput, buildContextSnapshot } from './context.js';
+import { buildContextSnapshot } from './context.js';
+import { serializeBoundedAiInput } from './input-bounds.js';
 import { makeValidV2Result } from './testFixture.js';
 
 const base = {
@@ -39,8 +40,8 @@ test('Profile permits depth16 and rejects depth17 without recursive serializatio
 
 test('total serialized AI input rejects 128KiB+1 and accepts exactly128KiB', () => {
   const make = (bytes: number) => ({ text: 'x'.repeat(bytes - 11) });
-  assert.equal(Buffer.byteLength(buildAiInput(make(131072) as never), 'utf8'), 131072);
-  assert.throws(() => buildAiInput(make(131073) as never), /上限/);
+  assert.equal(Buffer.byteLength(serializeBoundedAiInput(make(131072)), 'utf8'), 131072);
+  assert.throws(() => serializeBoundedAiInput(make(131073)), /上限/);
 });
 
 test('context snapshot rejects oversized/deep Profile before copying saved context', () => {
@@ -101,7 +102,7 @@ test('executable JSON hooks and getters are rejected without invoking them or di
   const client = { parse: async () => { sends++; throw new Error('must not dispatch'); } };
   for (const profile of [toJSON, getter]) {
     assert.equal(aiAnalysisInputSchema.safeParse(inputWith(profile)).success, false);
-    assert.throws(() => buildAiInput(inputWith(profile) as never), /上限/);
+    assert.throws(() => serializeBoundedAiInput(inputWith(profile)), /上限/);
     assert.throws(() => buildContextSnapshot(inputWith(profile).referenceContext as never), /上限/);
     await assert.rejects(analyzeMoodV2(inputWith(profile) as never, { client: client as never }),
       error => error instanceof AnalyzeMoodV2Error && error.code === 'AI_INPUT_LIMIT_EXCEEDED' && error.attempts === 0);
