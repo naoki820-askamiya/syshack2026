@@ -76,7 +76,7 @@ export function AnalysisV17() {
           {view.isLegacy && (
             <div className="flex gap-2 rounded-xl border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-800">
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-              旧形式の分析結果を互換表示しています。再分析時は新しい6指標形式になります。
+              旧形式の分析結果を互換表示しています。指標や根拠の記録は現在の形式と異なります。
             </div>
           )}
 

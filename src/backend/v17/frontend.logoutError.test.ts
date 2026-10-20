@@ -97,3 +97,26 @@ test('unknown logout rejection uses a safe generic accessible message', async ()
   assert.ok(alert && text(alert).includes('ログアウトに失敗'));
   assert.equal(text(alert).includes('synthetic must not render'), false);
 });
+
+test('mobile logout is reachable, prevents duplicate requests, announces failure, and clears the cache on retry', async () => {
+  let calls = 0, reject!: (error: Error) => void;
+  const pending = new Promise<void>((_done, fail) => { reject = fail; });
+  const flow = fixture(async () => { if (++calls === 1) await pending; else flow.switchUser(null); });
+  const mobile = () => flow.render().find(node => node.type === 'nav' && node.props['aria-label'] === 'モバイルナビゲーション')!;
+  const button = () => nodes(mobile()).find(node => node.type === 'button' && node.props['aria-label'] === 'ログアウト')!;
+  assert.ok(button());
+  const operation = button().props.onClick();
+  assert.equal(button().props.disabled, true);
+  assert.ok(nodes(mobile()).some(node => node.props.role === 'status'));
+  button().props.onClick(); assert.equal(calls, 1);
+  reject(new Error('synthetic logout failure'));
+  await operation;
+  assert.ok(nodes(mobile()).some(node => node.props.role === 'alert' && text(node).includes('ログアウトに失敗')));
+  assert.equal(flow.storage.getConsultations().length, 1);
+  await button().props.onClick();
+  assert.equal(calls, 2);
+  assert.deepEqual(flow.navigation, ['/']);
+  assert.deepEqual(flow.storage.getConsultations(), []);
+  assert.equal(button(), undefined);
+  assert.ok(nodes(mobile()).some(node => node.type === 'Link' && node.props.to === '/login'));
+});

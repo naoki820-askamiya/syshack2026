@@ -4,6 +4,7 @@ import OpenAI from 'openai';
 import { analyzeMoodV2 } from '../ai/v2/analyzeMood.js';
 import { makeValidV2Result } from '../ai/v2/testFixture.js';
 import { ensureSavedCaseAnalysis, type SavedAnalysisStatus } from '../../app/utils/analysisRetry.js';
+import { normalizeAnalysis } from '../../app/utils/analysisViewModel.js';
 
 process.env.DATABASE_URL ??= 'postgresql://synthetic:synthetic@127.0.0.1:1/no_network';
 const [{ prisma }, service, repository] = await Promise.all([
@@ -177,6 +178,27 @@ test('R12: flagged stored results are withheld in latest/list without rewriting 
   const latest = (await service.getLatestResult(USER, CASE)).result!;
   const listed = (await service.listResults(USER, CASE, {})).results[0];
   for (const output of [latest, listed]) { assert.equal(output.contentBlocked, true); assert.equal(output.analysis, null); }
+  assert.equal(JSON.stringify(stored), original);
+  assert.equal(fixture.sends, 0); assert.equal(fixture.usage, null);
+});
+
+test('safe stored legacy results survive the actual latest/list API envelope into the view', async t => {
+  const fixture = setup(t); fixture.row.status = 'analyzed';
+  const legacy = { scores: { angry: 0.2 }, contextImpression: '落ち着いて確認する余地があります。',
+    replyExamples: [{ tone: 'normal', text: '都合のよいときに確認をお願いします。' }] };
+  const stored = { id: USAGE, analysisCaseId: CASE, version: 1, promptVersion: 'old', resultSchemaVersion: 'old',
+    model: 'synthetic', createdAt: new Date('2026-01-01T00:00:00Z'), resultJson: legacy };
+  const original = JSON.stringify(stored);
+  replace(t, prisma.analysisResult, 'findFirst', async () => stored);
+  replace(t, prisma.analysisResult, 'findMany', async () => [stored]);
+  const latest = (await service.getLatestResult(USER, CASE)).result!;
+  const listed = (await service.listResults(USER, CASE, {})).results[0];
+  for (const result of [latest, listed]) {
+    const view = normalizeAnalysis({ status: 'analyzed', result });
+    assert.equal(view?.isLegacy, true);
+    assert.equal(view?.summary, legacy.contextImpression);
+    assert.equal(view?.replyDrafts[0].text, legacy.replyExamples[0].text);
+  }
   assert.equal(JSON.stringify(stored), original);
   assert.equal(fixture.sends, 0); assert.equal(fixture.usage, null);
 });

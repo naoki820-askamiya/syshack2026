@@ -161,8 +161,11 @@ function normalizeV2(root: JsonObject): AnalysisView | null {
 }
 
 function normalizeLegacy(root: JsonObject): AnalysisView | null {
-  const legacy = isObject(root.result) ? root.result : null;
-  if (!legacy || !isObject(legacy.scores)) return null;
+  const envelope = isObject(root.result) ? root.result : root;
+  // Stored v1 results use the same API envelope as v2; older memory caches
+  // may still contain the legacy body directly under result.
+  const legacy = isObject(envelope.analysis) ? envelope.analysis : envelope;
+  if (!isObject(legacy.scores)) return null;
   const rawScores = legacy.scores;
   const meta = [
     ['angry', '怒り', 'concern'], ['cold', '冷たさ', 'concern'],

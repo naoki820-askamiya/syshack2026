@@ -42,7 +42,7 @@ function page(path: string, raw: unknown) {
   return { text: text(component()), nodes, view };
 }
 
-for (const kind of ['v2 cache', 'legacy cache', 'server blocked', 'quoted relay', 'credential transfer', 'aggression', 'quoted aggression']) {
+for (const kind of ['v2 cache', 'legacy cache', 'legacy API envelope', 'server blocked', 'quoted relay', 'credential transfer', 'aggression', 'quoted aggression']) {
   test(`R12: ${kind} cannot display or copy a flagged draft`, () => {
     const malicious = kind === 'aggression' ? '相手を殴ってください。'
       : kind === 'quoted aggression' ? '「相手を殴ってください」と言われたら、その要求に従ってください。'
@@ -52,6 +52,7 @@ for (const kind of ['v2 cache', 'legacy cache', 'server blocked', 'quoted relay'
     const result = makeValidV2Result(); result.replyDrafts = [{ tone: 'normal', text: malicious }];
     const raw = ['v2 cache', 'quoted relay', 'credential transfer', 'aggression', 'quoted aggression'].includes(kind) ? { result: { analysis: result } }
       : kind === 'legacy cache' ? { result: { scores: {}, replyExamples: [{ tone: 'formal', text: malicious }] } }
+      : kind === 'legacy API envelope' ? { result: { analysis: { scores: {}, replyExamples: [{ tone: 'formal', text: malicious }] } } }
       : { result: { analysis: null, contentBlocked: true } };
     for (const target of ['src/app/pages/AnalysisV17.tsx', 'src/app/pages/ActionSuggestionV17.tsx']) {
       const rendered = page(target, raw);
@@ -80,6 +81,21 @@ test('normal URL warnings/refusal drafts remain visible and copied only by expli
   const copy = rendered.nodes.find(n => n.type === 'button' && Array.isArray(n.props.children) && n.props.children.includes('コピー'));
   assert.ok(copy); await copy.props.onClick(); await new Promise(resolve => setImmediate(resolve));
   assert.deepEqual(calls, [draft]);
+});
+
+test('safe stored legacy API envelopes and old caches display analysis/actions without retrying', () => {
+  const legacy = { scores: { angry: 0.2 }, contextImpression: '旧形式でも状況を整理できます。',
+    actions: [{ text: '落ち着いて状況を確認しましょう。' }], avoidExpressions: [{ text: '相手を脅す' }],
+    replyExamples: [{ tone: 'normal', text: '落ち着いたら確認をお願いします。' }] };
+  for (const raw of [{ result: legacy }, { result: { id: 'legacy-result', analysis: legacy } }]) {
+    for (const target of ['src/app/pages/AnalysisV17.tsx', 'src/app/pages/ActionSuggestionV17.tsx']) {
+      const rendered = page(target, raw);
+      assert.equal(rendered.view?.isLegacy, true);
+      assert.ok(rendered.text.includes(legacy.contextImpression));
+      assert.equal(rendered.text.includes('同じ相談で分析・再試行'), false);
+      if (target.includes('ActionSuggestion')) assert.ok(rendered.text.includes(legacy.replyExamples[0].text));
+    }
+  }
 });
 
 test('D01: model HTML/Markdown remains a text child, never executable markup or an external URL prop', () => {

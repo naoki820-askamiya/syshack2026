@@ -181,6 +181,8 @@ export function Navigation() {
       </nav>
 
       <nav aria-label="モバイルナビゲーション" className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[#D9E1EA] p-4 z-50">
+        {signOutStatus.pending && <p role="status" className="mb-3 text-center text-sm text-[#5B6573]">ログアウトしています…</p>}
+        {signOutStatus.error && <p role="alert" className="mb-3 text-sm text-red-700">{signOutStatus.error}</p>}
         <div className="max-w-2xl mx-auto flex justify-around">
           {(user ? bottomNavItems : guestBottomNavItems).map((item) => {
             const Icon = item.icon;
@@ -200,6 +202,12 @@ export function Navigation() {
               </Link>
             );
           })}
+          {user && <button type="button" aria-label="ログアウト" onClick={handleSignOut}
+            disabled={signOutStatus.pending}
+            className="flex min-h-11 flex-col items-center gap-1 text-[#5B6573] disabled:opacity-50">
+            <LogOut className="h-6 w-6" />
+            <span className="text-xs font-medium">{signOutStatus.pending ? '処理中…' : 'ログアウト'}</span>
+          </button>}
         </div>
       </nav>
     </>

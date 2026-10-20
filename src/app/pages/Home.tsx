@@ -63,7 +63,7 @@ export function Home() {
                 </span>
               </div>
               <p className="text-[#E8F1F8] text-sm mt-1">
-                {user ? '入力と根拠から、次の一歩を考える。' : 'ログイン後、この画面に戻ります。'}
+                {user ? '入力と根拠から、次の一歩を考える。' : 'ログイン後、相談の入力へ進みます。'}
               </p>
             </div>
           </Link>
