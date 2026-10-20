@@ -1,5 +1,6 @@
 import { AiInputBoundsError, assertProfileBounds, MAX_AI_OUTPUT_TOKENS } from "./input-bounds.js";
 import OpenAI from "openai";
+import { ZodError } from "zod";
 import { zodTextFormat } from "openai/helpers/zod";
 import {
     DEFAULT_AI_TIMEOUT_MS,
@@ -15,6 +16,7 @@ import {
 import { AiOutputValidationError, validateAiOutput } from "./validation.js";
 
 export type AnalyzeFailureCode =
+    | "AI_INPUT_INVALID"
     | "AI_INPUT_LIMIT_EXCEEDED"
     | "AI_CONFIG_MISSING"
     | "AI_TIMEOUT"
@@ -27,7 +29,7 @@ export class AnalyzeMoodV2Error extends Error {
     constructor(
         readonly code: AnalyzeFailureCode,
         message: string,
-        readonly attempts: number,
+        readonly attempts: number | null,
         readonly cause?: unknown,
     ) {
         super(message);
@@ -78,14 +80,18 @@ export async function analyzeMoodV2(
     let input: AiAnalysisInput;
     let serializedInput: string;
     try {
-        assertProfileBounds(rawInput.referenceContext.personProfile);
+        assertProfileBounds(rawInput?.referenceContext?.personProfile ?? null);
         input = aiAnalysisInputSchema.parse(rawInput);
         serializedInput = buildAiInput(input);
     } catch (error) {
         if (error instanceof AiInputBoundsError) {
             throw new AnalyzeMoodV2Error("AI_INPUT_LIMIT_EXCEEDED", error.message, 0);
         }
-        throw error;
+        if (error instanceof ZodError) {
+            throw new AnalyzeMoodV2Error("AI_INPUT_INVALID", "AI入力の形式が不正です。", 0, error);
+        }
+        // Preparation cannot have dispatched a request, including unexpected local failures.
+        throw new AnalyzeMoodV2Error("AI_PROVIDER_ERROR", "AI入力を準備できませんでした。", 0, error);
     }
     const preparationMs = elapsedMs(preparationStartedAt);
     const apiKey = process.env.OPENAI_API_KEY?.trim();
@@ -101,14 +107,20 @@ export async function analyzeMoodV2(
         );
     }
 
-    const client = options.client ?? new OpenAI({ apiKey }).responses;
+    let client: ResponsesClient;
+    try {
+        client = options.client ?? new OpenAI({ apiKey }).responses;
+    } catch (error) {
+        throw new AnalyzeMoodV2Error("AI_CONFIG_MISSING", "AI接続の設定が不正です。", 0, error);
+    }
     // timeoutMs bounds the entire operation, including backoff and all API attempts.
     const deadline = performance.now() + (options.timeoutMs ?? DEFAULT_AI_TIMEOUT_MS);
     let lastError: unknown;
+    let dispatchedAttempts = 0;
 
     for (let attempt = 1; attempt <= MAX_INTERNAL_AI_ATTEMPTS; attempt += 1) {
         if (options.signal?.aborted || performance.now() >= deadline) {
-            throw new AnalyzeMoodV2Error("AI_TIMEOUT", "AI分析が中断またはタイムアウトしました。", attempt - 1);
+            throw new AnalyzeMoodV2Error("AI_TIMEOUT", "AI分析が中断またはタイムアウトしました。", dispatchedAttempts);
         }
         const attemptStartedAt = attempt === 1 ? preparationStartedAt : performance.now();
         const metrics: AiAttemptMetrics = {
@@ -141,11 +153,19 @@ export async function analyzeMoodV2(
                     metrics.duration.prompt_build_ms = elapsedMs(promptStartedAt) + (attempt === 1 ? preparationMs : 0);
                 }
                 providerStartedAt = performance.now();
+                dispatchedAttempts += 1;
                 return client.parse(body, {
                     signal,
                     // SDK 4.x requires integer milliseconds; the outer timer keeps the precise deadline.
                     timeout: Math.max(1, Math.floor(remainingMs)),
                     maxRetries: 0,
+                }).catch((error: unknown) => {
+                    // The installed SDK parses output text before returning output_parsed.
+                    // Scope this mapping to that boundary, not arbitrary application errors.
+                    if (error instanceof SyntaxError || error instanceof ZodError) {
+                        throw new AiOutputValidationError("invalid", "AI応答を解析できませんでした。", error);
+                    }
+                    throw error;
                 });
             }, remainingMs, options.signal).finally(() => {
                 if (providerStartedAt !== null) metrics.duration.provider_request_ms = elapsedMs(providerStartedAt);
@@ -195,10 +215,10 @@ export async function analyzeMoodV2(
             }
             metrics.outcome = "succeeded";
             emitAttemptMetrics(options.onAttemptMetrics, metrics, attemptStartedAt);
-            return { analysis, model, attempts: attempt };
+            return { analysis, model, attempts: dispatchedAttempts };
         } catch (error) {
             lastError = error;
-            const normalized = normalizeAttemptError(error, attempt);
+            const normalized = normalizeAttemptError(error, dispatchedAttempts);
             metrics.failureCode = normalized.code;
             emitAttemptMetrics(options.onAttemptMetrics, metrics, attemptStartedAt);
 
@@ -207,17 +227,17 @@ export async function analyzeMoodV2(
             }
             const delayMs = retryDelayMs(error, attempt);
             if (performance.now() + delayMs >= deadline) {
-                throw new AnalyzeMoodV2Error("AI_TIMEOUT", "AI分析の再試行期限を超えました。", attempt, error);
+                throw new AnalyzeMoodV2Error("AI_TIMEOUT", "AI分析の再試行期限を超えました。", dispatchedAttempts, error);
             }
             try {
                 await waitForRetry(delayMs, options.signal);
             } catch (abortError) {
-                throw normalizeAttemptError(abortError, attempt);
+                throw normalizeAttemptError(abortError, dispatchedAttempts);
             }
         }
     }
 
-    throw normalizeAttemptError(lastError, MAX_INTERNAL_AI_ATTEMPTS);
+    throw normalizeAttemptError(lastError, dispatchedAttempts);
 }
 
 function elapsedMs(startedAt: number): number {
@@ -259,7 +279,7 @@ function readTokenUsage(response: { usage?: OpenAI.Responses.ResponseUsage | nul
 function shouldRetry(error: AnalyzeMoodV2Error, original: unknown): boolean {
     if (original instanceof OpenAI.APIUserAbortError ||
         (original as { name?: string } | null)?.name === "AbortError") return false;
-    if (["AI_OUTPUT_INVALID", "AI_OUTPUT_UNSAFE"].includes(error.code)) return true;
+    if (error.code === "AI_OUTPUT_INVALID") return true;
     if (original instanceof OpenAI.APIConnectionError) return true;
     if (original instanceof OpenAI.APIError) {
         return [408, 429, 500, 502, 503, 504].includes(original.status ?? 0);
@@ -327,7 +347,7 @@ function waitForRetry(delayMs: number, signal?: AbortSignal): Promise<void> {
 
 function normalizeAttemptError(error: unknown, attempts: number): AnalyzeMoodV2Error {
     if (error instanceof AnalyzeMoodV2Error) {
-        return new AnalyzeMoodV2Error(error.code, error.message, attempts, error.cause);
+        return new AnalyzeMoodV2Error(error.code, error.message, error.attempts === null ? null : attempts, error.cause);
     }
 
     if (error instanceof AiOutputValidationError) {
@@ -373,7 +393,8 @@ function normalizeAttemptError(error: unknown, attempts: number): AnalyzeMoodV2E
     return new AnalyzeMoodV2Error(
         "AI_PROVIDER_ERROR",
         "AI分析を完了できませんでした。",
-        attempts,
+        // An unrecognized exception after dispatch does not establish exact usage.
+        attempts === 0 ? 0 : null,
         error,
     );
 }

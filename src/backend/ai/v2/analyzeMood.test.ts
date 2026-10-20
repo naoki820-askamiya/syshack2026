@@ -192,7 +192,7 @@ test('invalid input fails before a provider send without provider-error classifi
   const invalid = { ...input, untrustedUserInput: { ...input.untrustedUserInput,
     currentCase: { ...input.untrustedUserInput.currentCase, eventFacts: '' } } };
   await assert.rejects(analyzeMoodV2(invalid, { client: client as never }),
-    error => !(error instanceof AnalyzeMoodV2Error));
+    error => error instanceof AnalyzeMoodV2Error && error.code === 'AI_INPUT_INVALID' && error.attempts === 0);
   assert.equal(calls, 0);
 }));
 

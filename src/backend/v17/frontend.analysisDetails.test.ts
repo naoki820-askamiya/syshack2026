@@ -5,7 +5,7 @@ import ts from 'typescript';
 import { normalizeAnalysis } from '../../app/utils/analysisViewModel.js';
 
 // Execute the actual page/mapper with synthetic I/O and JSX seams; not a browser/a11y proof.
-function pageText(raw: unknown, elements: { type: string; props: Record<string, unknown> }[] = []): string {
+function pageText(raw: unknown, elements: { type: string; props: Record<string, unknown> }[] = [], hookState: Record<string, unknown> = {}): string {
   const jsx = (type: unknown, props: Record<string, unknown>) => ({ type, props });
   const view = normalizeAnalysis(raw)!;
   const deps: Record<string, unknown> = {
@@ -17,7 +17,7 @@ function pageText(raw: unknown, elements: { type: string; props: Record<string, 
     '../components/AnalysisFeedbackForm': { AnalysisFeedbackForm: () => null },
     '../hooks/useHydratedAnalysis': { useHydratedAnalysis: () => ({
       consultation: { id: 'synthetic-case', personName: 'Synthetic person', event: 'synthetic event', reaction: 'synthetic reaction' },
-      view, loading: false, error: null, status: 'analyzed', retry: () => {},
+      view, loading: false, error: null, status: 'analyzed', retry: () => {}, ...hookState,
     }) },
   };
   // Execute the disclosure component too, so hiding detail panels cannot drop provenance.
@@ -48,6 +48,17 @@ function pageText(raw: unknown, elements: { type: string; props: Record<string, 
   }
   return content(module.exports.AnalysisV17());
 }
+
+test('failed analysis page displays the saved-case failure and an enabled explicit retry', () => {
+  const elements: { type: string; props: Record<string, unknown> }[] = [];
+  const text = pageText(null, elements, { view: null, status: 'failed',
+    error: '分析処理に失敗しました。同じ相談から再試行できます。' });
+  assert.ok(text.includes('相談を保存しました。'));
+  assert.ok(text.includes('分析処理に失敗しました。'));
+  assert.ok(text.includes('同じ相談で分析・再試行'));
+  assert.ok(elements.some(element => element.props.role === 'alert'));
+  assert.ok(elements.some(element => element.type === 'button' && element.props.disabled === false));
+});
 function fixture(enabled = true) {
   const scores = Object.fromEntries(['anger', 'coldness', 'distance', 'busyness', 'flatness', 'reassurance'].map(key => [key, {
     label: key, score: 10, category: ['busyness', 'flatness'].includes(key) ? 'context' : key === 'reassurance' ? 'relief' : 'concern', reason: 'synthetic score reason',

@@ -73,10 +73,14 @@ export function useHydratedAnalysis(caseId: string | undefined) {
     };
     const state = async (id: string): Promise<SavedAnalysisStatus> => {
       assertCurrentAuthBoundary(boundary);
-      const { analysisCase } = await fetchApiJson<{ analysisCase: { status: string } }>(`/api/analysis-cases/${id}`, { signal: controller.signal });
+      const { analysisCase } = await fetchApiJson<{ analysisCase: { status: string; failureMessage?: string | null } }>(`/api/analysis-cases/${id}`, { signal: controller.signal });
       assertCurrentAuthBoundary(boundary);
       if (!['draft', 'failed', 'analyzing', 'analyzed'].includes(analysisCase.status)) throw new Error('分析状態を確認できませんでした。');
-      if (current()) { setStatus(analysisCase.status as SavedAnalysisStatus); clientTiming.stage(timing, 'state'); }
+      if (current()) {
+        setStatus(analysisCase.status as SavedAnalysisStatus);
+        if (analysisCase.status === 'failed') setError(analysisCase.failureMessage || '分析処理に失敗しました。同じ相談から再試行できます。');
+        clientTiming.stage(timing, 'state');
+      }
       return analysisCase.status as SavedAnalysisStatus;
     };
     const check = async (start: boolean) => {

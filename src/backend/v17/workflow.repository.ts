@@ -189,6 +189,29 @@ export async function failAnalysis(input: {
     });
 }
 
+// Repair only a run whose own usage receipt proves terminal failure. An allowed
+// receipt (including unknown usage) and elapsed time alone are never sufficient.
+export async function reconcileFailedAnalysis(userId: string, caseId: string, analyzeRunId: string) {
+    return prisma.$transaction(async (tx) => {
+        await tx.$queryRaw<Array<{ locked: number }>>`
+            SELECT 1 AS locked
+            FROM pg_advisory_xact_lock(hashtextextended(${`analysis-case:${caseId}`}, 0))
+        `;
+        const failedUsage = await tx.apiUsageEvent.findFirst({
+            where: { userId, analysisCaseId: caseId, analyzeRunId, routeKey: "analyze", status: "failed" },
+            select: { id: true },
+        });
+        if (!failedUsage) return { count: 0 };
+        return tx.analysisCase.updateMany({
+            where: { id: caseId, userId, status: "analyzing", analyzeRunId },
+            data: {
+                status: "failed", failureCode: "ANALYSIS_FAILED",
+                failureMessage: "分析処理に失敗しました。同じ相談から再試行できます。",
+            },
+        });
+    });
+}
+
 type AnalysisRunState = {
     status: string;
     analyzeRunId: string | null;
