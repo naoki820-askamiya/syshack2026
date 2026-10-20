@@ -92,9 +92,10 @@ export function Login() {
               />
             </div>
 
-            <p className="text-sm text-[#5B6573]">
-              パスワード再設定は現在利用できません。
-            </p>
+            <button type="button" disabled={isSubmitting} onClick={() => navigate('/forgot-password')}
+              className="min-h-11 text-sm text-[#0F4C81] underline disabled:opacity-60">
+              パスワードを忘れた方
+            </button>
 
             {isSubmitting && <p role="status" className="text-sm text-[#5B6573]">処理中です…</p>}
             <button

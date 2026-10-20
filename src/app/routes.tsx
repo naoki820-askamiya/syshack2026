@@ -5,6 +5,7 @@ import { AnalysisV17 } from './pages/AnalysisV17';
 import { ActionSuggestionV17 } from './pages/ActionSuggestionV17';
 import { History } from './pages/History';
 import { Login } from './pages/Login';
+import { ForgotPassword, ResetPassword } from './pages/PasswordRecovery';
 import { Register } from './pages/Register';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { ProtectedPlaceholder } from './pages/ProtectedPlaceholder';
@@ -14,6 +15,8 @@ import { Consent } from './pages/Consent';
 import { RequireConsent } from './components/RequireConsent';
 
 export const router = createBrowserRouter([
+  { path: '/forgot-password', Component: ForgotPassword },
+  { path: '/reset-password', Component: ResetPassword },
   { path: '/terms', element: <LegalDocument kind="terms" /> },
   { path: '/privacy-policy', element: <LegalDocument kind="privacy" /> },
   { path: '/consent', element: <ProtectedRoute><Consent /></ProtectedRoute> },

@@ -34,11 +34,10 @@ function renderLogin() {
   return nodes(module.exports.Login());
 }
 
-test('Login explains unavailable password reset without a misleading interactive reset control', () => {
+test('Login has a working public recovery entry and retains login/register controls', () => {
   const tree = renderLogin();
-  assert.ok(tree.some(node => node.type === 'p' && text(node) === 'パスワード再設定は現在利用できません。'));
   const interactive = tree.filter(node => ['button', 'a', 'Link'].includes(String(node.type)));
-  assert.equal(interactive.some(node => /パスワード.*(忘れ|再設定)/.test(text(node))), false);
+  assert.ok(interactive.some(node => text(node) === 'パスワードを忘れた方' && typeof node.props.onClick === 'function'));
   assert.ok(interactive.some(node => node.props.type === 'submit' && text(node) === 'ログイン'));
   assert.ok(interactive.some(node => text(node) === '新規登録'));
 });
