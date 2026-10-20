@@ -6,7 +6,7 @@ import {
     DEFAULT_AI_TIMEOUT_MS,
     MAX_INTERNAL_AI_ATTEMPTS,
 } from "./constants.js";
-import { buildAiInput } from "./context.js";
+import { buildAiInput, withoutGeneratedHistory } from "./context.js";
 import { aiAnalysisInputSchema, type AiAnalysisInput } from "./input.schema.js";
 import { buildAiInstructions } from "./instructions.js";
 import {
@@ -81,7 +81,7 @@ export async function analyzeMoodV2(
     let serializedInput: string;
     try {
         assertProfileBounds(rawInput?.referenceContext?.personProfile ?? null);
-        input = aiAnalysisInputSchema.parse(rawInput);
+        input = withoutGeneratedHistory(aiAnalysisInputSchema.parse(rawInput));
         serializedInput = buildAiInput(input);
     } catch (error) {
         if (error instanceof AiInputBoundsError) {

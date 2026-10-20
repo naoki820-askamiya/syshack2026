@@ -104,11 +104,10 @@ test('narrative fields cannot hide unsafe instructions behind indirect positive 
 });
 
 
-test('observed aggression quotes stay conservatively rejected pending semantic policy review', () => {
+test('reported aggression quotes remain data when no action is recommended', () => {
   const result = makeValidV2Result();
   result.evidence.signalsForConcern[0].text = '「殴る」と言われたことが心配です';
-  assert.throws(() => validateAiOutput(result), error =>
-    error instanceof AiOutputValidationError && error.failure === 'unsafe');
+  assert.equal(validateAiOutput(result).evidence.signalsForConcern[0].text, result.evidence.signalsForConcern[0].text);
 });
 
 test('avoidActions role cannot bypass imperative or reversed avoidance instructions', () => {

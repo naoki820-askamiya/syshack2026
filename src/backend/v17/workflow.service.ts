@@ -12,6 +12,7 @@ import { getOwnedPersonOrThrow } from "./persons.service.js";
 import { settleUsage } from "./rateLimit.js";
 import * as repository from "./workflow.repository.js";
 import { publicCreatedResource } from './createIntent.js';
+import { hasUnsafeModelContent } from '../../shared/modelContentPolicy.js';
 
 export async function createAnalysisCase(userId: string, body: unknown) {
     const data = parseOrThrow(createCaseRequestSchema, body);
@@ -233,6 +234,7 @@ async function ownedCaseOrThrow(userId: string, caseId: string) {
 type StoredAnalysisResult = NonNullable<Awaited<ReturnType<typeof repository.findLatestResult>>>;
 
 function toResultEnvelope(result: StoredAnalysisResult) {
+    const contentBlocked = hasUnsafeModelContent(result.resultJson);
     return {
         id: result.id,
         analysisCaseId: result.analysisCaseId,
@@ -241,7 +243,9 @@ function toResultEnvelope(result: StoredAnalysisResult) {
         resultSchemaVersion: result.resultSchemaVersion,
         model: result.model,
         generatedAt: result.createdAt.toISOString(),
-        analysis: result.resultJson,
+        // Preserve the DB original. Never send a flagged historical result to the UI.
+        analysis: contentBlocked ? null : result.resultJson,
+        ...(contentBlocked ? { contentBlocked: true } : {}),
     };
 }
 

@@ -1,3 +1,5 @@
+import { CONTENT_BLOCK_MESSAGE, hasUnsafeModelContent } from '../../shared/modelContentPolicy.js';
+
 export type ConfidenceLevel = 'low' | 'medium' | 'high' | 'unknown';
 export type EvidenceSource = 'current_case' | 'person_profile' | 'recent_case' | 'feedback' | 'unknown';
 export type EvidenceStrength = ConfidenceLevel | 'unknown';
@@ -21,6 +23,7 @@ export interface AnalysisScoreView {
 }
 
 export interface AnalysisView {
+  contentBlocked?: boolean;
   resultId: string | null;
   schemaVersion: string;
   isLegacy: boolean;
@@ -195,5 +198,17 @@ function normalizeLegacy(root: JsonObject): AnalysisView | null {
 
 export function normalizeAnalysis(raw: unknown): AnalysisView | null {
   if (!isObject(raw)) return null;
+  const result = isObject(raw.result) ? raw.result : raw;
+  const candidate = isObject(result.analysis) ? result.analysis : result;
+  if (result.contentBlocked === true || hasUnsafeModelContent(candidate)) {
+    // Also covers old in-memory caches and legacy results, without exposing raw text.
+    return { contentBlocked: true, resultId: null, schemaVersion: text(result.resultSchemaVersion),
+      isLegacy: false, confidenceLevel: 'unknown', summary: CONTENT_BLOCK_MESSAGE,
+      textImpression: '', situationReading: '', scores: [], concernSignals: [], reassuringSignals: [],
+      unknowns: [], alternatives: [], possibleBiases: [], balancedView: '', recommendedActions: [],
+      avoidActions: [], replyDrafts: [], contactTiming: '',
+      contextComparison: { enabled: false, conclusion: '', patterns: [], sameAsUsual: [], deviations: [] },
+      disclaimer: CONTENT_BLOCK_MESSAGE };
+  }
   return normalizeV2(raw) ?? normalizeLegacy(raw);
 }
