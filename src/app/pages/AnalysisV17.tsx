@@ -32,6 +32,16 @@ export function AnalysisV17() {
   const resolvedId = id ?? caseId;
   const { consultation, view, loading, error, status, retry, needsConsent } = useHydratedAnalysis(resolvedId);
 
+  if (view?.contentBlocked) return (
+    <div className="min-h-screen bg-[#F7F9FC]"><Navigation />
+      <main className="lg:ml-64 mx-auto max-w-3xl space-y-4 p-6 pb-24">
+        <h1 className="text-xl font-semibold">分析結果の表示を停止しました</h1>
+        <p role="status">{view.summary}</p>
+        <button type="button" onClick={() => navigate('/history')} className="min-h-12 underline">相談履歴へ戻る</button>
+      </main>
+    </div>
+  );
+
   if (!view) return (
     <div className="min-h-screen bg-[#F7F9FC]">
       <Navigation />

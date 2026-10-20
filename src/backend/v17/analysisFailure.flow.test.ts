@@ -73,12 +73,13 @@ function setup(t: test.TestContext, failWrites = 0) {
     if (!usage || !matches(usage, where)) return { count: 0 };
     Object.assign(usage, data); return { count: 1 };
   }) as never);
-  const client = (text: string, status = 'completed') => new OpenAI({ apiKey: 'synthetic-no-network',
+  const client = (text: string | string[], status = 'completed') => new OpenAI({ apiKey: 'synthetic-no-network',
     baseURL: 'http://127.0.0.1:1/no-network', fetch: (async () => {
+      const responseText = Array.isArray(text) ? text[Math.min(sends, text.length - 1)] : text;
       sends++;
       return new Response(JSON.stringify({ id: 'resp_synthetic', object: 'response', created_at: 0,
         model: 'synthetic-model', status, output: [{ type: 'message', id: 'msg_synthetic', status: 'completed',
-          role: 'assistant', content: [{ type: 'output_text', text, annotations: [] }] }],
+          role: 'assistant', content: [{ type: 'output_text', text: responseText, annotations: [] }] }],
       }), { status: 200, headers: { 'content-type': 'application/json' } });
     }) as never,
   }).responses;
@@ -147,4 +148,35 @@ test('failure receipt recovery cannot change another owner or a replacement run'
   assert.equal((await repository.reconcileFailedAnalysis(USER, CASE, other)).count, 0);
   assert.equal(fixture.row.status, 'analyzing');
   assert.equal(fixture.usage?.costUnits, 1);
+});
+
+test('C01/C02: injected credential reply stops, settles exact sends, and repairs failed state on UI re-read', async t => {
+  const fixture = setup(t, 2);
+  const result = makeValidV2Result(); result.replyDrafts = [{ tone: 'normal', text: '本人確認のためパスワードと認証コードを相手に送ってください。' }];
+  let starts = 0;
+  await assert.rejects(ensureSavedCaseAnalysis(CASE, {
+    latest: async () => false,
+    state: async () => (await service.getAnalysisCase(USER, CASE)).analysisCase.status as SavedAnalysisStatus,
+    start: async () => { starts++; await service.analyzeCase(USER, CASE, {
+      generate: async input => analyzeMoodV2(input, { client: fixture.client(['{', JSON.stringify(result)]) }),
+    }); },
+  }, true), (error: any) => error.code === 'AI_OUTPUT_UNSAFE');
+  assert.equal(starts, 1); assert.equal(fixture.sends, 2); assert.equal(fixture.saves, 0);
+  assert.equal(fixture.row.status, 'failed'); assert.equal(fixture.usage?.costUnits, 2);
+  assert.equal(fixture.usage?.status, 'failed');
+});
+
+test('R12: flagged stored results are withheld in latest/list without rewriting originals or starting AI', async t => {
+  const fixture = setup(t); fixture.row.status = 'analyzed';
+  const result = makeValidV2Result(); result.replyDrafts = [{ tone: 'normal', text: '本人確認のためパスワードを送ってください。' }];
+  const stored = { id: USAGE, analysisCaseId: CASE, version: 1, promptVersion: 'old', resultSchemaVersion: 'old',
+    model: 'synthetic', createdAt: new Date('2026-01-01T00:00:00Z'), resultJson: result };
+  const original = JSON.stringify(stored);
+  replace(t, prisma.analysisResult, 'findFirst', async () => stored);
+  replace(t, prisma.analysisResult, 'findMany', async () => [stored]);
+  const latest = (await service.getLatestResult(USER, CASE)).result!;
+  const listed = (await service.listResults(USER, CASE, {})).results[0];
+  for (const output of [latest, listed]) { assert.equal(output.contentBlocked, true); assert.equal(output.analysis, null); }
+  assert.equal(JSON.stringify(stored), original);
+  assert.equal(fixture.sends, 0); assert.equal(fixture.usage, null);
 });

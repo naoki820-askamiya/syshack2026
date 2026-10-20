@@ -31,40 +31,10 @@ export async function buildAiContext(userId: string, caseId: string) {
             personProfile: null,
         },
     };
-    let personProfileId: string | null = null;
-
-    if (privacy.personalizationEnabled) {
-        if (privacy.usePersonProfile) {
-            const profile = await findPersonProfile(userId, analysisCase.personId);
-            personProfileId = profile?.id ?? null;
-            referenceContext.personProfile = profile?.profileJson ?? null;
-            referenceContext.provenance!.personProfile = profile
-                ? {
-                    ...sourceProvenance("person_profile", profile.id, "ai_generated_summary", profile.generatedAt),
-                    profileFacts: {
-                        schemaVersion: profile.profileSchemaVersion,
-                        sourceCaseCount: profile.sourceCaseCount,
-                        sourceFeedbackCount: profile.sourceFeedbackCount,
-                        sourceLatestCaseId: profile.sourceLatestCaseId!,
-                        needsRefresh: false as const,
-                        sourceCaseVerified: true as const,
-                    },
-                }
-                : null;
-        }
-
-        referenceContext.recentCaseSummaries = await findRecentCaseSummaries(
-            userId,
-            analysisCase.personId,
-            caseId,
-        );
-
-        if (privacy.useFeedbackForContext) {
-            referenceContext.recentFeedbacks = await findAllowedFeedbacks(
-                userId,
-                analysisCase.personId,
-            );
-        }
+    // AI-generated summaries/Profile can carry instructions across runs. Keep
+    // stored originals, but do not retrieve or reinsert them into a new model input.
+    if (privacy.personalizationEnabled && privacy.useFeedbackForContext) {
+        referenceContext.recentFeedbacks = await findAllowedFeedbacks(userId, analysisCase.personId);
     }
 
     return {
@@ -87,66 +57,9 @@ export async function buildAiContext(userId: string, caseId: string) {
         contextSnapshot: buildContextSnapshot(referenceContext),
         usedCaseIds: referenceContext.recentCaseSummaries.map((item) => item.analysisCaseId),
         usedFeedbackIds: referenceContext.recentFeedbacks.map((item) => item.feedbackId),
-        personProfileId,
+        personProfileId: null,
         userPatternSummaryId: null,
     };
-}
-
-async function findPersonProfile(userId: string, personId: string) {
-    const profile = await prisma.personProfile.findFirst({
-        where: { userId, personId },
-        select: {
-            id: true, profileJson: true, needsRefresh: true, staleSince: true,
-            generatedAt: true, generatedByModel: true, profileSchemaVersion: true,
-            sourceLatestCaseId: true, sourceCaseCount: true, sourceFeedbackCount: true,
-        },
-    });
-    // Source absence is different from a human-selected minimum data count or age threshold.
-    if (!profile || profile.needsRefresh || profile.staleSince !== null ||
-        !profile.generatedByModel?.trim() || !profile.profileSchemaVersion.trim() ||
-        !profile.sourceLatestCaseId || profile.sourceCaseCount + profile.sourceFeedbackCount === 0 ||
-        !Number.isFinite(profile.generatedAt.getTime())) return null;
-    const source = await prisma.analysisCase.findFirst({
-        where: { id: profile.sourceLatestCaseId, userId, personId },
-        select: { id: true },
-    });
-    if (!source) return null;
-    return profile;
-}
-
-async function findRecentCaseSummaries(
-    userId: string,
-    personId: string,
-    excludedCaseId: string,
-): Promise<ReferenceContext["recentCaseSummaries"]> {
-    const recentCases = await prisma.analysisCase.findMany({
-        where: {
-            userId,
-            personId,
-            id: { not: excludedCaseId },
-            status: "analyzed",
-        },
-        orderBy: { lastAnalyzedAt: "desc" },
-        take: 3,
-        select: {
-            id: true,
-            results: {
-                // 同一case内の最新性は生成時刻ではなくversionで決まります。
-                orderBy: { version: "desc" },
-                take: 1,
-                select: { id: true, resultJson: true, createdAt: true },
-            },
-        },
-    });
-
-    return recentCases.flatMap((recentCase) => {
-        const latestResult = recentCase.results[0];
-        const summary = latestResult ? readSummary(latestResult.resultJson) : null;
-        return summary && latestResult ? [{
-            analysisCaseId: recentCase.id, summary,
-            provenance: sourceProvenance("analysis_result", latestResult.id, "ai_generated_summary", latestResult.createdAt),
-        }] : [];
-    });
 }
 
 async function findAllowedFeedbacks(
@@ -192,13 +105,6 @@ function readPersonSnapshot(value: Prisma.JsonValue) {
         throw new Error("person_snapshot.person fields are invalid");
     }
     return { displayName, relationshipType };
-}
-
-function readSummary(value: Prisma.JsonValue): string | null {
-    if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-    const summary = value.summary;
-    if (!summary || typeof summary !== "object" || Array.isArray(summary)) return null;
-    return typeof summary.oneLine === "string" ? summary.oneLine.slice(0, 500) : null;
 }
 
 function sourceProvenance(

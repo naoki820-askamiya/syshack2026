@@ -24,14 +24,16 @@ function replace(t: test.TestContext, target: object, name: string, implementati
 }
 
 function mockContext(t: test.TestContext, personalizationEnabled: boolean, outcomeNote: string) {
-    replace(t, prisma.analysisCase, "findFirst", async () => ({
+    replace(t, prisma.analysisCase, "findFirst", async (args) => {
+        assert.deepEqual(args.where, { id: CASE_ID, userId: USER_ID });
+        return ({
         id: CASE_ID, personId: PERSON_ID,
         personSnapshot: { person: { displayName: "相手A", relationshipType: "coworker" } },
         userAgeRange: "20代", userGender: "回答しない",
         perceivedPartnerReaction: "冷たい", elapsedTimeType: "数時間後",
         eventFacts: "確認の連絡に短い返信があった。",
         userResponseType: "none", userResponseText: null,
-    }));
+    }); });
     replace(t, prisma.userPrivacySetting, "upsert", async () => ({
         personalizationEnabled, usePersonProfile: false, useFeedbackForContext: true,
     }));
@@ -55,11 +57,50 @@ for (const length of [500, 501, 1000]) {
             const parsed = aiAnalysisInputSchema.parse(context.aiInput);
             assert.deepEqual(parsed.referenceContext.recentFeedbacks.map((item) => item.outcomeNote), enabled ? [note] : []);
             assert.equal(mocks.feedbacks.mock.callCount(), enabled ? 1 : 0);
-            assert.equal(mocks.cases.mock.callCount(), enabled ? 1 : 0);
+            assert.equal(mocks.cases.mock.callCount(), 0, "AI-generated history is not retrieved");
             assert.deepEqual(context.usedFeedbackIds, enabled ? [FEEDBACK_ID] : []);
         });
     }
 }
+
+test('H07/H08: privacy OFF and withdrawn Feedback never enter the next context or rewrite old snapshots', async t => {
+    const oldSnapshot = { usedFeedbackIds: [FEEDBACK_ID], usedCaseIds: [CASE_ID] };
+    const original = structuredClone(oldSnapshot);
+    mockContext(t, false, 'withdrawn');
+    const writes = replace(t, prisma.analysisResult, 'update', async () => { throw new Error('old snapshot must not be updated'); });
+    let allowed = false;
+    const feedback = replace(t, prisma.analysisFeedback, 'findMany', async args => {
+        assert.equal(args.where.allowPersonalizationUse, true);
+        return allowed ? [{ id: FEEDBACK_ID, actualOutcome: null, overreadScore: null, outcomeNote: 'permitted' }] : [];
+    });
+    const off = await buildAiContext(USER_ID, CASE_ID);
+    assert.deepEqual(off?.usedFeedbackIds, []);
+    assert.deepEqual(off?.usedCaseIds, []);
+    assert.equal(off?.contextSnapshot.personalizationUsed, false);
+    assert.equal(feedback.mock.callCount(), 0);
+    replace(t, prisma.userPrivacySetting, 'upsert', async () => ({ personalizationEnabled: true, usePersonProfile: true, useFeedbackForContext: true }));
+    allowed = true;
+    assert.deepEqual((await buildAiContext(USER_ID, CASE_ID))?.usedFeedbackIds, [FEEDBACK_ID]);
+    allowed = false;
+    const withdrawn = await buildAiContext(USER_ID, CASE_ID);
+    assert.deepEqual(withdrawn?.aiInput.referenceContext.recentFeedbacks, []);
+    assert.equal(withdrawn?.personProfileId, null);
+    assert.equal(writes.mock.callCount(), 0);
+    assert.deepEqual(oldSnapshot, original);
+});
+
+test('H09: current case owner and Feedback owner/person are constrained before model input', async t => {
+    mockContext(t, true, 'owned');
+    const context = await buildAiContext(USER_ID, CASE_ID);
+    assert.deepEqual(context?.usedFeedbackIds, [FEEDBACK_ID]); // mockContext asserts all query predicates.
+    const privacy = replace(t, prisma.userPrivacySetting, 'upsert', async () => { throw new Error('no context for an unowned case'); });
+    replace(t, prisma.analysisCase, 'findFirst', async args => {
+        assert.deepEqual(args.where, { id: CASE_ID, userId: USER_ID });
+        return null; // Scoped query returns no row for another owner.
+    });
+    assert.equal(await buildAiContext(USER_ID, CASE_ID), null);
+    assert.equal(privacy.mock.callCount(), 0);
+});
 
 
 const PROFILE_ID = "99999999-9999-4999-8999-999999999999";
@@ -100,24 +141,21 @@ for (const [name, overrides] of [
     });
 }
 
-test("known non-stale Profile keeps source metadata without claiming user confirmation", async (t) => {
+test("even an eligible saved Profile is excluded without querying it", async (t) => {
     mockProfile(t);
+    const profile = replace(t, prisma.personProfile, "findFirst", async () => { throw new Error("Profile must not be read"); });
+    const history = replace(t, prisma.analysisCase, "findMany", async () => { throw new Error("AI summary must not be read"); });
     const context = await buildAiContext(USER_ID, CASE_ID);
     assert.ok(context);
-    assert.equal(context.personProfileId, PROFILE_ID);
-    const reference = context.aiInput.referenceContext as unknown as { provenance?: { personProfile: Record<string, unknown> } };
-    assert.deepEqual(reference.provenance?.personProfile, {
-        sourceType: "person_profile", sourceId: PROFILE_ID, kind: "ai_generated_summary",
-        generatedAt: GENERATED_AT.toISOString(), observedAt: null, userConfirmed: false,
-        profileFacts: {
-            schemaVersion: "synthetic-v1", sourceCaseCount: 1, sourceFeedbackCount: 0,
-            sourceLatestCaseId: CASE_ID, needsRefresh: false, sourceCaseVerified: true,
-        },
-    });
-    assert.deepEqual((context.contextSnapshot.referenceContextSnapshot as unknown as { provenance: unknown }).provenance, reference.provenance);
+    assert.equal(context.personProfileId, null);
+    assert.equal(context.aiInput.referenceContext.personProfile, null);
+    assert.equal(context.aiInput.referenceContext.provenance?.personProfile, null);
+    assert.deepEqual(context.usedCaseIds, []);
+    assert.equal(profile.mock.callCount(), 0);
+    assert.equal(history.mock.callCount(), 0);
 });
 
-test("past AI summaries and user Feedback retain different provenance kinds", async (t) => {
+test("AI summaries are excluded while permitted user Feedback retains its provenance", async (t) => {
     mockContext(t, true, "翌日は普段どおりだった");
     replace(t, prisma.analysisCase, "findMany", async (args) => {
         assert.deepEqual(args.select.results.orderBy, { version: "desc" });
@@ -131,9 +169,7 @@ test("past AI summaries and user Feedback retain different provenance kinds", as
         recentFeedbacks: Array<{ provenance: Record<string, unknown> }>;
         provenance: { currentCase: Record<string, unknown>; personSnapshot: Record<string, unknown> };
     };
-    assert.equal(reference.recentCaseSummaries[0]?.provenance.kind, "ai_generated_summary");
-    assert.equal(reference.recentCaseSummaries[0]?.provenance.sourceId, RESULT_ID);
-    assert.equal(reference.recentCaseSummaries[0]?.provenance.userConfirmed, false);
+    assert.deepEqual(reference.recentCaseSummaries, []);
     assert.equal(reference.recentFeedbacks[0]?.provenance.kind, "user_feedback");
     assert.equal(reference.recentFeedbacks[0]?.provenance.sourceId, FEEDBACK_ID);
     assert.equal(reference.provenance.currentCase.kind, "user_provided_fact");
@@ -159,6 +195,6 @@ for (const failure of ["missing", "wrong owner", "wrong person"]) {
         assert.equal(context.personProfileId, null);
         assert.equal(context.aiInput.referenceContext.personProfile, null);
         assert.equal(context.contextSnapshot.personalizationUsed, false);
-        assert.equal(lookup.mock.callCount(), 2);
+        assert.equal(lookup.mock.callCount(), 1, "only the current owned case is read");
     });
 }
