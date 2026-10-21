@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="736" viewBox="0 0 1200 736" role="img" aria-labelledby="title desc">
+<title id="title">KIGEN404 システム構成</title>
+<desc id="desc">ブラウザはAPIとSupabase Authを呼び出します。APIはSupabase Authで認証確認し、OpenAIへ分析を依頼し、Prisma経由でPostgreSQLのデータを取得・保存します。</desc>
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M 0 0 L 10 5 L 0 10 Z" fill="#567087"/></marker></defs>
+<rect width="1200" height="736" fill="#ffffff"/>
+<g font-family="Meiryo, Yu Gothic, Noto Sans JP, sans-serif">
+<text x="40" y="57" font-size="28" fill="#173858" font-weight="700" text-anchor="start">KIGEN404 システム構成</text>
+<text x="40" y="89" font-size="16" fill="#58677a" font-weight="400" text-anchor="start">画面・業務処理・外部サービスの役割と、主な通信の流れ</text>
+<rect x="24" y="212" width="662" height="398" rx="16" fill="#f5f8fc" stroke="#d5deea"/>
+<text x="298" y="243" font-size="16" fill="#637184" font-weight="700" text-anchor="start">アプリケーション</text>
+<rect x="782" y="112" width="394" height="580" rx="16" fill="#fafbfc" stroke="#dce2e9"/>
+<text x="808" y="143" font-size="16" fill="#637184" font-weight="700" text-anchor="start">外部サービス</text>
+<path d="M 163 305 L 163 180 L 750 180 L 750 208 L 812 208" fill="none" stroke="#567087" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M 278 400 L 414 400" fill="none" stroke="#567087" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M 656 330 L 729 330 L 729 248 L 812 248" fill="none" stroke="#567087" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M 656 392 L 812 392" fill="none" stroke="#567087" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M 656 465 L 729 465 L 729 580 L 812 580" fill="none" stroke="#567087" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="48" y="305" width="230" height="190" rx="12" fill="#edf4ff" stroke="#7299cf" stroke-width="1.5"/>
+<text x="66" y="340" font-size="20" fill="#18364e" font-weight="700" text-anchor="start">ブラウザ</text>
+<text x="66" y="367" font-size="16" fill="#37576f" font-weight="400" text-anchor="start">React / TypeScript</text>
+<text x="66" y="396" font-size="14" fill="#37576f" font-weight="400" text-anchor="start">相談入力・結果表示</text>
+<text x="66" y="420" font-size="14" fill="#37576f" font-weight="400" text-anchor="start">人物別履歴・振り返り</text>
+<text x="66" y="444" font-size="14" fill="#37576f" font-weight="400" text-anchor="start">認証状態の管理</text>
+<rect x="414" y="305" width="242" height="190" rx="12" fill="#e9f1f9" stroke="#356b98" stroke-width="1.5"/>
+<text x="432" y="340" font-size="20" fill="#18364e" font-weight="700" text-anchor="start">APIサーバー</text>
+<text x="432" y="367" font-size="16" fill="#37576f" font-weight="400" text-anchor="start">Node.js / Express</text>
+<text x="432" y="396" font-size="14" fill="#37576f" font-weight="400" text-anchor="start">認証・所有権・入力の検証</text>
+<text x="432" y="420" font-size="14" fill="#37576f" font-weight="400" text-anchor="start">参照情報の選別・AI出力検証</text>
+<text x="432" y="444" font-size="14" fill="#37576f" font-weight="400" text-anchor="start">分析状態の管理・保存</text>
+<rect x="812" y="167" width="330" height="112" rx="12" fill="#f3efff" stroke="#9980c6" stroke-width="1.5"/>
+<text x="830" y="202" font-size="20" fill="#18364e" font-weight="700" text-anchor="start">Supabase Auth</text>
+<text x="830" y="229" font-size="16" fill="#37576f" font-weight="400" text-anchor="start">メールアドレス認証</text>
+<text x="830" y="258" font-size="14" fill="#37576f" font-weight="400" text-anchor="start">登録・ログイン・token検証</text>
+<rect x="812" y="336" width="330" height="112" rx="12" fill="#eaf7f2" stroke="#5a9d84" stroke-width="1.5"/>
+<text x="830" y="371" font-size="20" fill="#18364e" font-weight="700" text-anchor="start">OpenAI Responses API</text>
+<text x="830" y="398" font-size="16" fill="#37576f" font-weight="400" text-anchor="start">Structured Outputs</text>
+<text x="830" y="427" font-size="14" fill="#37576f" font-weight="400" text-anchor="start">解釈・根拠・行動案の生成</text>
+<rect x="812" y="524" width="330" height="136" rx="12" fill="#fff7e8" stroke="#c8a66b" stroke-width="1.5"/>
+<text x="830" y="559" font-size="20" fill="#18364e" font-weight="700" text-anchor="start">PostgreSQL</text>
+<text x="830" y="586" font-size="16" fill="#37576f" font-weight="400" text-anchor="start">Prisma経由で取得・保存</text>
+<text x="830" y="615" font-size="14" fill="#37576f" font-weight="400" text-anchor="start">人物・相談・分析結果・Feedback</text>
+<text x="390" y="169" font-size="15" fill="#334155" font-weight="400" text-anchor="middle">登録・ログイン</text>
+<text x="346" y="365.75" font-size="14" fill="#334155" font-weight="400" text-anchor="middle">相談・履歴・設定</text>
+<text x="346" y="388" font-size="12" fill="#334155" font-weight="400" text-anchor="middle">token付き</text>
+<text x="691" y="299.5" font-size="14" fill="#334155" font-weight="400" text-anchor="middle">token検証</text>
+<text x="734" y="379.5" font-size="14" fill="#334155" font-weight="400" text-anchor="middle">分析依頼</text>
+<text x="690" y="528" font-size="14" fill="#334155" font-weight="400" text-anchor="middle">保存・取得</text>
+<text x="40" y="659.5" font-size="14" fill="#58677a" font-weight="400" text-anchor="start">業務データの正本はDB。ブラウザの一時キャッシュはメモリ内のみ。</text>
+<text x="40" y="696" font-size="14" fill="#58677a" font-weight="400" text-anchor="start">矢印は依頼の向きを示します（応答は省略）。</text>
+</g>
+</svg>

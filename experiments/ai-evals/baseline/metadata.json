@@ -1,0 +1,18 @@
+{
+  "baseSha": "406fc8581a471cedfe4a030845c820b03a4c4f2f",
+  "model": "UNKNOWN",
+  "promptVersion": "kigen-prompt-v2",
+  "schemaVersion": "kigen-analysis-result-v2",
+  "contextVersion": "analysis-context-snapshot-v4",
+  "evalResult": "NOT_RUN: no baseline model responses or paid gate",
+  "instructionsLineCount": 17,
+  "instructionsUtf8Bytes": 1520,
+  "candidate1Utf8ByteDelta": 338,
+  "exactTokens": null,
+  "files": {
+    "constants.ts": "da906fbf110d71967897c34a71d42d9109276a5e5f477456ef2a0721d263c7e4",
+    "input.schema.ts": "2a9221b43c4a50aebf88e3cbc405f2fccf87de6f68998fd8624a5b57b4964381",
+    "instructions.ts": "e4b4f79b00ee298a4161a0ad4fb0fd9a7a4929119bc5c767812260be0984bb4c",
+    "output.schema.ts": "102397c2956d852bf233cb6863e876680b7d97cacf0b91e5a2940f02844e9f45"
+  }
+}

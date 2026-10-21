@@ -1,0 +1,15 @@
+/* Result copy and supporting labels need distinct, readable sizes on every viewport. */
+.analysis-reading {
+  overflow-wrap: anywhere;
+  line-height: 1.8;
+}
+.analysis-reading .text-sm { font-size: 1rem; }
+.analysis-reading .text-xs { font-size: 0.875rem; }
+.analysis-reading .text-\[\#8A94A6\] { color: #5b6573; }
+.analysis-reading h2 { line-height: 1.5; }
+.analysis-reading :is(button, a):focus-visible {
+  outline: 2px solid #0f4c81;
+  outline-offset: 3px;
+}
+.reading-disclosure > summary::-webkit-details-marker { display: none; }
+.consultation-form :is(label, legend).font-medium { color: #1f2a37; }
