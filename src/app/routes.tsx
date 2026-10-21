@@ -13,8 +13,10 @@ import { PrivacySettingsV17 } from './pages/PrivacySettingsV17';
 import { LegalDocument } from './pages/LegalDocument';
 import { Consent } from './pages/Consent';
 import { RequireConsent } from './components/RequireConsent';
+import { GuestTrial } from './pages/GuestTrial';
 
 export const router = createBrowserRouter([
+  { path: '/guest', Component: GuestTrial },
   { path: '/forgot-password', Component: ForgotPassword },
   { path: '/reset-password', Component: ResetPassword },
   { path: '/terms', element: <LegalDocument kind="terms" /> },

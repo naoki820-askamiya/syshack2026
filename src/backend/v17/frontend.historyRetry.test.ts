@@ -30,7 +30,7 @@ const consultation = (id: string, personId: string) => ({
   id, personId, personName: 'Synthetic name', relation: '友人', event: 'Synthetic event',
   reaction: '分からない', userAction: '', timing: '翌日', createdAt: '2026-10-05T00:00:00Z',
 });
-function fixture(load: (options: { signal: AbortSignal }) => Promise<unknown[]>, pageName: 'History' | 'Home' = 'History') {
+function fixture(load: (options: { signal: AbortSignal }) => Promise<unknown[]>, pageName: 'History' | 'Home' = 'History', guestConfig: unknown = { enabled: false }) {
   const auth = actualModule('src/app/utils/authBoundary.ts');
   let userId: string | null = 'synthetic-A';
   auth.setAuthenticatedUser(userId);
@@ -58,6 +58,7 @@ function fixture(load: (options: { signal: AbortSignal }) => Promise<unknown[]>,
     'lucide-react': new Proxy({}, { get: (_target, key) => String(key) }),
     '../utils/storage': { getConsultations: () => [] },
     '../api/sessionV17': { loadConsultationHistory: load },
+    '../api/guestTrial': { guestClient: { config: async () => guestConfig } },
     '../utils/homeHistoryModel': actualModule('src/app/utils/homeHistoryModel.ts'),
     '../utils/randomSubtitle': { getRandomSubtitle: () => 'Synthetic subtitle' },
     '../utils/consultationHistory': actualModule('src/app/utils/consultationHistory.ts'),
@@ -77,8 +78,20 @@ function fixture(load: (options: { signal: AbortSignal }) => Promise<unknown[]>,
     return tree;
   };
   return { render, close: () => effects.forEach(effect => effect.cleanup?.()), states,
-    switchUser: (id: string) => { userId = id; auth.setAuthenticatedUser(id); } };
+    switchUser: (id: string | null) => { userId = id; auth.setAuthenticatedUser(id); } };
 }
+
+test('Home guest entry is absent by default and appears only after complete enabled server configuration', async () => {
+  for (const config of [{ enabled: false }, { enabled: true }, { enabled: true, termsVersion: 'synthetic-terms', privacyVersion: 'synthetic-privacy', consentVersion: 'synthetic-guest', notice: 'Synthetic notice' }]) {
+    const flow = fixture(async () => [], 'Home', config); flow.switchUser(null); flow.render();
+    assert.equal(flow.render().some(node => node.type === 'Link' && node.props.to === '/guest'), false);
+    await new Promise<void>(done => setImmediate(done));
+    assert.equal(flow.render().some(node => node.type === 'Link' && node.props.to === '/guest'), 'notice' in config);
+    flow.switchUser('synthetic-account');
+    assert.equal(flow.render().some(node => node.type === 'Link' && node.props.to === '/guest'), false);
+    flow.close();
+  }
+});
 
 test('History recovers failed GET through inline retry and preserves selected Person ID', async () => {
   let calls = 0, resolve!: (value: unknown[]) => void;

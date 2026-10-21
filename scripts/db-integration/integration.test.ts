@@ -4,7 +4,8 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import test, { before, after } from 'node:test';
 import pg from 'pg';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
+import type { GuestPolicy, GuestRepository, GuestRun } from '../../src/backend/guest/types.js';
 import { assertDisposableUrl } from './safety.mjs';
 import { makeValidV2Result } from '../../src/backend/ai/v2/testFixture.js';
 import { buildContextSnapshot } from '../../src/backend/ai/v2/context.js';
@@ -609,4 +610,369 @@ for (const archived of [false, true]) test('Case snapshot waits for concurrent P
     assert.deepEqual(((outcome as PromiseFulfilledResult<any>).value.personSnapshot as any).person,
       { displayName: 'Committed edit', relationshipType: 'friend' });
   }
+});
+
+// These tests are deliberately part of the guarded disposable PostgreSQL suite,
+// not npm test: they exercise the production SQL after all migrations above.
+// Synthetic policy values are fixtures, not approved prices or operating limits.
+const guestPolicy: GuestPolicy = {
+  model: 'synthetic-no-provider', pricingVersion: 'synthetic-price-v1',
+  tokenBoundVersion: 'synthetic-token-bound-v1', inputTokenBound: 100, maxOutputTokens: 50,
+  maxCostMicros: '100', promptVersion: 'synthetic-prompt', schemaVersion: 'synthetic-schema',
+  termsVersion: 'synthetic-terms', privacyVersion: 'synthetic-privacy', consentVersion: 'synthetic-consent',
+  contentTtlMs: 86_400_000, usedTtlMs: 30 * 86_400_000,
+};
+const guestInput = { eventFacts: 'Synthetic guest input; no real consultation or provider.' };
+const guestFingerprint = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
+
+async function guestRepository(db = prisma): Promise<GuestRepository> {
+  return (await import('../../src/backend/guest/repository.js')).createGuestRepository(db);
+}
+
+async function resetGuestBudget(limits: { cost?: string; requests?: number; concurrent?: number } = {}) {
+  // before() proves the database identity; only these synthetic guest fixtures
+  // are removed. No Compose stack, shared database or production URL is used.
+  await setup.query('DELETE FROM guest_v1_receipts; DELETE FROM guest_v1_runs; DELETE FROM guest_v1_sessions');
+  await setup.query(`UPDATE guest_v1_budget SET stopped=false, max_cost_micros=$1,
+    max_requests=$2, max_concurrent=$3, issuance_limit=10000,
+    issue_window_seconds=3600, issue_window_limit=10000,
+    occupied_micros=0, occupied_requests=0, active_runs=0, issued_total=0
+    WHERE scope='guest-v1'`, [limits.cost ?? '1000000', limits.requests ?? 1000, limits.concurrent ?? 100]);
+}
+
+async function consentedGuest(repo: GuestRepository, policy = guestPolicy) {
+  const tokenHash = guestFingerprint(randomUUID());
+  const session = await repo.issue(tokenHash, new Date(Date.now() + 60_000));
+  return repo.consent(session.id, policy);
+}
+
+async function reservedGuest(repo: GuestRepository, policy = guestPolicy) {
+  const session = await consentedGuest(repo, policy);
+  const executor = randomUUID();
+  const { run } = await repo.reserve(session.id, randomUUID(), guestFingerprint(guestInput), guestInput, policy, executor);
+  return { session, run, executor };
+}
+
+async function assertGuestBudget(repo: GuestRepository, cost: string, requests: number, active: number) {
+  const budget = await repo.budget();
+  assert.equal(budget.occupiedMicros, cost);
+  assert.equal(budget.occupiedRequests, requests);
+  assert.equal(budget.activeRuns, active);
+  return budget;
+}
+
+// A real row lock, not a sleep or Promise.all alone, establishes overlapping SQL
+// transactions. The max=2 Prisma pool must have two distinct blocked PG backends.
+async function guestRaceBehindBudget(tasks: (() => Promise<unknown>)[], holdAtLeastMs = 0) {
+  const blocker = new pg.Client({ connectionString: databaseUrl });
+  await blocker.connect(); await blocker.query('BEGIN');
+  await blocker.query("SELECT scope FROM guest_v1_budget WHERE scope='guest-v1' FOR UPDATE");
+  const lockedAt = Date.now();
+  const pending = Promise.allSettled(tasks.map(task => task()));
+  let observed = false;
+  try {
+    const deadline = Date.now() + 2500;
+    while (Date.now() < deadline) {
+      const waiting = await setup.query(`SELECT count(DISTINCT pid)::int AS n FROM pg_stat_activity
+        WHERE datname=current_database() AND wait_event_type='Lock'
+        AND query ILIKE '%guest_v1_budget%'`);
+      if (waiting.rows[0].n >= 2) { observed = true; break; }
+      await new Promise(resolveWait => setTimeout(resolveWait, 20));
+    }
+    // Used only by the one-second issuance regression below. Waiting while the
+    // real row is locked makes both transaction-start timestamps stale.
+    const remaining = lockedAt + holdAtLeastMs - Date.now();
+    if (remaining > 0) await new Promise(resolveWait => setTimeout(resolveWait, remaining));
+  } finally { await blocker.query('ROLLBACK'); await blocker.end(); }
+  const outcomes = await pending;
+  assert.equal(observed, true, 'guest reservations must overlap on distinct PostgreSQL connections');
+  return outcomes;
+}
+
+function fulfilled<T>(outcomes: PromiseSettledResult<unknown>[]): T[] {
+  return outcomes.filter((value): value is PromiseFulfilledResult<T> => value.status === 'fulfilled').map(value => value.value);
+}
+
+test('guest singleton is seeded stopped with no implicit monetary or request allowance', async () => {
+  const repo = await guestRepository();
+  const budget = await repo.budget();
+  assert.equal(budget.stopped, true);
+  assert.equal(budget.maxCostMicros, null); assert.equal(budget.maxRequests, null);
+  await assert.rejects(repo.issue(guestFingerprint(randomUUID()), new Date(Date.now() + 60_000)));
+  const policies = await setup.query("SELECT count(*)::int AS n FROM pg_policies WHERE tablename LIKE 'guest_v1_%'");
+  assert.equal(policies.rows[0].n, 0, 'guest data must have no anonymous/client RLS policy');
+  const tables = await setup.query("SELECT tablename, rowsecurity FROM pg_tables WHERE schemaname='public' AND tablename IN ('guest_v1_budget','guest_v1_sessions','guest_v1_runs','guest_v1_receipts')");
+  assert.equal(tables.rows.length, 4);
+  assert.ok(tables.rows.every(row => row.rowsecurity === true), 'RLS must be enabled on every guest table');
+});
+
+test('guest 50 parallel identical intents reserve once and only the first executor authorizes once', { timeout: 60_000 }, async () => {
+  await resetGuestBudget();
+  const repo = await guestRepository(); const session = await consentedGuest(repo);
+  const intent = randomUUID();
+  const outcomes = await guestRaceBehindBudget(Array.from({ length: 50 }, () => () =>
+    repo.reserve(session.id, intent, guestFingerprint(guestInput), guestInput, guestPolicy, randomUUID())));
+  assert.equal(outcomes.filter(value => value.status === 'rejected').length, 0);
+  const reservations = fulfilled<{ run: GuestRun; created: boolean }>(outcomes);
+  assert.equal(reservations.filter(value => value.created).length, 1);
+  assert.equal(new Set(reservations.map(value => value.run.id)).size, 1);
+  const run = reservations[0].run;
+  await assertGuestBudget(repo, '100', 1, 1);
+  assert.equal(await repo.authorize(run.id, randomUUID()), null, 'a different executor cannot steal permission');
+  const authorized = await Promise.all(Array.from({ length: 50 }, () => repo.authorize(run.id, run.executor)));
+  assert.equal(authorized.filter(Boolean).length, 1, 'replaying committed permission must not grant another send');
+  const usedUntil = (await repo.session(session.tokenHash))?.usedUntil;
+  assert.ok(usedUntil);
+  const changedPolicy = { ...guestPolicy, model: 'synthetic-next-model', maxCostMicros: '999' };
+  const replay = await repo.reserve(session.id, intent, guestFingerprint(guestInput), guestInput, changedPolicy, randomUUID());
+  assert.equal(replay.created, false); assert.deepEqual(replay.run.policy, guestPolicy);
+  assert.equal((await repo.session(session.tokenHash))?.usedUntil?.getTime(), usedUntil.getTime());
+  await assert.rejects(repo.reserve(session.id, intent, guestFingerprint({ changed: true }), { changed: true }, guestPolicy, randomUUID()), (e: any) => e.status === 409);
+  await assert.rejects(repo.reserve(session.id, randomUUID(), guestFingerprint(guestInput), guestInput, guestPolicy, randomUUID()), (e: any) => [403, 409].includes(e.status));
+  await assertGuestBudget(repo, '100', 1, 1);
+});
+
+test('guest intent namespace is owned and different-intent spam cannot reserve a second run', { timeout: 60_000 }, async () => {
+  await resetGuestBudget(); const repo = await guestRepository();
+  const first = await consentedGuest(repo); const other = await consentedGuest(repo);
+  const intent = randomUUID();
+  const firstRun = await repo.reserve(first.id, intent, guestFingerprint(guestInput), guestInput, guestPolicy, randomUUID());
+  const otherRun = await repo.reserve(other.id, intent, guestFingerprint({ other: true }), { other: true }, guestPolicy, randomUUID());
+  assert.notEqual(firstRun.run.id, otherRun.run.id);
+  assert.equal((await repo.current(first.id))?.id, firstRun.run.id);
+  assert.equal((await repo.current(other.id))?.id, otherRun.run.id);
+  const spam = await Promise.allSettled(Array.from({ length: 50 }, () =>
+    repo.reserve(first.id, randomUUID(), guestFingerprint(guestInput), guestInput, guestPolicy, randomUUID())));
+  assert.ok(spam.every(value => value.status === 'rejected' && value.reason.status === 409));
+  await assertGuestBudget(repo, '200', 2, 2);
+});
+
+for (const dimension of ['cost', 'requests', 'concurrent'] as const) {
+  test('guest global last ' + dimension + ' slot is atomic across 50 fresh identities', { timeout: 60_000 }, async () => {
+    await resetGuestBudget(dimension === 'cost' ? { cost: '100' } : dimension === 'requests' ? { requests: 1 } : { concurrent: 1 });
+    const repo = await guestRepository();
+    const sessions = await Promise.all(Array.from({ length: 50 }, () => consentedGuest(repo)));
+    const outcomes = await guestRaceBehindBudget(sessions.map(session => () =>
+      repo.reserve(session.id, randomUUID(), guestFingerprint(guestInput), guestInput, guestPolicy, randomUUID())));
+    assert.equal(fulfilled(outcomes).length, 1);
+    assert.ok(outcomes.filter(value => value.status === 'rejected').every(value => (value as PromiseRejectedResult).reason.status === 429));
+    await assertGuestBudget(repo, '100', 1, 1);
+    assert.equal((await setup.query('SELECT count(*)::int AS n FROM guest_v1_receipts')).rows[0].n, 1);
+  });
+}
+
+test('guest receipt INSERT and authorization failures roll back their complete transactions', { timeout: 30_000 }, async () => {
+  await resetGuestBudget(); const repo = await guestRepository(); const session = await consentedGuest(repo);
+  await setup.query(`CREATE FUNCTION synthetic_guest_receipt_failure() RETURNS trigger LANGUAGE plpgsql
+    AS $$ BEGIN RAISE EXCEPTION 'Synthetic guest receipt failure'; END $$;
+    CREATE TRIGGER synthetic_guest_receipt_failure AFTER INSERT ON guest_v1_receipts FOR EACH ROW EXECUTE FUNCTION synthetic_guest_receipt_failure();`);
+  try {
+    await assert.rejects(repo.reserve(session.id, randomUUID(), guestFingerprint(guestInput), guestInput, guestPolicy, randomUUID()));
+    await assertGuestBudget(repo, '0', 0, 0); assert.equal(await repo.current(session.id), null);
+  } finally { await setup.query('DROP TRIGGER synthetic_guest_receipt_failure ON guest_v1_receipts; DROP FUNCTION synthetic_guest_receipt_failure()'); }
+  const executor = randomUUID();
+  const { run } = await repo.reserve(session.id, randomUUID(), guestFingerprint(guestInput), guestInput, guestPolicy, executor);
+  await setup.query(`CREATE FUNCTION synthetic_guest_authorize_failure() RETURNS trigger LANGUAGE plpgsql
+    AS $$ BEGIN IF NEW.authorized AND NOT OLD.authorized THEN RAISE EXCEPTION 'Synthetic authorization failure'; END IF; RETURN NEW; END $$;
+    CREATE TRIGGER synthetic_guest_authorize_failure BEFORE UPDATE ON guest_v1_receipts FOR EACH ROW EXECUTE FUNCTION synthetic_guest_authorize_failure();`);
+  try {
+    await assert.rejects(repo.authorize(run.id, executor));
+    assert.equal((await repo.current(session.id))?.state, 'RESERVED');
+    assert.equal((await repo.session(session.tokenHash))?.usedUntil, null);
+    await assertGuestBudget(repo, '100', 1, 1);
+  } finally { await setup.query('DROP TRIGGER synthetic_guest_authorize_failure ON guest_v1_receipts; DROP FUNCTION synthetic_guest_authorize_failure()'); }
+  assert.ok(await repo.authorize(run.id, executor));
+});
+
+test('guest predispatch stop and double cancellation never authorize the old executor or double-credit', async () => {
+  await resetGuestBudget(); const repo = await guestRepository(); const { run, executor, session } = await reservedGuest(repo);
+  await setup.query("UPDATE guest_v1_budget SET stopped=true WHERE scope='guest-v1'");
+  assert.equal(await repo.authorize(run.id, executor), null);
+  await repo.cancel(run.id, executor); await repo.cancel(run.id, executor);
+  await assertGuestBudget(repo, '0', 0, 0);
+  assert.equal(await repo.authorize(run.id, executor), null);
+  assert.equal((await repo.session(session.tokenHash))?.usedUntil, null);
+  await setup.query("UPDATE guest_v1_budget SET stopped=false WHERE scope='guest-v1'");
+  const replacement = await repo.reserve(session.id, randomUUID(), guestFingerprint(guestInput), guestInput, guestPolicy, randomUUID());
+  assert.equal(replacement.created, true); assert.notEqual(replacement.run.id, run.id);
+  await assertGuestBudget(repo, '100', 1, 1);
+});
+
+test('guest committed authorization with lost acknowledgement cannot be replayed into a provider send', async () => {
+  await resetGuestBudget(); const repo = await guestRepository(); const { run, executor, session } = await reservedGuest(repo);
+  const ackLost = await guestRepository(new Proxy(prisma, { get(target, property) {
+    if (property === '$transaction') return async (...args: unknown[]) => {
+      await Reflect.apply(target.$transaction, target, args);
+      throw new Error('Synthetic committed transaction acknowledgement loss');
+    };
+    const value = Reflect.get(target, property); return typeof value === 'function' ? value.bind(target) : value;
+  } }));
+  let providerSends = 0;
+  await assert.rejects(async () => { if (await ackLost.authorize(run.id, executor)) providerSends++; });
+  assert.equal(providerSends, 0);
+  assert.equal((await repo.current(session.id))?.state, 'DISPATCH_AUTHORIZED');
+  assert.equal(await repo.authorize(run.id, executor), null);
+  await repo.cancel(run.id, executor);
+  await assertGuestBudget(repo, '100', 1, 1);
+});
+
+test('guest successful terminal settlement is idempotent, persists result, and retains maximum budget occupancy', async () => {
+  await resetGuestBudget(); const repo = await guestRepository(); const { run, executor, session } = await reservedGuest(repo);
+  assert.ok(await repo.authorize(run.id, executor));
+  const outcome = { terminal: true, result: makeValidV2Result(), usage: { inputTokens: 1, outputTokens: 1 } };
+  await Promise.all([repo.finish(run.id, executor, outcome), repo.finish(run.id, executor, outcome)]);
+  await assertGuestBudget(repo, '100', 1, 0);
+  const saved = await repo.current(session.id);
+  assert.equal(saved?.state, 'SUCCEEDED'); assert.deepEqual(saved?.result, outcome.result);
+  await repo.finish(run.id, executor, outcome);
+  assert.deepEqual((await repo.current(session.id))?.result, outcome.result);
+  await assertGuestBudget(repo, '100', 1, 0);
+});
+
+test('guest terminal-save failure is retried without another authorization and rolls back slot release', async () => {
+  await resetGuestBudget(); const repo = await guestRepository(); const { run, executor, session } = await reservedGuest(repo);
+  assert.ok(await repo.authorize(run.id, executor));
+  await setup.query(`CREATE FUNCTION synthetic_guest_finish_failure() RETURNS trigger LANGUAGE plpgsql
+    AS $$ BEGIN IF NEW.state='SUCCEEDED' THEN RAISE EXCEPTION 'Synthetic guest finish failure'; END IF; RETURN NEW; END $$;
+    CREATE TRIGGER synthetic_guest_finish_failure BEFORE UPDATE ON guest_v1_runs FOR EACH ROW EXECUTE FUNCTION synthetic_guest_finish_failure();`);
+  const result = makeValidV2Result();
+  try {
+    await assert.rejects(repo.finish(run.id, executor, { terminal: true, result }));
+    assert.equal((await repo.current(session.id))?.state, 'DISPATCH_AUTHORIZED');
+    assert.equal((await repo.current(session.id))?.result, null);
+    await assertGuestBudget(repo, '100', 1, 1);
+  } finally { await setup.query('DROP TRIGGER synthetic_guest_finish_failure ON guest_v1_runs; DROP FUNCTION synthetic_guest_finish_failure()'); }
+  assert.equal(await repo.authorize(run.id, executor), null, 'a storage failure never reauthorizes generation');
+  await repo.finish(run.id, executor, { terminal: true, result });
+  await repo.finish(run.id, executor, { terminal: true, result });
+  assert.deepEqual((await repo.current(session.id))?.result, result);
+  await assertGuestBudget(repo, '100', 1, 0);
+});
+
+test('guest UNKNOWN preserves all occupancy through cleanup and changed settings and stops new admissions', async () => {
+  await resetGuestBudget(); const repo = await guestRepository(); const { run, executor, session } = await reservedGuest(repo);
+  assert.ok(await repo.authorize(run.id, executor));
+  const usedUntil = (await repo.session(session.tokenHash))?.usedUntil;
+  await repo.finish(run.id, executor, { terminal: false });
+  await repo.finish(run.id, executor, { terminal: false });
+  assert.equal((await assertGuestBudget(repo, '100', 1, 1)).stopped, true);
+  await setup.query("UPDATE guest_v1_runs SET content_expires_at='2000-01-01' WHERE id=$1", [run.id]);
+  await setup.query("UPDATE guest_v1_budget SET max_cost_micros=999999, max_requests=999, max_concurrent=999 WHERE scope='guest-v1'");
+  await repo.cleanup(); await repo.cancel(run.id, executor);
+  const retained = await repo.current(session.id);
+  assert.equal(retained?.state, 'UNKNOWN'); assert.equal(retained?.input, null); assert.equal(retained?.result, null);
+  assert.equal((await repo.session(session.tokenHash))?.usedUntil?.getTime(), usedUntil?.getTime());
+  assert.equal((await assertGuestBudget(repo, '100', 1, 1)).stopped, true);
+  await assert.rejects(repo.issue(guestFingerprint(randomUUID()), new Date(Date.now() + 60_000)));
+  assert.equal((await setup.query('SELECT count(*)::int AS n FROM guest_v1_receipts WHERE run_id=$1', [run.id])).rows[0].n, 1);
+});
+
+for (const order of ['erase-first', 'finish-first', 'ttl-first'] as const) {
+  test('guest content is not resurrected by late finish: ' + order, async () => {
+    await resetGuestBudget(); const repo = await guestRepository(); const { run, executor, session } = await reservedGuest(repo);
+    assert.ok(await repo.authorize(run.id, executor));
+    const outcome = { terminal: true, result: makeValidV2Result() };
+    if (order === 'finish-first') await repo.finish(run.id, executor, outcome);
+    if (order === 'ttl-first') {
+      await setup.query("UPDATE guest_v1_runs SET content_expires_at='2000-01-01' WHERE id=$1", [run.id]);
+      // Reads must deny expired content before the physical cleanup runs.
+      const expired = await repo.current(session.id);
+      assert.equal(expired?.input, null); assert.equal(expired?.result, null);
+      await repo.cleanup();
+    } else await repo.erase(session.id);
+    await repo.finish(run.id, executor, outcome);
+    const retained = await repo.current(session.id);
+    assert.equal(retained?.input, null); assert.equal(retained?.result, null);
+    assert.ok(retained?.deletedAt);
+    assert.ok((await repo.session(session.tokenHash))?.usedUntil);
+    await assertGuestBudget(repo, '100', 1, 0);
+    assert.equal((await setup.query('SELECT count(*)::int AS n FROM guest_v1_receipts WHERE run_id=$1', [run.id])).rows[0].n, 1);
+  });
+}
+
+test('guest stale or missing consent and expired/revoked identities cannot consume a reservation', async () => {
+  await resetGuestBudget(); const repo = await guestRepository();
+  const unconsented = await repo.issue(guestFingerprint(randomUUID()), new Date(Date.now() + 60_000));
+  const reserve = (sessionId: string, policy = guestPolicy) => repo.reserve(sessionId, randomUUID(), guestFingerprint(guestInput), guestInput, policy, randomUUID());
+  await assert.rejects(reserve(unconsented.id));
+  await repo.consent(unconsented.id, guestPolicy);
+  await assert.rejects(reserve(unconsented.id, { ...guestPolicy, consentVersion: 'synthetic-next-consent' }));
+  await setup.query("UPDATE guest_v1_sessions SET issued_expires_at='2000-01-01' WHERE id=$1", [unconsented.id]);
+  await assert.rejects(reserve(unconsented.id));
+  const revoked = await consentedGuest(repo);
+  await setup.query('UPDATE guest_v1_sessions SET revoked_at=now() WHERE id=$1', [revoked.id]);
+  await assert.rejects(reserve(revoked.id));
+  await assertGuestBudget(repo, '0', 0, 0);
+});
+
+test('guest identifier expiry cleanup cannot erase UNKNOWN liability or make an old entitlement available', async () => {
+  await resetGuestBudget(); const repo = await guestRepository(); const { run, executor, session } = await reservedGuest(repo);
+  assert.ok(await repo.authorize(run.id, executor));
+  await repo.finish(run.id, executor, { terminal: false });
+  await setup.query("UPDATE guest_v1_sessions SET used_until='2000-02-01', issued_expires_at='2000-01-01' WHERE id=$1", [session.id]);
+  await setup.query("UPDATE guest_v1_runs SET content_expires_at='2000-01-02' WHERE id=$1", [run.id]);
+  await repo.cleanup();
+  assert.equal(await repo.session(session.tokenHash), null);
+  await assert.rejects(repo.reserve(session.id, randomUUID(), guestFingerprint(guestInput), guestInput, guestPolicy, randomUUID()));
+  assert.equal((await repo.current(session.id))?.state, 'UNKNOWN');
+  assert.equal((await assertGuestBudget(repo, '100', 1, 1)).stopped, true);
+  assert.equal((await setup.query('SELECT count(*)::int AS n FROM guest_v1_receipts WHERE run_id=$1', [run.id])).rows[0].n, 1);
+});
+
+test('guest restart recovery cancels only predispatch runs and fences authorized work as UNKNOWN without refund', async () => {
+  await resetGuestBudget(); const repo = await guestRepository();
+  const predispatch = await reservedGuest(repo);
+  const authorized = await reservedGuest(repo);
+  const completed = await reservedGuest(repo);
+  assert.ok(await repo.authorize(authorized.run.id, authorized.executor));
+  assert.ok(await repo.authorize(completed.run.id, completed.executor));
+  const result = makeValidV2Result();
+  await repo.finish(completed.run.id, completed.executor, { terminal: true, result });
+  await assertGuestBudget(repo, '300', 3, 2);
+  const usedUntil = (await repo.session(authorized.session.tokenHash))?.usedUntil;
+
+  await repo.recover();
+  assert.equal((await repo.current(predispatch.session.id))?.state, 'CANCELLED');
+  assert.equal((await repo.current(authorized.session.id))?.state, 'UNKNOWN');
+  assert.equal((await repo.current(completed.session.id))?.state, 'SUCCEEDED');
+  assert.deepEqual((await repo.current(completed.session.id))?.result, result);
+  assert.equal((await repo.session(authorized.session.tokenHash))?.usedUntil?.getTime(), usedUntil?.getTime());
+  assert.equal((await assertGuestBudget(repo, '200', 2, 1)).stopped, true);
+  assert.equal(await repo.authorize(predispatch.run.id, predispatch.executor), null);
+  assert.equal(await repo.authorize(authorized.run.id, authorized.executor), null);
+  await repo.cancel(authorized.run.id, authorized.executor);
+  await repo.recover();
+  assert.equal((await assertGuestBudget(repo, '200', 2, 1)).stopped, true);
+
+  // Simulate a changed DB configuration in the isolated fixture; no production
+  // reset/unstop endpoint is provided. UNKNOWN still latches startup closed.
+  await setup.query("UPDATE guest_v1_budget SET stopped=false WHERE scope='guest-v1'");
+  await repo.recover();
+  assert.equal((await assertGuestBudget(repo, '200', 2, 1)).stopped, true);
+});
+
+for (const limit of ['issuance_limit', 'issue_window_limit'] as const) {
+  test('guest ' + limit + ' is atomic under concurrent explicit issuance', { timeout: 60_000 }, async () => {
+    await resetGuestBudget(); const repo = await guestRepository();
+    // The column comes from this closed test-only union, never a request value.
+    await setup.query(`UPDATE guest_v1_budget SET ${limit}=1 WHERE scope='guest-v1'`);
+    const outcomes = await guestRaceBehindBudget(Array.from({ length: 50 }, () => () =>
+      repo.issue(guestFingerprint(randomUUID()), new Date(Date.now() + 60_000))));
+    assert.equal(fulfilled(outcomes).length, 1);
+    assert.ok(outcomes.filter(value => value.status === 'rejected').every(value => (value as PromiseRejectedResult).reason.status === 429));
+    await assertGuestBudget(repo, '0', 0, 0);
+    assert.equal((await setup.query('SELECT count(*)::int AS n FROM guest_v1_sessions')).rows[0].n, 1);
+  });
+}
+
+test('guest issuance window counts insertion time after a lock wait, not stale transaction start', { timeout: 15_000 }, async () => {
+  await resetGuestBudget(); const repo = await guestRepository();
+  await setup.query("UPDATE guest_v1_budget SET issue_window_seconds=1, issue_window_limit=1 WHERE scope='guest-v1'");
+  const outcomes = await guestRaceBehindBudget(Array.from({ length: 2 }, () => () =>
+    repo.issue(guestFingerprint(randomUUID()), new Date(Date.now() + 60_000))), 1500);
+  assert.equal(fulfilled(outcomes).length, 1, 'the second queued issuer must count the row inserted after lock release');
+  const denied = outcomes.find(value => value.status === 'rejected') as PromiseRejectedResult;
+  assert.equal(denied.reason.status, 429);
+  assert.equal((await setup.query('SELECT count(*)::int AS n FROM guest_v1_sessions')).rows[0].n, 1);
+  await assertGuestBudget(repo, '0', 0, 0);
 });

@@ -40,3 +40,16 @@ Combined new-Person/Case creation is also checked with two real concurrent conne
 lost-response replay, failures after each table insert, changed-input conflicts, owner separation,
 existing-Person intent compatibility, and failed analysis followed by creation replay. Each failed
 combined save must leave neither row; analysis failure must retain the already committed pair.
+
+`integration.test.ts` のゲスト v1 テストは、実装と同じゲスト repository と、この隔離 DB 内の合成予算を使います。
+50 並列の再送・別資格、全体金額・件数・同時枠の最終枠、実行者の送信許可 CAS、transaction rollback、
+許可保存後の応答消失、取消、終端後の同時枠返却、UNKNOWN による受付停止、起動時回復、
+不変の再送結果、同意・資格の期限切れ、削除・内容期限と遅延完了の競合を検証します。
+競合の検証では実際の予算行をロックし、別々の PostgreSQL 接続 2 本が待機したことを観測してから解放します。
+短期発行制限の回帰テストでは、制限期間より長く 2 transaction を待機させます。
+transaction 開始時の古い時刻で、新しく発行した資格が集計から抜けないことを確認します。
+fixture の料金・保持期間は承認済みの本番方針ではありません。AI provider は呼び出しません。
+配備先の DB 権限や Supabase RLS・Data API の動作を証明するテストでもありません。
+テストの追加だけを実行成功の証拠にせず、実際のハーネス終了結果を別途記録してください。
+Docker daemon が利用できなければ実 PostgreSQL の受入ゲートは未検証です。
+モック・構文・型チェックの成功を、実 DB 検証の代わりとして報告しないでください。

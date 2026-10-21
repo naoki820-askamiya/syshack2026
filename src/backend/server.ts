@@ -80,6 +80,9 @@ export async function createServerApp() {
         () => import("./v17/privacy.routes.js"),
     );
     await mountOptionalRouter(app, "/api/legal-consent", () => import("./v17/consent.routes.js"));
+    const guest = await import("./guest/routes.js");
+    await guest.initializeGuestStartup();
+    app.use("/api/guest", guest.default);
     await mountOptionalRouter(
         app,
         "/api",

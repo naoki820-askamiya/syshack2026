@@ -10,10 +10,12 @@ import { getRelationStyle, getReactionStyle } from '../utils/relationStyles';
 import { getRandomSubtitle } from '../utils/randomSubtitle';
 import { useAuth } from '../auth/AuthContext';
 import { LegalLinks } from '../components/LegalLinks';
+import { guestClient } from '../api/guestTrial';
 
 export function Home() {
   const { user, authEpoch, loading: authLoading } = useAuth();
   const [loadAttempt, setLoadAttempt] = useState(0);
+  const [guestAvailability, setGuestAvailability] = useState<{ epoch: number; enabled: boolean } | null>(null);
   const [historyState, setHistoryState] = useState<HomeHistoryState>(() => ({
     boundary: captureAuthBoundary(), status: 'loading', consultations: [], error: '',
   }));
@@ -21,6 +23,20 @@ export function Home() {
   const consultations = visible.consultations;
   const persons = getLatestConsultationsByPerson(consultations);
   const recentConsultations = selectRecentConsultations(consultations);
+
+  useEffect(() => {
+    setGuestAvailability(null);
+    if (user || authLoading) return;
+    const controller = new AbortController();
+    const boundary = captureAuthBoundary();
+    void guestClient.config(controller.signal).then(config => {
+      const current = captureAuthBoundary();
+      if (!controller.signal.aborted && current.userId === null && current.epoch === boundary.epoch) {
+        setGuestAvailability({ epoch: boundary.epoch, enabled: config.enabled === true && !!config.termsVersion && !!config.privacyVersion && !!config.consentVersion && !!config.notice });
+      }
+    }).catch(() => { /* The guest entry stays hidden when configuration cannot be confirmed. */ });
+    return () => controller.abort();
+  }, [user?.id, authEpoch, authLoading]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -67,6 +83,10 @@ export function Home() {
               </p>
             </div>
           </Link>
+
+          {!user && !authLoading && guestAvailability?.epoch === captureAuthBoundary().epoch && guestAvailability.enabled && (
+            <Link to="/guest" className="mb-6 block rounded-2xl border border-[#0F4C81] bg-white p-5 text-center font-semibold text-[#0F4C81]">ログインなしで1回試す</Link>
+          )}
 
           <div className="lg:grid lg:grid-cols-3 lg:gap-6 space-y-6 lg:space-y-0">
             <div className="lg:col-span-1">
