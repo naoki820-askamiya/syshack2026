@@ -269,6 +269,7 @@ docker compose down
 | フロントエンドのビルド | `npm run build:client` |
 | バックエンドのビルド | `npm run build:server` |
 | 全体のビルド | `npm run build` |
+| ビルド済みサーバーの起動検査（外部接続なし） | `npm run check:server-build` |
 | ビルド済みサーバーの起動 | `npm start` |
 | Prisma schema検証 | `npm run prisma:validate` |
 | Prisma schema整形 | `npm run prisma:format` |
@@ -276,6 +277,8 @@ docker compose down
 
 `npm run lint`もTypeScript検査です。現在はESLintを実行しません。
 `npm run build:server`は、Prisma Client生成後にサーバーをビルドします。
+生成されたTypeScriptの相対importは、サーバービルド時にJavaScriptの拡張子へ書き換えます。
+ビルド後の`npm run check:server-build`は、空の作業ディレクトリと合成設定の子プロセスでPrisma Clientのimport・全APIの初期化・ループバックでのポート待受けを検査します。外向きのTCP接続とfetchを拒否し、実DB・認証・AIには接続しません。
 
 `npm test`では、`src/backend/**/*.test.ts`と`experiments/ai-evals/scripts/*.test.ts`をNode.js test runnerで実行します。
 認証・所有権、分析の状態遷移と同時実行、AI出力の構造・表現・参照元の検証、画面表示用の変換、履歴取得、Feedbackや設定の保存処理などを確認します。
@@ -287,7 +290,7 @@ docker compose down
 
 [GitHub ActionsのCI](.github/workflows/ci.yml)は、`main`・`develop`へのpushと、それらを対象とするPull Requestで実行します。
 `workflow_dispatch`による手動実行も定義しています。GitHubの画面からの手動実行には、デフォルトブランチにこのworkflowが必要です。
-Node.js 22と標準のUbuntuランナーを使い、`npm ci`、Prisma schema検証・Client生成、型チェック、Markdown検査、`npm test`、フロントエンド・バックエンドのビルドを順に確認します。
+Node.js 22と標準のUbuntuランナーを使い、`npm ci`、Prisma schema検証・Client生成、型チェック、Markdown検査、`npm test`、フロントエンド・バックエンドのビルド、ビルド済みサーバーの起動検査を順に確認します。
 
 CIは合成の接続設定と既存のテスト用モックを使い、実DBへのmigrationや有料AI APIの呼び出し、デプロイを行いません。
 実DB・実認証・実AI出力・ブラウザー操作の検証は、このCIの対象外です。

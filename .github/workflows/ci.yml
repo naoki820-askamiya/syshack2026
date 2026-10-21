@@ -61,3 +61,6 @@ jobs:
 
       - name: Build client and server
         run: npm run build
+
+      - name: Check built server startup without external services
+        run: npm run check:server-build

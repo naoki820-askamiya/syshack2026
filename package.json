@@ -12,6 +12,7 @@
     "build:client": "vite build",
     "build:server": "npm run prisma:generate && tsc -p tsconfig.server.json",
     "build": "npm run build:client && npm run build:server",
+    "check:server-build": "node scripts/check-server-build.mjs",
     "dev": "vite",
     "server": "tsx src/server.ts",
     "server:dev": "tsx watch src/server.ts",
