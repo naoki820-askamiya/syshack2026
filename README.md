@@ -139,7 +139,7 @@ AIモデルは環境変数で指定します。コードに固定の既定モデ
 
 ### 必要なもの
 
-- Node.js 22.12以降の22系とnpm（Docker環境でもNode.js 22を使用）
+- Node.js 22.23.4（`.node-version`・Docker・CIで固定）とnpm。`engines.node`は22.23.4以上の22系を許可する
 - Supabase Authを利用できるプロジェクト
 - アプリ用のPostgreSQL接続先（migrationはSupabase管理の`auth.users`を参照します）
 - OpenAI APIキーと、利用するAIモデルの設定

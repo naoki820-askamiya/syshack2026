@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.0.1",
   "type": "module",
+  "engines": {
+    "node": ">=22.23.4 <23"
+  },
   "scripts": {
     "legal:sync": "tsx scripts/sync-legal-digests.ts",
     "legal:check": "tsx scripts/sync-legal-digests.ts --check",
