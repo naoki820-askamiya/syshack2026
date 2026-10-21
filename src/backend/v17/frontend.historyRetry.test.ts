@@ -30,13 +30,16 @@ const consultation = (id: string, personId: string) => ({
   id, personId, personName: 'Synthetic name', relation: '友人', event: 'Synthetic event',
   reaction: '分からない', userAction: '', timing: '翌日', createdAt: '2026-10-05T00:00:00Z',
 });
-function fixture(load: (options: { signal: AbortSignal }) => Promise<unknown[]>, pageName: 'History' | 'Home' = 'History', guestConfig: unknown = { enabled: false }) {
+function fixture(load: (options: { signal: AbortSignal }) => Promise<unknown[]>, pageName: 'History' | 'Home' = 'History', guestConfig: unknown = { enabled: false }, initialUrl = '/history?personId=person-A') {
   const auth = actualModule('src/app/utils/authBoundary.ts');
   let userId: string | null = 'synthetic-A';
   auth.setAuthenticatedUser(userId);
   const states: any[] = [];
   let stateIndex = 0, effectIndex = 0;
   const effects: Array<{ deps?: unknown[]; run: () => any; cleanup?: () => void; pending: boolean }> = [];
+  let url = new URL(initialUrl, 'https://synthetic.invalid');
+  let params = url.searchParams;
+  const navigate = (target: string) => { url = new URL(target, url); params = url.searchParams; };
   const jsx = (type: unknown, props: Record<string, unknown>) => ({ type, props });
   const page = actualModule('src/app/pages/' + pageName + '.tsx', {
     react: {
@@ -54,7 +57,7 @@ function fixture(load: (options: { signal: AbortSignal }) => Promise<unknown[]>,
       },
     },
     'react/jsx-runtime': { jsx, jsxs: jsx },
-    'react-router': { Link: 'Link', useNavigate: () => () => {}, useSearchParams: () => [params], useParams: () => ({}) },
+    'react-router': { Link: 'Link', useNavigate: () => navigate, useSearchParams: () => [params], useParams: () => ({ personId: url.pathname.startsWith('/persons/') ? decodeURIComponent(url.pathname.slice('/persons/'.length)) : undefined }) },
     'lucide-react': new Proxy({}, { get: (_target, key) => String(key) }),
     '../utils/storage': { getConsultations: () => [] },
     '../api/sessionV17': { loadConsultationHistory: load },
@@ -68,7 +71,6 @@ function fixture(load: (options: { signal: AbortSignal }) => Promise<unknown[]>,
     '../components/LegalLinks': { LegalLinks: 'LegalLinks' },
     '../utils/relationStyles': { getRelationStyle: () => ({}), getReactionStyle: () => ({}) },
   });
-  const params = new URLSearchParams('personId=person-A');
   const render = () => {
     stateIndex = 0; effectIndex = 0;
     const tree = nodes(page[pageName]());
@@ -77,7 +79,8 @@ function fixture(load: (options: { signal: AbortSignal }) => Promise<unknown[]>,
     }
     return tree;
   };
-  return { render, close: () => effects.forEach(effect => effect.cleanup?.()), states,
+  return { render, close: () => effects.forEach(effect => effect.cleanup?.()), states, navigate,
+    get url() { return url.pathname + url.search; },
     switchUser: (id: string | null) => { userId = id; auth.setAuthenticatedUser(id); } };
 }
 
@@ -150,4 +153,32 @@ test('Home cancels its caller-owned history load on unmount without updating old
   flow.render(); assert.equal(signal.aborted, false); flow.close(); assert.equal(signal.aborted, true);
   const snapshot = structuredClone(flow.states); resolve([consultation('case-old', 'person-A')]);
   await new Promise<void>(done => setImmediate(done)); assert.deepEqual(flow.states, snapshot);
+});
+
+test('History person selection survives URL reuse and clears a legacy person path', async () => {
+  const rows = [consultation('case-A', 'person-A'), consultation('case-B', 'person-B')];
+  for (const initialUrl of ['/history?personId=person-A', '/persons/person-A']) {
+    const flow = fixture(async () => rows, 'History', undefined, initialUrl);
+    flow.render(); await new Promise<void>(done => setImmediate(done));
+    const personB = flow.render().find(node => node.type === 'button' && text(node).includes('・2）'));
+    assert.ok(personB);
+    personB.props.onClick();
+    assert.equal(flow.url, '/history?personId=person-B');
+    const selected = flow.render();
+    assert.ok(selected.some(node => node.type === 'Link' && node.props.to === '/analysis/case-B'));
+    assert.equal(selected.some(node => node.type === 'Link' && node.props.to === '/analysis/case-A'), false);
+    assert.equal(selected.find(node => node.type === 'button' && text(node).includes('・2）'))?.props['aria-pressed'], true);
+    const reopened = fixture(async () => rows, 'History', undefined, flow.url);
+    reopened.render(); await new Promise<void>(done => setImmediate(done));
+    assert.ok(reopened.render().some(node => node.type === 'Link' && node.props.to === '/analysis/case-B'));
+    reopened.close();
+    selected.find(node => node.type === 'button' && text(node) === 'すべて')!.props.onClick();
+    assert.equal(flow.url, '/history');
+    assert.equal(flow.render().filter(node => node.type === 'Link' && /^\/analysis\//.test(node.props.to)).length, 2);
+    flow.navigate('/history?personId=person-A');
+    const restored = flow.render();
+    assert.ok(restored.some(node => node.type === 'Link' && node.props.to === '/analysis/case-A'));
+    assert.equal(restored.some(node => node.type === 'Link' && node.props.to === '/analysis/case-B'), false);
+    flow.close();
+  }
 });
