@@ -175,8 +175,8 @@ export class PasswordRecovery {
       if (!this.current()) return;
       if (error) {
         if (error.code === 'weak_password' || error.code === 'same_password') {
-          this.publish('ready', error.code === 'same_password' ? '現在と異なるパスワードを入力してください。' :
-            'より安全なパスワードを入力してください。長く、推測されにくいものにしてください。');
+          this.publish('ready', '過去に使用したことのない、より安全で推測されにくいパスワードを入力してください。');
+
         } else {
           this.invalidate();
         }
