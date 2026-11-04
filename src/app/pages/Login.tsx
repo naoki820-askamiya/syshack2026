@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { ArrowLeft, LogIn } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
+import { AuthCaptcha, useAuthCaptcha } from '../components/AuthCaptcha';
 
 export function Login() {
+  const captcha = useAuthCaptcha();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { signIn } = useAuth();
@@ -14,19 +16,24 @@ export function Login() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
+  const busy = useRef(false);
   const returnTo = searchParams.get('returnTo') || '/';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (busy.current || !captcha.ready) return;
+    busy.current = true;
     setErrorMessage('');
     setIsSubmitting(true);
 
     try {
-      await signIn(formData.email.trim(), formData.password);
+      await signIn(formData.email.trim(), formData.password, captcha.takeToken());
       navigate(returnTo, { replace: true });
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'ログインに失敗しました。');
     } finally {
+      captcha.reset();
+      busy.current = false;
       setIsSubmitting(false);
     }
   };
@@ -98,9 +105,10 @@ export function Login() {
             </button>
 
             {isSubmitting && <p role="status" className="text-sm text-[#5B6573]">処理中です…</p>}
+            <AuthCaptcha generation={captcha.generation} onToken={captcha.onToken} />
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !captcha.ready}
               className="w-full bg-[#0F4C81] text-white py-3 lg:py-4 rounded-lg font-semibold shadow-sm hover:bg-[#0C3E69] transition-colors lg:text-lg disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {isSubmitting ? 'ログイン中...' : 'ログイン'}

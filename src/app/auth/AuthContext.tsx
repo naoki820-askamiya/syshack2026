@@ -10,6 +10,7 @@ import {
 import type { ReactNode } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { supabase } from './supabase';
+import { requireCaptchaToken } from './captcha';
 import { captureAuthBoundary, finishExplicitLogin, setAuthenticatedUser } from '../utils/authBoundary';
 import type { AuthBoundary } from '../utils/authBoundary';
 import '../utils/storage';
@@ -18,8 +19,8 @@ type AuthContextValue = {
   user: User | null;
   loading: boolean;
   authEpoch: number;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, displayName?: string) => Promise<{ needsEmailConfirmation: boolean; authenticatedBoundary: AuthBoundary | null }>;
+  signIn: (email: string, password: string, captchaToken?: string) => Promise<void>;
+  signUp: (email: string, password: string, displayName?: string, captchaToken?: string) => Promise<{ needsEmailConfirmation: boolean; authenticatedBoundary: AuthBoundary | null }>;
   signOut: () => Promise<void>;
 };
 
@@ -73,10 +74,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [publishUser, sessionAttempt]);
 
-  const signIn = useCallback(async (email: string, password: string) => {
+  const signIn = useCallback(async (email: string, password: string, captchaToken?: string) => {
+    requireCaptchaToken(captchaToken);
     const start = captureAuthBoundary();
     const attempt = ++loginAttempt.current;
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password, ...(captchaToken ? { options: { captchaToken } } : {}) });
 
     if (error) {
       throw new Error('メールアドレスまたはパスワードを確認してください。');
@@ -87,12 +89,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuthEpoch(finishExplicitLogin(start, data.session?.user.id ?? null, attempt !== loginAttempt.current).epoch);
   }, []);
 
-  const signUp = useCallback(async (email: string, password: string, displayName?: string) => {
+  const signUp = useCallback(async (email: string, password: string, displayName?: string, captchaToken?: string) => {
+    requireCaptchaToken(captchaToken);
     const start = captureAuthBoundary();
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
+        ...(captchaToken ? { captchaToken } : {}),
         data: displayName ? { display_name: displayName } : undefined,
       },
     });

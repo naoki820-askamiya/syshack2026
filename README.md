@@ -182,6 +182,7 @@ ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 | 変数 | 用途 | 備考 |
 | --- | --- | --- |
 | `VITE_SERVER_URL` | ブラウザから呼ぶAPIのURL | Vite開発時は未設定なら`http://127.0.0.1:3000` |
+| `VITE_TURNSTILE_SITE_KEY` | Turnstile 公開キー（登録・ログイン・再設定メール） | 本番必須。[設定手順](docs/auth-captcha.md) |
 | `VITE_SUPABASE_URL` | フロントエンドのSupabase URL | 必須 |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | フロントエンドの公開可能キー | `VITE_SUPABASE_ANON_KEY`も利用可能 |
 | `SUPABASE_URL` | バックエンドのSupabase URL | 未設定時は`VITE_SUPABASE_URL`を使用 |

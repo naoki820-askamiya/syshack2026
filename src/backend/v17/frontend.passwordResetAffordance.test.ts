@@ -14,10 +14,11 @@ function text(root: unknown): string {
   if (typeof root === 'string' || typeof root === 'number') return String(root);
   return root && typeof root === 'object' && 'props' in root ? text((root as Node).props.children) : '';
 }
-function renderLogin() {
+function renderLogin(ready = true) {
   const jsx = (type: unknown, props: Record<string, unknown>) => ({ type, props });
   const deps: Record<string, unknown> = {
-    react: { useState: (initial: unknown) => [initial, () => {}] },
+    '../components/AuthCaptcha': { AuthCaptcha: () => null, useAuthCaptcha: () => ({ ready }) },
+    react: { useRef: (value: unknown) => ({ current: value }), useState: (initial: unknown) => [initial, () => {}] },
     'react/jsx-runtime': { jsx, jsxs: jsx },
     'react-router': { useNavigate: () => () => {}, useSearchParams: () => [new URLSearchParams()] },
     'lucide-react': { ArrowLeft: 'ArrowLeft', LogIn: 'LogIn' },
@@ -58,4 +59,12 @@ test('password reset honesty fix preserves the existing Supabase session configu
     assert.ok(ts.isPropertyAssignment(property)); return [property.name.getText(source), property.initializer.getText(source)];
   }));
   assert.deepEqual(settings, { autoRefreshToken: 'false', detectSessionInUrl: 'true', persistSession: 'false' });
+});
+
+
+test('CAPTCHA pending blocks login submission but keeps credential entry and recovery navigation usable', () => {
+  const tree = renderLogin(false);
+  assert.equal(tree.find(node => node.props.type === 'submit')!.props.disabled, true);
+  assert.equal(tree.find(node => text(node) === 'パスワードを忘れた方')!.props.disabled, false);
+  for (const input of tree.filter(node => node.type === 'input')) assert.equal(input.props.disabled, false);
 });
