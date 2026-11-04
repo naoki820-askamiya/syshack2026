@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { ArrowLeft, UserPlus } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
+import { AuthCaptcha, useAuthCaptcha } from '../components/AuthCaptcha';
 import { LegalLinks } from '../components/LegalLinks';
 import { dataHandlingNotice, legalDraftNotice } from '../legal/documents';
 import { safeLegalReturnTo } from '../../shared/legal';
@@ -9,6 +10,7 @@ import { recordConsent } from '../api/consentV17';
 import { assertCurrentAuthBoundary, isCurrentAuthBoundary, type AuthBoundary } from '../utils/authBoundary';
 
 export function Register() {
+  const captcha = useAuthCaptcha();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { signUp } = useAuth();
@@ -49,6 +51,7 @@ export function Register() {
       return;
     }
     
+    if (!registeredBoundary.current && !captcha.ready) return;
     busy.current = true;
     const owner = lifetime.current;
     const active = () => owner !== null && lifetime.current === owner;
@@ -56,7 +59,7 @@ export function Register() {
 
     try {
       if (!registeredBoundary.current) {
-        const result = await signUp(formData.email.trim(), formData.password, formData.name.trim());
+        const result = await signUp(formData.email.trim(), formData.password, formData.name.trim(), captcha.takeToken());
         if (!active()) return;
         if (result.needsEmailConfirmation) {
           setAwaitingEmail(true);
@@ -78,6 +81,7 @@ export function Register() {
         ? 'アカウントの登録は完了しましたが、同意の記録を完了できませんでした。再試行してください。ログイン状態が変わった場合はログインし直してください。'
         : error instanceof Error ? error.message : '新規登録に失敗しました。');
     } finally {
+      if (!registeredBoundary.current) captcha.reset();
       busy.current = false;
       if (active()) setIsSubmitting(false);
     }
@@ -196,9 +200,10 @@ export function Register() {
               </label>
               <p>登録後に同意内容を記録します。メール確認が必要な場合は、確認・ログイン後に改めて同意をお願いします。</p>
             </section>
+            {!accountCreated && !awaitingEmail && <AuthCaptcha generation={captcha.generation} onToken={captcha.onToken} />}
             <button
               type="submit"
-              disabled={isSubmitting || !accepted || awaitingEmail || (accountCreated && !registeredBoundary.current)}
+              disabled={isSubmitting || !accepted || (!accountCreated && !captcha.ready) || awaitingEmail || (accountCreated && !registeredBoundary.current)}
               className="w-full bg-[#0F4C81] text-white py-3 lg:py-4 rounded-lg font-semibold shadow-sm hover:bg-[#0C3E69] transition-colors mt-6 lg:text-lg disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {isSubmitting ? '処理中...' : awaitingEmail ? '確認メールを送信しました' : accountCreated ? '同意の記録を再試行' : '同意して登録する'}

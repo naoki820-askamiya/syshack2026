@@ -1,3 +1,4 @@
+import { requireCaptchaToken } from './captcha';
 import { consumeRecoveryLink } from './recoveryBootstrap';
 import { PasswordRecovery, RESET_REQUEST_INTERVAL_MS, sendRecoveryEmail } from './passwordRecovery';
 
@@ -15,12 +16,13 @@ export function getPasswordRecovery(): PasswordRecovery {
   return recovery;
 }
 export function recoveryRequestAllowedAt(): number { return requestAllowedAt; }
-export function requestPasswordReset(email: string): boolean {
+export function requestPasswordReset(email: string, captchaToken?: string): boolean {
   if (!config.enabled || Date.now() < requestAllowedAt) return false;
+  requireCaptchaToken(captchaToken);
   requestAllowedAt = Date.now() + RESET_REQUEST_INTERVAL_MS;
   // The UI receipt and 60-second countdown do not depend on account existence,
   // network outcome or provider timing. Provider-side quotas are separate.
-  void sendRecoveryEmail(config, email, window.location.origin).catch(() => {});
+  void sendRecoveryEmail(config, email, window.location.origin, fetch, captchaToken).catch(() => {});
   return true;
 }
 

@@ -36,7 +36,7 @@ export function recoveryRedirect(origin: string): string {
 // No account-specific error or provider text escapes to the UI. The caller shows
 // the same neutral result immediately, independent of provider response timing.
 export async function sendRecoveryEmail(config: RecoveryConfig, email: string, origin: string,
-  transport: typeof fetch = fetch): Promise<void> {
+  transport: typeof fetch = fetch, captchaToken?: string): Promise<void> {
   if (!config.enabled) throw new Error('パスワード再設定は準備中です。');
   const redirectTo = recoveryRedirect(origin);
   const abort = new AbortController();
@@ -46,7 +46,7 @@ export async function sendRecoveryEmail(config: RecoveryConfig, email: string, o
       persistSession: false, autoRefreshToken: false, detectSessionInUrl: false,
       storageKey: 'kigen-recovery-request',
     }, global: { fetch: (input, init) => quietFetch(transport, input, { ...init, signal: abort.signal }) } });
-    await client.auth.resetPasswordForEmail(email, { redirectTo });
+    await client.auth.resetPasswordForEmail(email, { redirectTo, ...(captchaToken ? { captchaToken } : {}) });
   } catch { /* A neutral receipt never asserts that a message was delivered. */ }
   finally { clearTimeout(timer); }
 }

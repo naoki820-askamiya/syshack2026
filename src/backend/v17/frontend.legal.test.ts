@@ -53,6 +53,7 @@ function registration(emailConfirmation = false, returnTo = '/new', save: () => 
   const h = hooksFixture(); const navigations: any[] = []; const calls: any[] = []; const records: any[] = [];
   const boundary = { userId: 'registered-user', epoch: 1 }; let current = boundary;
   const { Register } = load('src/app/pages/Register.tsx', {
+    '../components/AuthCaptcha': { AuthCaptcha: () => null, useAuthCaptcha: () => ({ ready: true, takeToken: () => undefined, reset() {} }) },
     react: h.react,
     'react-router': { useNavigate: () => (target: any) => navigations.push(target), useSearchParams: () => [new URLSearchParams({ returnTo })] },
     'lucide-react': { ArrowLeft: 'icon', UserPlus: 'icon' },
@@ -78,6 +79,7 @@ for (const mode of ['session', 'email', 'changed-user', 'same-user-relogin']) te
   const h = hooksFixture(); let current: { userId: string | null; epoch: number } = { userId: null, epoch: 0 };
   const calls: any[] = []; const context = { Provider: 'Provider' };
   const { AuthProvider } = load('src/app/auth/AuthContext.tsx', {
+    './captcha': { requireCaptchaToken: () => {} },
     react: { ...h.react, createContext: () => context, useContext: () => null, useCallback: (fn: any) => fn, useMemo: (fn: any) => fn() },
     './supabase': { supabase: { auth: {
       getSession: async () => ({ data: { session: null } }),

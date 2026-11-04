@@ -58,6 +58,7 @@ for (const kind of ['reject', 'returned-error', 'sync-throw']) test('session boo
   const first = deferred();
   let observer!: (event: string, session: any) => void;
   const { AuthProvider } = load('src/app/auth/AuthContext.tsx', {
+    './captcha': { requireCaptchaToken: () => {} },
     react: h.react, 'react/jsx-runtime': { jsx, jsxs: jsx },
     './supabase': { supabase: { auth: {
       getSession: () => { calls++; if (calls > 1) return Promise.resolve({ data: { session: { user: { id: 'A' } } }, error: null }); if (kind === 'sync-throw') throw new Error('Private lookup detail'); return first.promise; },
@@ -87,6 +88,7 @@ for (const kind of ['reject', 'returned-error', 'sync-throw']) test('session boo
 for (const close of [false, true]) test('late bootstrap failure cannot override ' + (close ? 'unmount' : 'auth event'), async () => {
   const h = fixture(), pending = deferred(); let observer!: (event: string, session: any) => void;
   const { AuthProvider } = load('src/app/auth/AuthContext.tsx', {
+    './captcha': { requireCaptchaToken: () => {} },
     react: h.react, 'react/jsx-runtime': { jsx, jsxs: jsx },
     './supabase': { supabase: { auth: { getSession: () => pending.promise, onAuthStateChange: (fn: any) => { observer = fn; return { data: { subscription: { unsubscribe() {} } } }; } } } },
     '../utils/authBoundary': { captureAuthBoundary: () => ({ epoch: 1 }), setAuthenticatedUser: () => ({ epoch: 1 }) }, '../utils/storage': {},

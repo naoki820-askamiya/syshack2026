@@ -1,3 +1,4 @@
+import { AuthCaptcha, useAuthCaptcha } from '../components/AuthCaptcha';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { ReactNode, FormEvent } from 'react';
 import { Link } from 'react-router';
@@ -17,6 +18,7 @@ function RecoveryLayout({ title, children }: { title: string; children: ReactNod
 }
 
 export function ForgotPassword() {
+  const captcha = useAuthCaptcha();
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [now, setNow] = useState(Date.now);
@@ -28,7 +30,10 @@ export function ForgotPassword() {
   }, []);
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (requestPasswordReset(email.trim())) { setSent(true); setNow(Date.now()); }
+    if (!captcha.ready || remaining > 0) return;
+    try {
+      if (requestPasswordReset(email.trim(), captcha.takeToken())) { setSent(true); setNow(Date.now()); }
+    } finally { captcha.reset(); }
   };
   return <RecoveryLayout title="パスワードの再設定">
     <p className="text-sm text-[#5B6573]">登録したメールアドレスを入力してください。メールのリンクから新しいパスワードを設定できます。</p>
@@ -38,7 +43,8 @@ export function ForgotPassword() {
         <input id="recovery-email" name="email" type="email" autoComplete="email" autoCapitalize="none" spellCheck={false}
           className={field} required value={email} onChange={event => setEmail(event.target.value)} aria-describedby={sent ? 'recovery-receipt' : undefined} />
         {sent && <p id="recovery-receipt" role="status" className="text-sm text-[#5B6573]">{RESET_REQUEST_MESSAGE}</p>}
-        <button type="submit" className={button} disabled={remaining > 0}>{remaining > 0 ? `再送は${remaining}秒後` : sent ? '再設定メールを再依頼する' : '再設定メールを依頼する'}</button>
+        <AuthCaptcha generation={captcha.generation} onToken={captcha.onToken} />
+        <button type="submit" className={button} disabled={remaining > 0 || !captcha.ready}>{remaining > 0 ? `再送は${remaining}秒後` : sent ? '再設定メールを再依頼する' : '再設定メールを依頼する'}</button>
         <p className="text-sm text-[#5B6573]">メールが届くまで数分かかる場合があります。再依頼するときは60秒以上お待ちください。</p>
       </form>}
     <Link className="inline-flex min-h-11 items-center text-[#0F4C81] underline" to="/login">ログインに戻る</Link>
