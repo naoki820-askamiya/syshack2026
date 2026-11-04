@@ -76,7 +76,7 @@ export function ResetPassword() {
     <div aria-busy={busy}>
       {busy && <p role="status">{state.phase === 'verifying' ? 'リンクを確認しています…' : '保存しています。この画面のままお待ちください…'}</p>}
       {(state.phase === 'ready' || state.phase === 'saving') && <form ref={form} onSubmit={submit} className="space-y-4">
-        <p id="password-help" className="text-sm text-[#5B6573]">8文字以上の、推測されにくいパスワードを入力してください。保存後は新しいパスワードでログインしてください。</p>
+        <p id="password-help" className="text-sm text-[#5B6573]">8文字以上で、過去に使用したことのない推測されにくいパスワードを入力してください。保存後は新しいパスワードでログインしてください。</p>
         <label htmlFor="new-password" className="block text-sm font-medium">新しいパスワード</label>
         <input id="new-password" name="new-password" type="password" autoComplete="new-password" minLength={8} required
           className={field} value={password} onChange={event => setPassword(event.target.value)} disabled={busy} aria-describedby="password-help recovery-result" />
