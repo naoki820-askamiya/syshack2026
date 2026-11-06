@@ -15,8 +15,7 @@ export function History() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { personId: routePersonId } = useParams<{ personId?: string }>();
-  const initialPerson = routePersonId ?? searchParams.get('personId') ?? '';
-  const [filterPerson, setFilterPerson] = useState<string>(initialPerson);
+  const filterPerson = routePersonId ?? searchParams.get('personId') ?? '';
   const [loadedConsultations, setAllConsultations] = useState<ConsultationData[]>(getConsultations);
   const [loadedBoundary, setLoadedBoundary] = useState(captureAuthBoundary);
   const [loadingState, setIsLoading] = useState(true);
@@ -55,9 +54,13 @@ export function History() {
     return () => { active = false; controller.abort(); };
   }, [loadAttempt, user?.id, authEpoch, authLoading]);
 
-  useEffect(() => {
-    setFilterPerson(routePersonId ?? searchParams.get('personId') ?? '');
-  }, [searchParams, routePersonId]);
+  const selectPerson = (personId: string) => {
+    const next = new URLSearchParams(searchParams);
+    if (personId) next.set('personId', personId);
+    else next.delete('personId');
+    const query = next.toString();
+    navigate(query ? `/history?${query}` : '/history');
+  };
 
   const latestPersons = getLatestConsultationsByPerson(allConsultations).filter(c => c.personId);
   const persons = [{ id: '', label: 'すべて' }, ...latestPersons.map((c, index) => ({
@@ -101,7 +104,7 @@ export function History() {
                   return (
                     <button
                       key={person.id}
-                      onClick={() => setFilterPerson(person.id)}
+                      onClick={() => selectPerson(person.id)}
                       aria-pressed={isActive}
                       className={`min-h-11 px-4 py-2 rounded-full text-sm font-medium break-all transition-colors ${
                         isActive
