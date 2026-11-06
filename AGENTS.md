@@ -7,6 +7,7 @@
 - 現行動作の正本は [現行仕様書](docs/仕様書.md)。README は概要・セットアップ・検証入口として読む。
 - DB の詳細は [DB設計書](docs/database-design.md)、Prisma schema、SQL migration を照合する。
 - [差別化機能の実装計画](docs/differentiation-implementation-spec.md) と日付付き資料には将来構想・過去時点の情報がある。現行動作と同列に扱わず、実装との差を確認する。
+- [2026年6月12日の設計・実装記録](docs/history/2026-06-12-design-notes.md) と [ゲスト1回の設計判断・検証記録](docs/guest-mode-design-decisions.md) は、当時の判断・検証範囲を確認するための資料。現行仕様や今回の検証結果として扱わない。
 
 ## 維持する境界
 
