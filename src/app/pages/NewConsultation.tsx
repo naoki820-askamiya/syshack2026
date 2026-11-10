@@ -21,12 +21,14 @@ import {
   AGE_GROUPS,
   BUSINESS_RELATIONS,
   EMPTY_CONSULTATION_FORM,
+  ERROR_FIELD_ELEMENT_IDS,
   GENDERS,
   PRIVATE_RELATIONS,
   REACTIONS,
   REACTION_EMOJI,
   TIMINGS,
   getConsultationFormErrors,
+  getFirstErrorField,
   resolveReaction,
   resolveRelation,
   resolveUserAction,
@@ -183,7 +185,18 @@ export function NewConsultation() {
     setSubmitted(true);
     setApiError("");
     const errors = getErrors();
-    if (Object.values(errors).some(Boolean)) return;
+    const firstError = getFirstErrorField(errors);
+    if (firstError) {
+      const targetId = ERROR_FIELD_ELEMENT_IDS[firstError];
+      const targetElement = document.getElementById(targetId);
+      if (targetElement) {
+        targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if ('focus' in targetElement && typeof targetElement.focus === 'function') {
+          targetElement.focus();
+        }
+      }
+      return;
+    }
 
     const effectiveRelation = resolveRelation(formData);
     const effectiveReaction = resolveReaction(formData);
@@ -607,7 +620,7 @@ export function NewConsultation() {
                   )}
 
                   {actionMode === 'chat' && (
-                    <div className="space-y-3">
+                    <div id="chat-platform-choice" tabIndex={-1} className="space-y-3 outline-none">
                       <div className="flex gap-2">
                         <button
                           type="button"

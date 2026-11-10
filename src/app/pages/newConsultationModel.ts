@@ -27,6 +27,33 @@ export interface ConsultationFormErrors {
   chatContent: boolean;
 }
 
+export type ConsultationFormErrorField = keyof ConsultationFormErrors;
+
+const ERROR_FIELD_ORDER: ConsultationFormErrorField[] = [
+  'personName',
+  'relationOther',
+  'event',
+  'reactionOther',
+  'userAction',
+  'chatContent',
+];
+
+export const ERROR_FIELD_ELEMENT_IDS: Record<ConsultationFormErrorField, string> = {
+  personName: 'person-name',
+  relationOther: 'relation-other',
+  event: 'event-facts',
+  reactionOther: 'reaction-other',
+  userAction: 'user-action',
+  chatContent: 'chat-platform-choice',
+};
+
+export function getFirstErrorField(errors: ConsultationFormErrors): ConsultationFormErrorField | null {
+  for (const field of ERROR_FIELD_ORDER) {
+    if (errors[field]) return field;
+  }
+  return null;
+}
+
 export const BUSINESS_RELATIONS: RelationType[] = ['上司', '同僚', '部下'];
 export const PRIVATE_RELATIONS: RelationType[] = ['恋人', '配偶者', '友人', '家族', 'その他'];
 export const REACTIONS: Reaction[] = [
