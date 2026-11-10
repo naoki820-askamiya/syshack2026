@@ -59,13 +59,21 @@ export function AnalysisV17() {
   if (!consultation) return <MissingResult message={error || undefined} />;
   const conf = CONFIDENCE[view.confidenceLevel];
 
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate('/history');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#F7F9FC]">
       <Navigation />
       <div className="lg:ml-64 pb-24 lg:pb-8">
         <div className="sticky top-0 z-10 border-b border-[#D9E1EA] bg-white p-4 lg:px-8">
           <div className="mx-auto flex max-w-5xl items-center gap-3">
-            <button onClick={() => navigate('/')} className="text-[#5B6573]" aria-label="ホームへ戻る">
+            <button onClick={handleBack} className="text-[#5B6573]" aria-label="戻る">
               <ArrowLeft className="h-6 w-6" />
             </button>
             <h1 className="text-xl font-semibold lg:text-2xl">分析結果</h1>

@@ -50,7 +50,7 @@ export function ActionSuggestionV17() {
       <div className="lg:ml-64 pb-24 lg:pb-8">
         <div className="sticky top-0 z-10 border-b border-[#D9E1EA] bg-white p-4 lg:px-8">
           <div className="mx-auto flex max-w-5xl items-center gap-3">
-            <button onClick={() => navigate(-1)} aria-label="戻る" className="text-[#5B6573]"><ArrowLeft className="h-6 w-6" /></button>
+            <button onClick={() => navigate(`/analysis/${consultation.id}`)} aria-label="戻る" className="text-[#5B6573]"><ArrowLeft className="h-6 w-6" /></button>
             <h1 className="text-xl font-semibold lg:text-2xl">行動提案</h1>
           </div>
         </div>
