@@ -1,4 +1,4 @@
-FROM node:22.23.4-bookworm-slim
+FROM node:22.23.5-bookworm-slim
 
 RUN apt-get update \
     && apt-get install --yes --no-install-recommends openssl \
