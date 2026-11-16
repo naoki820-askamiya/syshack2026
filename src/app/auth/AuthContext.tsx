@@ -20,6 +20,7 @@ type AuthContextValue = {
   authEpoch: number;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, displayName?: string) => Promise<{ needsEmailConfirmation: boolean; authenticatedBoundary: AuthBoundary | null }>;
+  resendSignUpEmail: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -93,6 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email,
       password,
       options: {
+        emailRedirectTo: `${window.location.origin}/`,
         data: displayName ? { display_name: displayName } : undefined,
       },
     });
@@ -106,6 +108,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Never attach registration intent to a different current account/session.
     return { needsEmailConfirmation: !data.session,
       authenticatedBoundary: data.session && boundary.userId === data.session.user.id && boundary.epoch === expectedEpoch ? boundary : null };
+  }, []);
+
+  const resendSignUpEmail = useCallback(async (email: string) => {
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email,
+        options: { emailRedirectTo: `${window.location.origin}/` },
+      });
+      if (error) throw error;
+    } catch {
+      throw new Error('確認メールを再送信できませんでした。時間をおいて再試行してください。');
+    }
   }, []);
 
   const signOut = useCallback(async () => {
@@ -124,9 +139,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       authEpoch,
       signIn,
       signUp,
+      resendSignUpEmail,
       signOut,
     }),
-    [authEpoch, loading, signIn, signOut, signUp, user],
+    [authEpoch, loading, resendSignUpEmail, signIn, signOut, signUp, user],
   );
 
   return <AuthContext.Provider value={value}>{sessionError ? (

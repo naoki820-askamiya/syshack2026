@@ -20,14 +20,14 @@ function text(root: any): string {
   if (!root?.props) return '';
   return text(typeof root.type === 'function' ? root.type(root.props) : root.props.children);
 }
-function load(path: string, dependencies: Record<string, any>) {
+function load(path: string, dependencies: Record<string, any>, browserWindow?: { location: URL }) {
   const output = ts.transpileModule(readFileSync(path, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   const module = { exports: {} as Record<string, any> };
-  new Function('require', 'exports', 'module', output)((name: string) => {
+  new Function('require', 'exports', 'module', 'window', output)((name: string) => {
     if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx };
     if (!(name in dependencies)) throw new Error('Unexpected dependency ' + name);
     return dependencies[name];
-  }, module.exports, module);
+  }, module.exports, module, browserWindow);
   return module.exports;
 }
 const LegalLinks = load('src/app/components/LegalLinks.tsx', { 'react-router': { Link: 'a' } }).LegalLinks;
@@ -49,20 +49,20 @@ test('public documents disclose storage, AI transfer, draft status, retention an
   for (const content of ['自動削除', '準備中', '外部サービスでの一切の保存', '過去の要約に既に含まれた内容']) assert.ok(text(privacy).includes(content), content);
   assert.ok(flatten(privacy).some(node => node.props.href === 'https://developers.openai.com/api/docs/guides/your-data'));
 });
-function registration(emailConfirmation = false, returnTo = '/new', save: () => Promise<unknown> = async () => ({})) {
-  const h = hooksFixture(); const navigations: any[] = []; const calls: any[] = []; const records: any[] = [];
+function registration(emailConfirmation = false, returnTo = '/new', save: () => Promise<unknown> = async () => ({}), resend: (email: string) => Promise<unknown> = async () => ({})) {
+  const h = hooksFixture(); const navigations: any[] = []; const calls: any[] = []; const records: any[] = []; const resends: string[] = [];
   const boundary = { userId: 'registered-user', epoch: 1 }; let current = boundary;
   const { Register } = load('src/app/pages/Register.tsx', {
     react: h.react,
     'react-router': { useNavigate: () => (target: any) => navigations.push(target), useSearchParams: () => [new URLSearchParams({ returnTo })] },
     'lucide-react': { ArrowLeft: 'icon', UserPlus: 'icon' },
-    '../auth/AuthContext': { useAuth: () => ({ signUp: async (...args: any[]) => { calls.push(args); return { needsEmailConfirmation: emailConfirmation, authenticatedBoundary: emailConfirmation ? null : boundary }; } }) },
+    '../auth/AuthContext': { useAuth: () => ({ signUp: async (...args: any[]) => { calls.push(args); return { needsEmailConfirmation: emailConfirmation, authenticatedBoundary: emailConfirmation ? null : boundary }; }, resendSignUpEmail: async (email: string) => { resends.push(email); return resend(email); } }) },
     '../components/LegalLinks': { LegalLinks }, '../legal/documents': documents, '../../shared/legal': { safeLegalReturnTo },
     '../api/consentV17': { recordConsent: () => { records.push(current); return save(); } },
     '../utils/authBoundary': { isCurrentAuthBoundary: (b: any) => b === current, assertCurrentAuthBoundary: (b: any) => { if (b !== current) throw new Error('Synthetic stale auth'); } },
   });
   const render = () => h.render(Register);
-  return { render, navigations, calls, records, close: h.close, changeUser: () => { current = { userId: 'another-user', epoch: 2 }; }, slots: h.slots };
+  return { render, navigations, calls, records, resends, close: h.close, changeUser: () => { current = { userId: 'another-user', epoch: 2 }; }, slots: h.slots };
 }
 test('registration cannot call signup before acknowledgement, with policies visible before submit', async () => {
   const f = registration(); let root = f.render(); let elements = flatten(root);
@@ -74,7 +74,8 @@ test('registration cannot call signup before acknowledgement, with policies visi
   assert.ok(text(root).includes('プライバシーポリシーに同意します。')); f.close();
 });
 
-for (const mode of ['session', 'email', 'changed-user', 'same-user-relogin']) test(`signup exposes an authenticated consent boundary only for the returned current session: ${mode}`, async () => {
+for (const origin of ['https://kigen404.vercel.app', 'https://kigen404-preview.example.com', 'http://localhost:5173'])
+for (const mode of ['session', 'email', 'changed-user', 'same-user-relogin']) test(`signup returns to its origin and exposes only the current consent boundary: ${origin}, ${mode}`, async () => {
   const h = hooksFixture(); let current: { userId: string | null; epoch: number } = { userId: null, epoch: 0 };
   const calls: any[] = []; const context = { Provider: 'Provider' };
   const { AuthProvider } = load('src/app/auth/AuthContext.tsx', {
@@ -85,13 +86,32 @@ for (const mode of ['session', 'email', 'changed-user', 'same-user-relogin']) te
       signUp: async (input: any) => { calls.push(input); if (mode !== 'email') current = { userId: mode === 'changed-user' ? 'another-user' : 'registered-user', epoch: mode === 'same-user-relogin' ? 3 : 1 }; return { data: { session: mode === 'email' ? null : { user: { id: 'registered-user' } }, user: { id: 'fake-unconfirmed-user' } }, error: null }; },
     } } },
     '../utils/authBoundary': { captureAuthBoundary: () => current, setAuthenticatedUser: () => current }, '../utils/storage': {},
-  });
+  }, { location: new URL(`${origin}/register?returnTo=%2Fnew#synthetic-fragment`) });
   const tree = h.render(() => AuthProvider({ children: null }));
   const result = await tree.props.value.signUp('fixture@example.com', 'synthetic-password', 'Nickname');
   assert.equal(result.needsEmailConfirmation, mode === 'email');
   assert.deepEqual(result.authenticatedBoundary, mode === 'session' ? current : null);
-  assert.deepEqual(calls, [{ email: 'fixture@example.com', password: 'synthetic-password', options: { data: { display_name: 'Nickname' } } }]); h.close(); await tick();
+  assert.deepEqual(calls, [{ email: 'fixture@example.com', password: 'synthetic-password', options: { emailRedirectTo: `${origin}/`, data: { display_name: 'Nickname' } } }]); h.close(); await tick();
 });
+for (const origin of ['https://kigen404.vercel.app', 'https://kigen404-preview.example.com', 'http://localhost:5173'])
+for (const result of ['success', 'returned-error', 'rejection']) test(`signup email resend preserves its origin and hides provider errors: ${origin}, ${result}`, async () => {
+  const h = hooksFixture(); const calls: any[] = [];
+  const { AuthProvider } = load('src/app/auth/AuthContext.tsx', {
+    react: { ...h.react, createContext: () => ({ Provider: 'Provider' }), useContext: () => null, useCallback: (fn: any) => fn, useMemo: (fn: any) => fn() },
+    './supabase': { supabase: { auth: {
+      getSession: async () => ({ data: { session: null } }),
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
+      resend: async (input: any) => { calls.push(input); if (result === 'rejection') throw new Error('Private provider detail'); return { error: result === 'returned-error' ? new Error('Private provider detail') : null }; },
+    } } },
+    '../utils/authBoundary': { captureAuthBoundary: () => ({ userId: null, epoch: 0 }), setAuthenticatedUser: () => ({ epoch: 0 }) }, '../utils/storage': {},
+  }, { location: new URL(`${origin}/signup?returnTo=https://untrusted.example/#synthetic-fragment`) });
+  const tree = h.render(() => AuthProvider({ children: null }));
+  if (result === 'success') await tree.props.value.resendSignUpEmail('fixture@example.com');
+  else await assert.rejects(tree.props.value.resendSignUpEmail('fixture@example.com'), { message: '確認メールを再送信できませんでした。時間をおいて再試行してください。' });
+  assert.deepEqual(calls, [{ type: 'signup', email: 'fixture@example.com', options: { emailRedirectTo: `${origin}/` } }]);
+  h.close(); await tick();
+});
+
 test('email-confirmation registration does not falsely claim consent was stored', async () => {
   const f = registration(true); let elements = flatten(f.render());
   elements.find(node => node.props.id === 'registration-legal-confirmation')!.props.onChange({ target: { checked: true } });
@@ -99,6 +119,64 @@ test('email-confirmation registration does not falsely claim consent was stored'
   assert.equal(f.navigations.length, 0); assert.equal(f.records.length, 0);
   assert.ok(text(f.render()).includes('ログイン後に改めて同意を確認・記録します。'));
   assert.equal(flatten(f.render()).find(n => n.props.type === 'submit')!.props.disabled, true); f.close();
+});
+
+async function waitForConfirmation(f: ReturnType<typeof registration>) {
+  let nodes = flatten(f.render());
+  assert.equal(nodes.some(n => n.props.children === '確認メールを再送信'), false);
+  nodes.find(n => n.props.id === 'email')!.props.onChange({ target: { value: '  fixture@example.com  ' } });
+  nodes = flatten(f.render());
+  nodes.find(n => n.props.id === 'registration-legal-confirmation')!.props.onChange({ target: { checked: true } });
+  nodes = flatten(f.render());
+  await nodes.find(n => n.type === 'form')!.props.onSubmit({ preventDefault() {} });
+  return flatten(f.render()).find(n => n.type === 'button' && n.props.children === '確認メールを再送信')!;
+}
+
+test('confirmation resend waits 60 seconds, uses the registered email and suppresses duplicate requests', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 0 });
+  const pending = deferred<void>(); const f = registration(true, '/new', undefined, () => pending.promise);
+  let button = await waitForConfirmation(f);
+  assert.equal(button.props.disabled, true); await button.props.onClick(); assert.deepEqual(f.resends, []);
+  t.mock.timers.tick(59_000); f.render();
+  assert.ok(text(f.render()).includes('あと1秒'));
+  t.mock.timers.tick(1000);
+  button = flatten(f.render()).find(n => n.type === 'button' && n.props.children === '確認メールを再送信')!;
+  assert.equal(button.props.disabled, false);
+  const first = button.props.onClick(); await button.props.onClick();
+  assert.deepEqual(f.resends, ['fixture@example.com']);
+  assert.ok(text(f.render()).includes('再送信中'));
+  pending.resolve(); await first;
+  assert.ok(text(f.render()).includes('再送信を受け付けました'));
+  assert.equal(f.calls.length, 1); assert.equal(f.records.length, 0); assert.deepEqual(f.navigations, []);
+  assert.equal(flatten(f.render()).find(n => n.props.children === '確認メールを再送信')!.props.disabled, true);
+  f.close();
+});
+
+test('confirmation resend failure is safe, waits before retry, and can succeed later', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 0 });
+  let attempts = 0; const f = registration(true, '/new', undefined, async () => { if (++attempts === 1) throw new Error('Private email/provider detail'); });
+  await waitForConfirmation(f); t.mock.timers.tick(60_000);
+  let button = flatten(f.render()).find(n => n.props.children === '確認メールを再送信')!;
+  await button.props.onClick();
+  assert.ok(text(f.render()).includes('再送信できませんでした'));
+  assert.equal(text(f.render()).includes('Private'), false);
+  await button.props.onClick(); assert.equal(attempts, 1);
+  t.mock.timers.tick(60_000);
+  button = flatten(f.render()).find(n => n.props.children === '確認メールを再送信')!;
+  await button.props.onClick(); assert.equal(attempts, 2);
+  assert.ok(text(f.render()).includes('再送信を受け付けました')); f.close();
+});
+
+for (const outcome of ['success', 'failure']) test(`confirmation resend ${outcome} after unmount cannot update page state`, async t => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 0 });
+  const pending = deferred<void>(); const f = registration(true, '/new', undefined, () => pending.promise);
+  await waitForConfirmation(f); t.mock.timers.tick(60_000);
+  const completion = flatten(f.render()).find(n => n.props.children === '確認メールを再送信')!.props.onClick();
+  f.close();
+  const states = () => JSON.stringify(f.slots.filter(value => value === null || typeof value !== 'object'));
+  const before = states();
+  if (outcome === 'success') pending.resolve(); else pending.reject(new Error('Synthetic stale error'));
+  await completion; t.mock.timers.tick(60_000); assert.equal(states(), before);
 });
 
 test('registration saves consent before navigation and retries only the record after account creation', async () => {

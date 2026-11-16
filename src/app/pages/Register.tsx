@@ -11,7 +11,7 @@ import { assertCurrentAuthBoundary, isCurrentAuthBoundary, type AuthBoundary } f
 export function Register() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { signUp } = useAuth();
+  const { signUp, resendSignUpEmail } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -24,6 +24,10 @@ export function Register() {
   const [accepted, setAccepted] = useState(false);
   const [accountCreated, setAccountCreated] = useState(false);
   const [awaitingEmail, setAwaitingEmail] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [resendSeconds, setResendSeconds] = useState(0);
+  const confirmationEmail = useRef('');
+  const resendAllowedAt = useRef(0);
   const registeredBoundary = useRef<AuthBoundary | null>(null);
   const busy = useRef(false);
   const lifetime = useRef<object | null>(null);
@@ -31,6 +35,39 @@ export function Register() {
     lifetime.current = {};
     return () => { lifetime.current = null; };
   }, []);
+
+  useEffect(() => {
+    if (resendSeconds <= 0) return;
+    const timer = setTimeout(() => {
+      setResendSeconds(Math.max(0, Math.ceil((resendAllowedAt.current - Date.now()) / 1000)));
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [resendSeconds]);
+
+  const startResendWait = () => {
+    resendAllowedAt.current = Date.now() + 60_000;
+    setResendSeconds(60);
+  };
+
+  const handleResend = async () => {
+    if (!awaitingEmail || !confirmationEmail.current || busy.current || Date.now() < resendAllowedAt.current) return;
+    busy.current = true;
+    const owner = lifetime.current;
+    const active = () => owner !== null && lifetime.current === owner;
+    setIsResending(true);
+    setErrorMessage('');
+    setNoticeMessage('');
+    startResendWait();
+    try {
+      await resendSignUpEmail(confirmationEmail.current);
+      if (active()) setNoticeMessage('確認メールの再送信を受け付けました。届かない場合は迷惑メールフォルダもご確認ください。');
+    } catch {
+      if (active()) setErrorMessage('確認メールを再送信できませんでした。時間をおいて再試行してください。');
+    } finally {
+      busy.current = false;
+      if (active()) setIsResending(false);
+    }
+  };
 
   const returnTo = safeLegalReturnTo(searchParams.get('returnTo'));
 
@@ -59,6 +96,8 @@ export function Register() {
         const result = await signUp(formData.email.trim(), formData.password, formData.name.trim());
         if (!active()) return;
         if (result.needsEmailConfirmation) {
+          confirmationEmail.current = formData.email.trim();
+          startResendWait();
           setAwaitingEmail(true);
           setNoticeMessage('確認メールを送信しました。メール内のリンクを開いてからログインしてください。メール確認が必要な場合、ログイン後に改めて同意を確認・記録します。');
           return;
@@ -203,6 +242,20 @@ export function Register() {
             >
               {isSubmitting ? '処理中...' : awaitingEmail ? '確認メールを送信しました' : accountCreated ? '同意の記録を再試行' : '同意して登録する'}
             </button>
+            {awaitingEmail && (
+              <section aria-label="確認メールの再送信" className="space-y-3 text-sm text-[#5B6573]">
+                <p>メールが届かない場合は迷惑メールフォルダもご確認ください。</p>
+                <button
+                  type="button"
+                  disabled={isResending || resendSeconds > 0}
+                  onClick={handleResend}
+                  className="w-full rounded-lg border border-[#0F4C81] px-4 py-3 font-semibold text-[#0F4C81] hover:bg-[#E8F1F8] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isResending ? '再送信中…' : '確認メールを再送信'}
+                </button>
+                {resendSeconds > 0 && <p>再送信できるまであと{resendSeconds}秒です。</p>}
+              </section>
+            )}
           </form>
 
           <div className="mt-6 lg:mt-8 pt-6 border-t border-[#D9E1EA] text-center">
