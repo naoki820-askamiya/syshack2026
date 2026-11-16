@@ -1,9 +1,10 @@
 import { captureAuthBoundary, type AuthBoundary } from '../utils/authBoundary.js';
 
-type SessionResponse = { data: { session: { access_token: string } | null } };
+type SessionResponse = { data: { session: { access_token?: string; id?: string } | null }; error?: Error | null };
 type ApiTransport = {
   getSession: () => Promise<SessionResponse>;
   send: (endpoint: string, options: RequestInit) => Promise<Response>;
+  onAuthFailure?: () => void;
 };
 
 export class StaleAuthResponseError extends Error {
@@ -69,19 +70,26 @@ async function buildApiError(response: Response, signal?: AbortSignal | null): P
 }
 
 // The existing protected transport, with injectable I/O for response-race regressions.
-export function createApiClient({ getSession, send }: ApiTransport) {
+export function createApiClient({ getSession, send, onAuthFailure }: ApiTransport) {
   async function request(endpoint: string, options: RequestInit, boundary: AuthBoundary): Promise<Response> {
-    const { data } = await awaitApiOperation(getSession, options.signal);
+    const { data, error } = await awaitApiOperation(getSession, options.signal);
+    if (error) throw error;
     const accessToken = data.session?.access_token;
-    if (!accessToken) throw new Error('ログインが必要です。');
+    const sessionId = data.session?.id;
+    if (!accessToken && !sessionId) throw new Error('ログインが必要です。');
 
     const headers = new Headers(options.headers);
-    headers.set('Authorization', `Bearer ${accessToken}`);
+    if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`);
+    else {
+      headers.delete('Authorization');
+      headers.set('X-Kigen-Session', sessionId!);
+      headers.set('X-Kigen-CSRF', '1');
+    }
     if (!(options.body instanceof FormData) && !headers.has('Content-Type')) {
       headers.set('Content-Type', 'application/json');
     }
 
-    const requestOptions = { ...options, headers };
+    const requestOptions = { ...options, ...(!accessToken ? { credentials: 'include' as const } : {}), headers };
     const response = await awaitApiOperation(() => {
       // Check at the exact dispatch; the signal race can introduce a microtask after token lookup.
       requestOptions.signal?.throwIfAborted();
@@ -93,7 +101,11 @@ export function createApiClient({ getSession, send }: ApiTransport) {
       }
       return send(endpoint, requestOptions);
     }, requestOptions.signal);
-    if (!response.ok) throw await buildApiError(response, requestOptions.signal);
+    if (!response.ok) {
+      const failure = await buildApiError(response, requestOptions.signal);
+      if (response.status === 401 || (failure instanceof ApiResponseError && failure.code === 'AUTH_SESSION_CHANGED')) onAuthFailure?.();
+      throw failure;
+    }
     return response;
   }
 

@@ -16,6 +16,7 @@ function getClient() {
     }
 
     client = createClient(supabaseUrl, supabaseAnonKey, {
+        global: { fetch: (input, init) => fetch(input, { ...init, signal: AbortSignal.timeout(15_000) }) },
         auth: {
             // 認証の正本はSupabaseなので、APIサーバー独自のsessionを持たせません。
             autoRefreshToken: false,

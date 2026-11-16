@@ -98,6 +98,25 @@ for (const close of [false, true]) test('late bootstrap failure cannot override 
   if (!close) { assert.equal(render().props.value.user.id, 'B'); assert.equal(render().props.children, 'APP'); h.close(); }
 });
 
+test('cross-tab pending state waits without redirecting and revalidation failure is recoverable', async () => {
+  const h = fixture(); let observer!: (event: string, session: any) => void;
+  const { AuthProvider } = load('src/app/auth/AuthContext.tsx', {
+    react: h.react, 'react/jsx-runtime': { jsx, jsxs: jsx },
+    './supabase': { supabase: { auth: { getSession: async () => ({ data: { session: null } }),
+      onAuthStateChange: (fn: any) => { observer = fn; return { data: { subscription: { unsubscribe() {} } } }; } } } },
+    '../utils/authBoundary': { captureAuthBoundary: () => ({ epoch: 1 }), setAuthenticatedUser: () => ({ epoch: 1 }) }, '../utils/storage': {},
+  });
+  const render = () => h.render(() => AuthProvider({ children: 'APP' })); render(); await tick();
+  observer('SIGNED_IN', { id: 'a'.repeat(32), user: { id: 'A' } });
+  observer('SESSION_PENDING', null);
+  assert.equal(render().props.value.loading, true); assert.equal(render().props.value.user, null);
+  observer('SIGNED_IN', { id: 'b'.repeat(32), user: { id: 'B' } });
+  assert.equal(render().props.value.loading, false); assert.equal(render().props.value.user.id, 'B');
+  observer('SESSION_PENDING', null); observer('SESSION_ERROR', null);
+  const failed = render(); assert.equal(failed.props.value.loading, false);
+  assert.ok(nodes(failed).some(node => node.props.role === 'alert')); h.close();
+});
+
 function polling() {
   const h = fixture(); let now = 0, epoch = 1, calls = 0, starts = 0, id = 0;
   const timers = new Map<number, { fn: () => void; due: number }>();

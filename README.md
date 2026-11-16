@@ -130,7 +130,7 @@ AIモデルは環境変数で指定します。コードに固定の既定モデ
 
 - 人物ごとの傾向要約（PersonProfile）の自動生成・再生成は未実装です。過去のAI要約・Profileは新しい分析へ自動投入せず、許可済み本人Feedbackだけを参考情報に使います。
 - ユーザー全体の傾向要約（UserPatternSummary）は、保存済みデータの取得・削除APIのみです。生成処理はなく、現在のAI分析にも渡しません。
-- ログイン状態をブラウザへ永続保存しないため、再読込や期限切れ後に再ログインが必要になる場合があります。
+- 暗号化した認証情報をHttpOnly Cookieに保存し、再読込後も最長7日ログインを維持します。トークンの更新・失効確認はAPI側で行い、通常ログインのトークンをブラウザのJavaScriptやlocalStorageへ渡しません。共有端末では利用後にログアウトしてください。
 - パスワード再設定の送信と[ゲスト1回](docs/guest-mode-v1.md)は既定でOFFです。各機能の有効化には環境・公開条件の確認が必要です。ゲストの承認済みrelease登録は空で、本番利用はできません。汎用の設定画面は未提供です。
 - 終端失敗の利用記録に基づく分析状態の回復は再取得APIへ接続済みです。経過時間だけに基づく回復ヘルパーの定期実行・本番基準は未決定で、未精算予約を時刻だけで解放しません。
 - 本番モードのAI分析には、有効な利用上限設定（RateLimitPolicy）が必要です。本番の上限値はmigrationに含めていません。
@@ -158,12 +158,12 @@ npm ci
 `.env`と`.env.local`はGit管理外です。
 
 ```dotenv
-VITE_SERVER_URL=http://127.0.0.1:3000
-VITE_SUPABASE_URL=
-VITE_SUPABASE_PUBLISHABLE_KEY=
+VITE_SERVER_URL=
 
 SUPABASE_URL=
 SUPABASE_PUBLISHABLE_KEY=
+AUTH_COOKIE_SECRET=
+AUTH_COOKIE_SECURE=false
 DATABASE_URL=
 DIRECT_URL=
 
@@ -181,11 +181,13 @@ ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 
 | 変数 | 用途 | 備考 |
 | --- | --- | --- |
-| `VITE_SERVER_URL` | ブラウザから呼ぶAPIのURL | Vite開発時は未設定なら`http://127.0.0.1:3000` |
-| `VITE_SUPABASE_URL` | フロントエンドのSupabase URL | 必須 |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | フロントエンドの公開可能キー | `VITE_SUPABASE_ANON_KEY`も利用可能 |
+| `VITE_SERVER_URL` | 旧設定との互換 | 通常の認証・業務APIは同じOriginへ固定。開発時はVite、本番はVercelが`/api`を転送 |
+| `VITE_SUPABASE_URL` | 旧設定との互換 | バックエンドのURL代替・旧SDK保存の削除にのみ使用。ブラウザの認証には不要 |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | 旧設定との互換 | バックエンドの公開可能キー代替。新規設定ではサーバー側の変数を使用 |
 | `SUPABASE_URL` | バックエンドのSupabase URL | 未設定時は`VITE_SUPABASE_URL`を使用 |
 | `SUPABASE_PUBLISHABLE_KEY` | サーバーでtoken検証に使う公開可能キー | 未設定時は`VITE_SUPABASE_PUBLISHABLE_KEY`または`NEXT_PUBLIC_SUPABASE_ANON_KEY` |
+| `AUTH_COOKIE_SECRET` | 認証CookieのAES-256-GCM暗号鍵 | 必須。32バイトの乱数を64桁hexで指定。全APIインスタンスで同じ値を使い、`VITE_`を付けない |
+| `AUTH_COOKIE_SECURE` | HTTPS専用Cookie | 既定は`true`。`false`はローカルHTTP開発限定。本番では無効化できない |
 | `DATABASE_URL` | アプリ実行時のPostgreSQL接続先 | 必須 |
 | `DIRECT_URL` | Prisma CLI用の接続先 | 未設定時は`DATABASE_URL`を使用 |
 | `OPENAI_API_KEY` | OpenAI APIキー | AI分析に必須 |
@@ -195,7 +197,7 @@ ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 
 #### メール認証後の戻り先（Supabase）
 
-新規登録では、登録したサイトのトップページ（`window.location.origin + '/'`）を`emailRedirectTo`に指定します。
+新規登録では、APIが許可済みのリクエストOriginからトップページ（`Origin + '/'`）を`emailRedirectTo`に指定します。クライアントが指定した戻り先URLは使用しません。
 Supabase Dashboardの **Authentication → URL Configuration** も次のように設定してください。
 
 - **Site URL**：本番フロントエンドのURL（例：`https://kigen404.vercel.app/`）。戻り先を指定しない認証メールの既定値です。本番ではlocalhostを残さないでください。
@@ -207,6 +209,26 @@ Supabase Dashboardの **Authentication → URL Configuration** も次のよう�
 詳細は[Supabase公式のRedirect URLs](https://supabase.com/docs/guides/auth/redirect-urls)を参照してください。
 
 登録後のメール確認待ち画面には「確認メールを再送信」があります。最初の送信後と再送要求後は60秒待機し、送信中の重複要求を防ぎます。再送先は登録時のメールアドレス、認証後の戻り先は登録元サイトです。再送の受付成功は到達保証ではありません。プロバイダー側の制限などで失敗した場合も、待機後に再試行できます。
+
+確認リンクはPKCEを使うため、登録したブラウザで1時間以内に開いてください。別ブラウザ・期限切れ・旧形式のリンクでは、メール確認後にメールアドレスとパスワードでログインしてください。コードはAPI側で一度だけ交換し、ブラウザにはトークンを返しません。
+
+#### Cookie認証の配置と鍵
+
+ローカルでは`VITE_SERVER_URL=`と`AUTH_COOKIE_SECURE=false`を設定し、Viteの`/api`転送を使います。`AUTH_COOKIE_SECRET`には、次のコマンドで生成した64桁の値を秘密設定として登録します。出力をGit・チャット・ログに残さないでください。
+
+```bash
+node -e "process.stdout.write(require('node:crypto').randomBytes(32).toString('hex'))"
+```
+
+本番は`AUTH_COOKIE_SECURE=true`にし、フロントとAPIを同じOriginのリバースプロキシ配下、または`app.example.com`と`api.example.com`のようなHTTPSの同じsiteに配置します。VercelとRenderの標準ドメインのような異なるsite間では、`SameSite=Lax`のCookieを送れないため、このまま接続しないでください。確認済みの本番では、`vercel.json`が`https://kigen404.vercel.app/api/…`を`https://kigen404.onrender.com/api/…`へ転送し、応答のキャッシュを無効にします。通常のブラウザ認証・業務APIは同じOriginへ固定し、既存の`VITE_SERVER_URL`に残る別Origin設定は使用しません。
+
+`ALLOWED_ORIGINS`には実際のフロントのOriginだけを完全一致で登録します。Originなし・`null`・許可以外のOrigin・必要な独自ヘッダーなしのCookie書込要求は拒否します。認証応答は`no-store`です。ログイン等はIPごとに10分20回、状態取得は10分120回に制限します。これはプロセス内の補助制限であり、複数インスタンス共通の制限ではありません。プロキシのIPを一律に信頼せず、公開時は入口側とSupabase側の制限も確認します。
+
+全APIインスタンスで同じ暗号鍵を使い、鍵変更時は既存のログインが無効になる前提で運用します。ブラウザはWeb Locks対応版を使用してください。Cookie方式でもXSSによる本人としての操作は防げないため、入力の安全な描画とCSPは維持します。
+
+Supabaseのログアウトは該当セッションの更新トークンを失効させます。発行済みJWTの即時失効までは保証せず、有効期間はSupabase側の設定に従います。JWTやCookieが別途盗まれた場合の即時利用停止まで必要なら、サーバー側の失効確認を別途設計します。
+
+Cookie認証の実ブラウザ回帰は、実Auth・DB・AIを使わない[scripts/auth-cookie-smoke.ts](scripts/auth-cookie-smoke.ts)と[scripts/auth-cookie-browser-check.js](scripts/auth-cookie-browser-check.js)を使えます。フィクスチャは`KIGEN_AUTH_FIXTURE=1`を指定したローカル環境専用で、本番へ公開しません。
 
 ### 3. 開発用DBとPrisma Clientを準備する
 

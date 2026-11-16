@@ -3,6 +3,7 @@ import type { ReactNode, FormEvent } from 'react';
 import { Link } from 'react-router';
 import { getPasswordRecovery, passwordRecoveryEnabled, recoveryRequestAllowedAt, requestPasswordReset } from '../auth/recoveryRuntime';
 import { RESET_REQUEST_MESSAGE } from '../auth/passwordRecovery';
+import { useAuth } from '../auth/AuthContext';
 
 const field = 'w-full min-h-12 rounded-lg border border-[#D9E1EA] bg-white px-4 py-3 text-base text-[#1F2A37] focus:outline-2 focus:outline-[#0F4C81]';
 const button = 'w-full min-h-12 rounded-lg bg-[#0F4C81] px-4 py-3 font-semibold text-white disabled:opacity-60';
@@ -46,6 +47,12 @@ export function ForgotPassword() {
 }
 
 export function ResetPassword() {
+  const { loading } = useAuth();
+  if (loading) return <RecoveryLayout title="パスワードの再設定"><p role="status">ログイン状態を確認しています…</p></RecoveryLayout>;
+  return <ReadyResetPassword />;
+}
+
+function ReadyResetPassword() {
   const [flow] = useState(getPasswordRecovery);
   const state = useSyncExternalStore(flow.subscribe, flow.getSnapshot);
   const [password, setPassword] = useState('');

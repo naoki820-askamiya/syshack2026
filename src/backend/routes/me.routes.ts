@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { AppError } from '../utils/index.js';
 import { requireAuth } from '../middlewares/requireAuth.js';
 import type { Request, Response } from 'express';
+import { hasCookieSession } from '../auth/cookies.js';
 
 type AuthRequest = Request & {
     userId?: string;
@@ -13,7 +14,7 @@ const router = Router();
 router.get('/', (req: Request, res: Response, next) => {
     const authorization = req.headers.authorization;
 
-    if (!authorization) {
+    if (!authorization && !hasCookieSession(req.headers.cookie)) {
         res.json({ user: null });
         return;
     }

@@ -8,7 +8,7 @@ import {
   useState,
 } from 'react';
 import type { ReactNode } from 'react';
-import type { User } from '@supabase/supabase-js';
+import type { BrowserUser as User } from './supabase';
 import { supabase } from './supabase';
 import { captureAuthBoundary, finishExplicitLogin, setAuthenticatedUser } from '../utils/authBoundary';
 import type { AuthBoundary } from '../utils/authBoundary';
@@ -32,6 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [sessionError, setSessionError] = useState(false);
   const [sessionAttempt, setSessionAttempt] = useState(0);
   const loginAttempt = useRef(0);
+  const currentSessionId = useRef<string | null>(null);
   const [authEpoch, setAuthEpoch] = useState(() => captureAuthBoundary().epoch);
   const publishUser = useCallback((nextUser: User | null, newSession = false) => {
     const boundary = setAuthenticatedUser(nextUser?.id ?? null, { newSession });
@@ -63,7 +64,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       if (!mounted) return;
       authEventObserved = true;
-      publishUser(nextSession?.user ?? null);
+      if (_event === 'SESSION_PENDING' || _event === 'SESSION_ERROR') {
+        currentSessionId.current = null;
+        publishUser(null);
+        setLoading(_event === 'SESSION_PENDING');
+        setSessionError(_event === 'SESSION_ERROR');
+        return;
+      }
+      const changedSession = Boolean(currentSessionId.current && nextSession?.id && currentSessionId.current !== nextSession.id);
+      currentSessionId.current = nextSession?.id ?? null;
+      publishUser(nextSession?.user ?? null, changedSession);
       setSessionError(false);
       setLoading(false);
     });
