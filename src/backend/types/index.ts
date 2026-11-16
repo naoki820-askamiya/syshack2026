@@ -14,6 +14,7 @@ export interface ErrorResponseBody {
 }
 
 export interface RequestLike {
+    method?: string;
     headers?: Record<string, string | string[] | undefined>;
     userId?: string;
     userEmail?: string | null;

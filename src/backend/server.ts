@@ -6,6 +6,7 @@ import type { CorsOptions } from "cors";
 import { errorHandler } from "./middlewares/errorHandler.js";
 import { readEnv } from "./utils/index.js";
 import { requestIdFrom } from "./v17/http.js";
+import { allowedBrowserOrigins } from './auth/browserSecurity.js';
 
 type OptionalRouterModule = {
     default?: Router;
@@ -15,14 +16,7 @@ type OptionalRouterModule = {
 loadDotenv({ path: ".env" });
 loadDotenv({ path: ".env.local", override: true });
 
-const defaultAllowedOrigins = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "https://kigen404.vercel.app",
-    "https://syshack2026.vercel.app",
-];
-
-const allowedOrigins = readAllowedOrigins();
+const allowedOrigins = allowedBrowserOrigins();
 
 const corsOptions: CorsOptions = {
     origin(origin, callback) {
@@ -48,12 +42,22 @@ export async function createServerApp() {
     });
 
     app.use(cors(corsOptions));
+    app.use('/api', (_req, res, next) => {
+        res.setHeader('Cache-Control', 'no-store');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+        res.setHeader('Referrer-Policy', 'no-referrer');
+        res.setHeader('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'");
+        res.vary('Cookie');
+        next();
+    });
     app.use(express.json({ limit: "100kb" }));
 
     app.get("/health", (_req, res) => {
         res.json({ status: "ok" });
     });
 
+    await mountOptionalRouter(app, '/api/auth', () => import('./auth/browser.routes.js'));
     await mountOptionalRouter(
         app,
         "/api/me",
@@ -114,19 +118,4 @@ async function mountOptionalRouter(
     if (routeModule.default) {
         app.use(path, routeModule.default);
     }
-}
-
-function readAllowedOrigins(): string[] {
-    const envOrigins = readEnv("ALLOWED_ORIGINS") ?? readEnv("FRONTEND_ORIGIN");
-
-    if (!envOrigins) {
-        return defaultAllowedOrigins;
-    }
-
-    const origins = envOrigins
-        .split(",")
-        .map((origin) => origin.trim())
-        .filter(Boolean);
-
-    return origins.length > 0 ? origins : defaultAllowedOrigins;
 }

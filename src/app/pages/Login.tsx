@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { ArrowLeft, LogIn } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
+import { safeLegalReturnTo } from '../../shared/legal';
 
 export function Login() {
   const navigate = useNavigate();
@@ -14,7 +15,7 @@ export function Login() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  const returnTo = searchParams.get('returnTo') || '/';
+  const returnTo = safeLegalReturnTo(searchParams.get('returnTo') || '/');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -1,19 +1,11 @@
-import { supabase } from '../auth/supabase';
+import { supabase, serverUrl } from '../auth/supabase';
 import { createApiClient } from './clientRequest';
 
-const serverUrl = import.meta.env.VITE_SERVER_URL ?? (
-  import.meta.env.DEV ? 'http://127.0.0.1:3000' : undefined
-);
-
-function requireServerUrl(): string {
-  if (!serverUrl) throw new Error('VITE_SERVER_URL が未設定です');
-  return serverUrl;
-}
-
-// Keep Supabase token retrieval, URL selection and fetch unchanged; this is protected I/O only.
+// Cookies authenticate; only public identity/session binding crosses JavaScript.
 const client = createApiClient({
   getSession: () => supabase.auth.getSession(),
-  send: (endpoint, options) => fetch(`${requireServerUrl()}${endpoint}`, options),
+  send: (endpoint, options) => fetch(`${serverUrl}${endpoint}`, options),
+  onAuthFailure: () => { supabase.invalidate(); void supabase.revalidate(); },
 });
 
 export const fetchApi = client.fetchApi;

@@ -554,6 +554,7 @@ localStorageに保存してはいけないもの:
 認証情報:
 
 - 認証状態はSupabase AuthのSDKが管理する。
+- ブラウザ用の認証処理はExpress経由でSupabase Authを使う。SDKのセッションは要求ごとのメモリ内だけに置き、トークンをAES-256-GCMで暗号化したHttpOnly Cookieに保持する。認証の正本はSupabase Authであり、独自の認証テーブルやトークンを発行しない。
 - アプリ独自にaccess token / refresh tokenを発行・保存しない。
 - refresh tokenをアプリDBに保存しない。
 
@@ -816,7 +817,7 @@ rg "ORDER BY created_at|created_at DESC" docs/database-design.md
 
 ## 未解決・確認事項
 
-- Supabase AuthのセッションをフロントでどのSDK設定で保持するかは、フロント実装時に確認する。
+- ブラウザのセッション保持はHttpOnly Cookie方式。運用時の同じsiteへの配置・Cookie転送・暗号鍵は[README](../README.md#cookie認証の配置と鍵)に従って確認する。
 - Supabase RLSを必須にするか、バックエンドAPIの所有権検証を主にするか、または両方使うかは実装前に確定する。
 - `analysis_feedbacks` のフィードバックUIをどの画面に置くかは未確定。
 - `analysis_feedbacks.outcome_type` の候補値は、実装前にUI文言と合わせて最終確認する。

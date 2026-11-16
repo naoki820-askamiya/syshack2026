@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import ts from 'typescript';
+import { safeLegalReturnTo } from '../../shared/legal.js';
 
 type Node = { type: unknown; props: Record<string, any> };
 function nodes(root: unknown): Node[] {
@@ -22,6 +23,7 @@ function renderLogin() {
     'react-router': { useNavigate: () => () => {}, useSearchParams: () => [new URLSearchParams()] },
     'lucide-react': { ArrowLeft: 'ArrowLeft', LogIn: 'LogIn' },
     '../auth/AuthContext': { useAuth: () => ({ signIn: async () => {} }) },
+    '../../shared/legal': { safeLegalReturnTo },
   };
   const output = ts.transpileModule(readFileSync('src/app/pages/Login.tsx', 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
@@ -42,20 +44,9 @@ test('Login has a working public recovery entry and retains login/register contr
   assert.ok(interactive.some(node => text(node) === '新規登録'));
 });
 
-test('password reset honesty fix preserves the existing Supabase session configuration', () => {
-  const source = ts.createSourceFile('supabase.ts', readFileSync('src/app/auth/supabase.ts', 'utf8'), ts.ScriptTarget.Latest, true);
-  let options: ts.ObjectLiteralExpression | undefined;
-  function visit(node: ts.Node) {
-    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === 'createClient') {
-      const last = node.arguments[2]; if (last && ts.isObjectLiteralExpression(last)) options = last;
-    }
-    ts.forEachChild(node, visit);
-  }
-  visit(source); assert.ok(options);
-  const auth = options.properties.find(property => ts.isPropertyAssignment(property) && property.name.getText(source) === 'auth') as ts.PropertyAssignment;
-  assert.ok(auth && ts.isObjectLiteralExpression(auth.initializer));
-  const settings = Object.fromEntries(auth.initializer.properties.map(property => {
-    assert.ok(ts.isPropertyAssignment(property)); return [property.name.getText(source), property.initializer.getText(source)];
-  }));
-  assert.deepEqual(settings, { autoRefreshToken: 'false', detectSessionInUrl: 'true', persistSession: 'false' });
+test('browser authentication uses the cookie API without a persistent Supabase SDK', () => {
+  const source = readFileSync('src/app/auth/supabase.ts', 'utf8');
+  assert.match(source, /createBrowserAuthClient/);
+  assert.doesNotMatch(source, /createClient\(/);
+  assert.doesNotMatch(source, /(?:localStorage|sessionStorage)\.setItem/);
 });

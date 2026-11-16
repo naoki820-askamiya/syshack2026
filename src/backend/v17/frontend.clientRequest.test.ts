@@ -235,9 +235,8 @@ test('production protected client uses this transport while public/login/registe
   assert.match(auth, /supabase\.auth\.signInWithPassword\(/);
   assert.match(auth, /supabase\.auth\.signUp\(/);
   const settings = source('src/app/auth/supabase.ts');
-  assert.match(settings, /persistSession: false/);
-  assert.match(settings, /autoRefreshToken: false/);
-  assert.match(settings, /detectSessionInUrl: true/);
+  assert.match(settings, /createBrowserAuthClient/);
+  assert.doesNotMatch(settings, /from '@supabase\/supabase-js'/);
   assert.match(source('src/backend/server.ts'), /app\.get\("\/health"/);
 });
 

@@ -2,6 +2,8 @@ import { isAuthApiError, isAuthRetryableFetchError } from '@supabase/supabase-js
 import type { NextLike, RequestLike, ResponseLike } from '../types/index.js';
 import { supabaseAuth } from '../auth/supabase.js';
 import { AppError } from '../utils/index.js';
+import { hasCookieSession, readCookieSession, requireSessionBinding } from '../auth/cookies.js';
+import { verifyBrowserMutation } from '../auth/browserSecurity.js';
 
 export async function requireAuth(
     req: RequestLike,
@@ -10,7 +12,19 @@ export async function requireAuth(
 ): Promise<void> {
     const rawHeader = req.headers?.authorization ?? req.headers?.Authorization;
     const authorization = Array.isArray(rawHeader) ? rawHeader[0] : rawHeader;
-    const token = extractBearerToken(authorization);
+    let token = extractBearerToken(authorization);
+    let expectedUserId: string | undefined;
+    if (hasCookieSession(typeof req.headers?.cookie === 'string' ? req.headers.cookie : undefined)) {
+        try {
+            if (authorization) throw new AppError({ code: 'AUTH_AMBIGUOUS', status: 400, message: '認証方法を確認してください。' });
+            const session = readCookieSession(req.headers?.cookie as string);
+            if (!session || session.expiresAt <= Date.now() / 1000) { next(buildAuthRequiredError()); return; }
+            requireSessionBinding(typeof req.headers?.['x-kigen-session'] === 'string' ? req.headers['x-kigen-session'] : undefined, session);
+            if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method ?? 'GET')) verifyBrowserMutation(req.headers ?? {});
+            token = session.accessToken;
+            expectedUserId = session.userId;
+        } catch (error) { next(error); return; }
+    }
 
     if (!token) {
         next(buildAuthRequiredError());
@@ -38,7 +52,7 @@ export async function requireAuth(
         return;
     }
 
-    if (error || !data.user) {
+    if (error || !data.user || (expectedUserId && data.user.id !== expectedUserId)) {
         next(buildAuthRequiredError());
         return;
     }

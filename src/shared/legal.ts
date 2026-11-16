@@ -3,7 +3,7 @@
 // version change even if the human-readable release label was left unchanged.
 // Draft acknowledgements must never be reused for a published release.
 export const TERMS_CONTENT_SHA256 = '4044d608c8c4d01a12aee0610817eed75d8d054ad191624b46e15eb66a003174';
-export const PRIVACY_CONTENT_SHA256 = 'a616817615faca7edac269ee2582c6fcfedd24c2400ace90bfb82760bbfdbc35';
+export const PRIVACY_CONTENT_SHA256 = '09cd505a7304aea37ffad09b10a2aa84757fd91a4fac4abcf32107b83eb864ec';
 export const TERMS_VERSION = `2026-10-07-draft-2-${TERMS_CONTENT_SHA256.slice(0, 16)}`;
 export const PRIVACY_POLICY_VERSION = `2026-10-07-draft-2-${PRIVACY_CONTENT_SHA256.slice(0, 16)}`;
 

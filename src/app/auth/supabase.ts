@@ -1,19 +1,41 @@
-import { createClient } from '@supabase/supabase-js';
+import { createBrowserAuthClient } from './cookieClient';
+export type { BrowserUser, BrowserSession } from './cookieClient';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabasePublishableKey =
-  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ??
-  import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Production and development both use the same-origin /api proxy.
+// Ignore legacy VITE_SERVER_URL values retained on the hosting service.
+export const serverUrl = '';
+const channel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('kigen-auth') : null;
 
-if (!supabaseUrl || !supabasePublishableKey) {
-  throw new Error('Supabase Auth の公開環境変数が未設定です');
-}
-
-export const supabase = createClient(supabaseUrl, supabasePublishableKey, {
-  auth: {
-    // 認証の正本はSupabaseに置き、tokenをブラウザへ永続化しない現在の再ログイン方針を維持します。
-    autoRefreshToken: false,
-    detectSessionInUrl: true,
-    persistSession: false,
+// Keep the AuthContext interface; all token operations now happen in Express.
+export const supabase = createBrowserAuthClient({
+  serverUrl,
+  send: (input, init) => fetch(input, init),
+  withLock: async operation => {
+    if (!navigator.locks) throw new Error('ブラウザを更新して、もう一度お試しください。');
+    return await navigator.locks.request('kigen-auth', operation);
+  },
+  broadcast: () => channel?.postMessage('changed'),
+  takeCallbackCode: () => {
+    const url = new URL(window.location.href);
+    const code = url.searchParams.get('code');
+    const legacyTokens = /(?:^#|&)(?:access_token|refresh_token)=/.test(url.hash);
+    if (code || legacyTokens) {
+      url.searchParams.delete('code');
+      if (legacyTokens) url.hash = '';
+      window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
+    }
+    // Delete only known legacy SDK keys, without reading or reusing tokens.
+    const oldUrl = import.meta.env.VITE_SUPABASE_URL;
+    if (oldUrl) {
+      const key = `sb-${new URL(oldUrl).hostname.split('.')[0]}-auth-token`;
+      try { for (const suffix of ['', '-user', '-code-verifier']) localStorage.removeItem(key + suffix); } catch { /* storage may be disabled */ }
+    }
+    return code;
   },
 });
+
+channel?.addEventListener('message', () => {
+  supabase.invalidate();
+  void supabase.revalidate();
+});
+window.addEventListener('focus', () => { void supabase.revalidate(); });
