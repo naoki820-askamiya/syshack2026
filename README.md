@@ -193,6 +193,21 @@ ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 | `PORT` | APIの待受ポート | 既定値は`3000` |
 | `ALLOWED_ORIGINS` | CORSで許可するOrigin | カンマ区切り。`FRONTEND_ORIGIN`も利用可能 |
 
+#### メール認証後の戻り先（Supabase）
+
+新規登録では、登録したサイトのトップページ（`window.location.origin + '/'`）を`emailRedirectTo`に指定します。
+Supabase Dashboardの **Authentication → URL Configuration** も次のように設定してください。
+
+- **Site URL**：本番フロントエンドのURL（例：`https://kigen404.vercel.app/`）。戻り先を指定しない認証メールの既定値です。本番ではlocalhostを残さないでください。
+- **Redirect URLs**：本番URLと、利用する開発・プレビュー環境の戻り先を登録します。ローカル開発では`http://localhost:5173/`、必要なら`http://127.0.0.1:5173/`も追加します。本番は完全なURLで登録し、プレビューも管理している環境だけを許可してください。
+
+コードで指定したURLが許可されていない場合もSite URLへ戻るため、コードとDashboardの両方を確認します。
+独自メールテンプレートを使う場合は、認証リンクが`.SiteURL`で固定されていないかも確認してください。
+設定変更前に送信済みのメールではなく、変更後の新しい認証メールで戻り先を確認してください。
+詳細は[Supabase公式のRedirect URLs](https://supabase.com/docs/guides/auth/redirect-urls)を参照してください。
+
+登録後のメール確認待ち画面には「確認メールを再送信」があります。最初の送信後と再送要求後は60秒待機し、送信中の重複要求を防ぎます。再送先は登録時のメールアドレス、認証後の戻り先は登録元サイトです。再送の受付成功は到達保証ではありません。プロバイダー側の制限などで失敗した場合も、待機後に再試行できます。
+
 ### 3. 開発用DBとPrisma Clientを準備する
 
 新しい開発用DBでは、Supabase Authの準備後に既存のmigrationを適用します。
